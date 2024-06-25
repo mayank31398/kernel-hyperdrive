@@ -3,7 +3,7 @@ from typing import Callable
 import torch
 from parameterized import parameterized
 
-from kernels import vector_addition_cuda, vector_addition_pytorch, vector_addition_triton
+from kernel_hperdrive import vector_addition_cuda, vector_addition_pytorch, vector_addition_triton
 
 from .test_commons import TestCommons
 
