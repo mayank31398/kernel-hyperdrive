@@ -1,0 +1,8 @@
+__pycache__
+.pytest_cache
+.vscode
+*.so
+*.pyc
+/appwrapper.yaml
+*.egg-info/
+build/
