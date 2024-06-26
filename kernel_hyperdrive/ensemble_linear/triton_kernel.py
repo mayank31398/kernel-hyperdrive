@@ -91,9 +91,8 @@ class EnsembleLinear_Triton(nn.Module):
 
         self.weight = nn.Parameter(torch.empty(self.tensor_parallel_size, self.in_features, self.out_features))
 
-        self.bias = None
         if bias:
-            self.bias = nn.Parameter(torch.empty(self.tensor_parallel_size, self.out_features))
+            raise NotImplementedError(f"bias is not supported with {self.__class__.__name__}")
 
         self.reset_parameters()
 
@@ -103,8 +102,6 @@ class EnsembleLinear_Triton(nn.Module):
     @torch.no_grad()
     def reset_parameters(self) -> None:
         nn.init.normal_(self.weight, mean=0, std=self.std)
-        if self.bias is not None:
-            self.bias.zero_()
 
     def extra_repr(self) -> str:
         return (
