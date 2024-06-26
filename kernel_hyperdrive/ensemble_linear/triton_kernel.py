@@ -35,20 +35,26 @@ def _ensemble_linear_forward(
     block_indices_batch_size = pid_batch_size * BLOCK_SIZE_batch_size + tl.arange(0, BLOCK_SIZE_batch_size)
     block_indices_tp = pid_tp * BLOCK_SIZE_tp + tl.arange(0, BLOCK_SIZE_tp)
 
-    load_mask = block_indices_batch_size < batch_size and block_indices_tp < tp
+    print(block_indices_batch_size)
+    print(block_indices_tp)
 
-    input_block = tl.load()
-    block_start = pid * BLOCK_SIZE
-    block_indices = block_start + tl.arange(0, BLOCK_SIZE)
+    print(BLOCK_SIZE_batch_size)
+    print(BLOCK_SIZE_tp)
 
-    mask = block_indices < num_elements
+    # load_mask = block_indices_batch_size < batch_size and block_indices_tp < tp
 
-    x = tl.load(x_ptr + block_indices, mask=mask)
-    y = tl.load(y_ptr + block_indices, mask=mask)
+    # input_block = tl.load()
+    # block_start = pid * BLOCK_SIZE
+    # block_indices = block_start + tl.arange(0, BLOCK_SIZE)
 
-    output = x + y
+    # mask = block_indices < num_elements
 
-    tl.store(output_ptr + block_indices, output, mask=mask)
+    # x = tl.load(x_ptr + block_indices, mask=mask)
+    # y = tl.load(y_ptr + block_indices, mask=mask)
+
+    # output = x + y
+
+    # tl.store(output_ptr + block_indices, output, mask=mask)
 
 
 class _EnsembleLinear_Triton(torch.autograd.Function):
