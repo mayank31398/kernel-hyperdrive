@@ -20,7 +20,7 @@ class _VectorAddition_Naive(torch.autograd.Function):
 
         num_elements = x.numel()
 
-        _vector_addition_naive(x, y, num_elements, BLOCK_SIZE=1024)
+        _vector_addition_naive(x, y, output, num_elements, BLOCK_SIZE=1024)
 
         return output
 
