@@ -12,15 +12,32 @@ def _ensemble_linear_forward(
     weight_ptr,
     output_ptr,
     batch_size,
-    TP,
+    tp,
     sequence_length,
     in_features,
     out_features,
-    BLOCK_SIZE_M: tl.constexpr,
-    BLOCK_SIZE_N: tl.constexpr,
+    stride_input_batch_size,
+    stride_input_tp,
+    stride_input_sequence_length,
+    stride_input_in_features,
+    stride_weight_tp,
+    stride_weight_in_features,
+    stride_weight_out_features,
+    BLOCK_SIZE_batch_size: tl.constexpr,
+    BLOCK_SIZE_tp: tl.constexpr,
+    BLOCK_SIZE_sequence_length: tl.constexpr,
+    BLOCK_SIZE_out_features: tl.constexpr,
 ):
-    pid = tl.program_id(axis=0)
+    pid_batch_size = tl.program_id(axis=0)
+    pid_tp = tl.program_id(axis=1)
+    pid_matmul = tl.program_id(axis=2)
 
+    block_indices_batch_size = pid_batch_size * BLOCK_SIZE_batch_size + tl.arange(0, BLOCK_SIZE_batch_size)
+    block_indices_tp = pid_tp * BLOCK_SIZE_tp + tl.arange(0, BLOCK_SIZE_tp)
+
+    load_mask = block_indices_batch_size < batch_size and block_indices_tp < tp
+
+    input_block = tl.load()
     block_start = pid * BLOCK_SIZE
     block_indices = block_start + tl.arange(0, BLOCK_SIZE)
 
@@ -62,6 +79,11 @@ class _EnsembleLinear_Triton(torch.autograd.Function):
             * triton.cdiv(out_features, meta["BLOCK_SIZE_out_features"]),
         )
 
+        stride_input_batch_size, stride_input_tp, stride_input_sequence_length, stride_input_in_features = (
+            input.stride()
+        )
+        stride_weight_tp, stride_weight_in_features, stride_weight_out_features = weight.stride()
+
         _ensemble_linear_forward[grid](
             input,
             weight,
@@ -71,6 +93,13 @@ class _EnsembleLinear_Triton(torch.autograd.Function):
             sequence_length,
             in_features,
             out_features,
+            stride_input_batch_size,
+            stride_input_tp,
+            stride_input_sequence_length,
+            stride_input_in_features,
+            stride_weight_tp,
+            stride_weight_in_features,
+            stride_weight_out_features,
             BLOCK_SIZE_batch_size=1024,
             BLOCK_SIZE_tp=1024,
             BLOCK_SIZE_sequence_length=1024,
@@ -108,7 +137,6 @@ class EnsembleLinear_Triton(nn.Module):
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         return ensemble_linear_triton(input, self.weight)
 
-    @torch.no_grad()
     def reset_parameters(self) -> None:
         nn.init.normal_(self.weight, mean=0, std=self.std)
 
