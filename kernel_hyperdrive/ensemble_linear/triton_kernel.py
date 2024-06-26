@@ -42,18 +42,25 @@ class _EnsembleLinear_Triton(torch.autograd.Function):
         assert input.dim() == 4
         assert weight.dim() == 3
 
-        assert input.shape[1] == weight.shape[0]
         assert input.shape[3] == weight.shape[1]
+
+        batch_size, _, sequence_length, in_features = input.shape
+        tp, _, out_features = weight.shape[-1]
+
+        if input.shape[1] != tp:
+            assert input.shape[1] == 1
+            input = input.expand(-1, tp, -1, -1)
 
         input = input.contiguous()
 
-        batch_size, tp, sequence_length, in_features = input.shape
-        out_features = weight.shape[-1]
-
         output = torch.empty(batch_size, tp, sequence_length, out_features, dtype=input.dtype, device=input.device)
 
-        num_elements = x.numel()
-        grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE"]),)
+        grid = lambda meta: (
+            triton.cdiv(batch_size, meta["BLOCK_SIZE_batch_size"]),
+            triton.cdiv(tp, meta["BLOCK_SIZE_tp"]),
+            triton.cdiv(sequence_length, meta["BLOCK_SIZE_sequence_length"])
+            * triton.cdiv(out_features, meta["BLOCK_SIZE_out_features"]),
+        )
 
         _ensemble_linear_forward[grid](
             input,
@@ -64,8 +71,10 @@ class _EnsembleLinear_Triton(torch.autograd.Function):
             sequence_length,
             in_features,
             out_features,
-            BLOCK_SIZE_M=1024,
-            BLOCK_SIZE_N=1024,
+            BLOCK_SIZE_batch_size=1024,
+            BLOCK_SIZE_tp=1024,
+            BLOCK_SIZE_sequence_length=1024,
+            BLOCK_SIZE_out_features=1024,
         )
 
         return output
