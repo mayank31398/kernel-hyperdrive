@@ -27,19 +27,35 @@ def _ensemble_linear_forward(
     BLOCK_SIZE_tp: tl.constexpr,
     BLOCK_SIZE_sequence_length: tl.constexpr,
     BLOCK_SIZE_out_features: tl.constexpr,
+    GROUP_SIZE_sequence_length: tl.constexpr,
 ):
+    # program ids
     pid_batch_size = tl.program_id(axis=0)
     pid_tp = tl.program_id(axis=1)
     pid_matmul = tl.program_id(axis=2)
 
+    # num pids along axes
+    num_pid_sequence_length = tl.cdiv(sequence_length, BLOCK_SIZE_sequence_length)
+    num_pid_out_features = tl.cdiv(out_features, BLOCK_SIZE_out_features)
+    # num pids in a group for maximizing L2 cache hits
+    num_pid_in_group = GROUP_SIZE_sequence_length * num_pid_out_features
+    # group id
+    group_id = pid_matmul // num_pid_in_group
+
+    group_id = pid // num_pid_in_group
+    first_pid_m = group_id * GROUP_SIZE_M
+    group_size_m = min(num_pid_m - first_pid_m, GROUP_SIZE_M)
+    pid_m = first_pid_m + ((pid % num_pid_in_group) % group_size_m)
+    pid_n = (pid % num_pid_in_group) // group_size_m
+
     block_indices_batch_size = pid_batch_size * BLOCK_SIZE_batch_size + tl.arange(0, BLOCK_SIZE_batch_size)
     block_indices_tp = pid_tp * BLOCK_SIZE_tp + tl.arange(0, BLOCK_SIZE_tp)
 
-    print(block_indices_batch_size)
-    print(block_indices_tp)
+    tl.device_print("a", block_indices_batch_size)
+    tl.device_print("a", block_indices_tp)
 
-    print(BLOCK_SIZE_batch_size)
-    print(BLOCK_SIZE_tp)
+    tl.device_print("a", BLOCK_SIZE_batch_size)
+    tl.device_print("a", BLOCK_SIZE_tp)
 
     # load_mask = block_indices_batch_size < batch_size and block_indices_tp < tp
 
@@ -68,7 +84,7 @@ class _EnsembleLinear_Triton(torch.autograd.Function):
         assert input.shape[3] == weight.shape[1]
 
         batch_size, _, sequence_length, in_features = input.shape
-        tp, _, out_features = weight.shape[-1]
+        tp, _, out_features = weight.shape
 
         if input.shape[1] != tp:
             assert input.shape[1] == 1
