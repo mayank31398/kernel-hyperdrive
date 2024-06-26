@@ -1,3 +1,4 @@
+from .ensemble_linear import EnsembleLinear_Triton, ensemble_linear_triton
 from .utils import compile_helpers
 from .vector_addition import (
     VectorAddition_CUDA,
