@@ -3,7 +3,7 @@ from typing import Callable
 import torch
 import torch.nn as nn
 
-from ..pytorch import Experts_PyTorch, MoE_PyTorch
+from ..torch_implementation import Experts_Torch, MoE_Torch
 from .kernel import flatten_and_sort, group, group_bwd_W, padded_block_indices, scatter2scatter
 
 
@@ -160,7 +160,7 @@ def scattered_experts(
     return results
 
 
-class Experts_Triton(Experts_PyTorch):
+class Experts_Triton(Experts_Torch):
     def forward(
         self,
         inputs,
@@ -189,7 +189,7 @@ class Experts_Triton(Experts_PyTorch):
         return results
 
 
-class MoE_Triton(MoE_PyTorch):
+class MoE_Triton(MoE_Torch):
     def __init__(
         self,
         num_experts: int,

@@ -3,7 +3,7 @@ from typing import Callable
 import torch
 from parameterized import parameterized
 
-from kernel_hyperdrive import vector_addition_cuda, vector_addition_pytorch, vector_addition_triton
+from kernel_hyperdrive import vector_addition_cuda, vector_addition_torch, vector_addition_triton
 
 from .test_commons import TestCommons
 
@@ -30,6 +30,6 @@ class VectorAdditionTest(TestCommons):
         y = torch.randn(size, device=device, dtype=dtype)
 
         z_kernel = function(x, y)
-        z_expected = vector_addition_pytorch(x, y)
+        z_expected = vector_addition_torch(x, y)
 
         self.assert_equal_tensors(z_kernel, z_expected, True)
