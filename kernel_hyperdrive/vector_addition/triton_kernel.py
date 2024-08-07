@@ -24,6 +24,7 @@ def _vector_addition_forward(x_ptr, y_ptr, output_ptr, num_elements, BLOCK_SIZE:
 
 
 class _VectorAddition_Triton(torch.autograd.Function):
+    @staticmethod
     def forward(ctx, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         assert x.dim() == 1
         output = torch.empty_like(x)
@@ -35,6 +36,7 @@ class _VectorAddition_Triton(torch.autograd.Function):
 
         return output
 
+    @staticmethod
     def backward(ctx, output_grad: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         return output_grad, output_grad
 
