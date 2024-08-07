@@ -33,11 +33,12 @@ class ParallelLinear(torch.autograd.Function):
             x_grouped=grouped_in,
             y_grouped=grouped_out,
         )
-        if gates is not None:
+
+        if gates is None:
+            output_expanded = None
+        else:
             output_expanded = output.view(gates.size(0), gates.size(1), output.size(-1))
             output = torch.bmm(gates[:, None, :], output_expanded).squeeze(1)
-        else:
-            output_expanded = None
 
         ctx.save_for_backward(
             x,
@@ -49,9 +50,11 @@ class ParallelLinear(torch.autograd.Function):
             gates,
             output_expanded,
         )
+
         ctx.grouped_in = grouped_in
         ctx.grouped_out = grouped_out
         ctx.k = k
+
         return output
 
     @staticmethod
@@ -69,19 +72,19 @@ class ParallelLinear(torch.autograd.Function):
         k = ctx.k
         grouped_in = ctx.grouped_in
         grouped_out = ctx.grouped_out
-        # print("backward")
-        if gates is not None:
+
+        if gates is None:
+            d_gates = None
+            gates_flat = None
+            gate_fan = 1
+            grouped_grad_out = None
+        else:
             # calculate gates gradient
             d_gates = torch.bmm(output_expanded, grad_out[:, :, None]).squeeze(-1)
             gates_flat = gates.flatten()
             gate_fan = gates.size(1)
             # print("expanded and grouping")
             grouped_grad_out = output_expanded.flatten(0, 1)  # reuse expanded buffer later
-        else:
-            d_gates = None
-            gates_flat = None
-            gate_fan = 1
-            grouped_grad_out = None
 
         if grouped_out:
             grouped_grad_out = grad_out
@@ -89,15 +92,18 @@ class ParallelLinear(torch.autograd.Function):
             grouped_grad_out = group(
                 grad_out, sorted_scattered_idxs, fan_out=gate_fan, coeff=gates_flat, out=grouped_grad_out
             )
+
         if grouped_in:
             grouped_x = x
             d_expanded_input = None
         else:
             grouped_x = group(x, sorted_scattered_idxs, fan_out=k)
             d_expanded_input = grouped_x
+
         d_weights = group_bwd_W(
             DY=grouped_grad_out, X=grouped_x, expert_offsets=expert_offsets, E=expert_weights.size(0)
         )
+
         d_expanded_input = scatter2scatter(
             X=grouped_grad_out,
             x_grouped=True,
@@ -114,6 +120,7 @@ class ParallelLinear(torch.autograd.Function):
             d_input = d_expanded_input
         else:
             d_input = d_expanded_input.view(x.size(0), k, d_expanded_input.size(-1)).sum(-2)
+
         # print("backward end.")
         return (
             # x, expert_weights, k,
