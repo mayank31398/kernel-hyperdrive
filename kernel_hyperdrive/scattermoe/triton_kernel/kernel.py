@@ -31,14 +31,8 @@ def padded_block_indices(sorted_experts_idxs: torch.Tensor, k: int, N_BLOCK_SIZE
     return expanded_block_idxs, expert_boundaries_end
 
 
-def _scatter2scatter_configs():
-    return [
-        triton.Config({"BLOCK_N": 128, "BLOCK_K": 32}, num_stages=4, num_warps=4),
-    ]
-
-
 @triton.autotune(
-    configs=_scatter2scatter_configs(),
+    configs=[triton.Config({"BLOCK_N": 128, "BLOCK_K": 32}, num_stages=4, num_warps=4)],
     key=["M", "N", "K"],
 )
 @triton.heuristics(
