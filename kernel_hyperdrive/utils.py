@@ -5,7 +5,7 @@ from torch.utils.cpp_extension import load as load_cpp_extension
 
 def compile_helpers() -> None:
     load_cpp_extension(
-        "vector_addition_cuda",
+        "khd",
         sources=[
             os.path.join(os.path.dirname(__file__), "vector_addition/cuda_kernel/vector_addition.cpp"),
             os.path.join(os.path.dirname(__file__), "vector_addition/cuda_kernel/vector_addition.cu"),
