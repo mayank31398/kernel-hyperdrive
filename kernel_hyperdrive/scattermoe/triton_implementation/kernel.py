@@ -400,3 +400,161 @@ def _group(
             tl.store(tgt_blk_ptrs, block, mask=mask)
         src_blk_ptrs += BLOCK_K * stride_sk
         tgt_blk_ptrs += BLOCK_K * stride_ti
+
+
+class _ScatteredExperts(torch.autograd.Function):
+    @staticmethod
+    def forward(
+        ctx,
+        x,
+        expert_weights,
+        k,
+        sorted_expert_idxs,
+        sorted_scattered_idxs,
+        padded_block_idxs,
+        expert_offsets,
+        gates=None,
+        grouped_in=False,
+        grouped_out=False,
+    ):
+        output = scatter2scatter(
+            X=x,
+            W=expert_weights,
+            sorted_expert_idxs=sorted_expert_idxs,
+            sorted_scattered_idxs=sorted_scattered_idxs,
+            padded_block_idxs=padded_block_idxs,
+            k=k,
+            x_grouped=grouped_in,
+            y_grouped=grouped_out,
+        )
+
+        if gates is None:
+            output_expanded = None
+        else:
+            output_expanded = output.view(gates.size(0), gates.size(1), output.size(-1))
+            output = torch.bmm(gates[:, None, :], output_expanded).squeeze(1)
+
+        ctx.save_for_backward(
+            x,
+            expert_weights,
+            sorted_expert_idxs,
+            sorted_scattered_idxs,
+            padded_block_idxs,
+            expert_offsets,
+            gates,
+            output_expanded,
+        )
+
+        ctx.grouped_in = grouped_in
+        ctx.grouped_out = grouped_out
+        ctx.k = k
+
+        return output
+
+    @staticmethod
+    def backward(ctx, grad_out):
+        (
+            x,
+            expert_weights,
+            sorted_expert_idxs,
+            sorted_scattered_idxs,
+            padded_block_idxs,
+            expert_offsets,
+            gates,
+            output_expanded,
+        ) = ctx.saved_tensors
+        k = ctx.k
+        grouped_in = ctx.grouped_in
+        grouped_out = ctx.grouped_out
+
+        if gates is None:
+            d_gates = None
+            gates_flat = None
+            gate_fan = 1
+            grouped_grad_out = None
+        else:
+            # calculate gates gradient
+            d_gates = torch.bmm(output_expanded, grad_out[:, :, None]).squeeze(-1)
+            gates_flat = gates.flatten()
+            gate_fan = gates.size(1)
+            # print("expanded and grouping")
+            grouped_grad_out = output_expanded.flatten(0, 1)  # reuse expanded buffer later
+
+        if grouped_out:
+            grouped_grad_out = grad_out
+        else:
+            grouped_grad_out = group(
+                grad_out, sorted_scattered_idxs, fan_out=gate_fan, coeff=gates_flat, out=grouped_grad_out
+            )
+
+        if grouped_in:
+            grouped_x = x
+            d_expanded_input = None
+        else:
+            grouped_x = group(x, sorted_scattered_idxs, fan_out=k)
+            d_expanded_input = grouped_x
+
+        d_weights = group_bwd_W(
+            DY=grouped_grad_out, X=grouped_x, expert_offsets=expert_offsets, E=expert_weights.size(0)
+        )
+
+        d_expanded_input = scatter2scatter(
+            X=grouped_grad_out,
+            x_grouped=True,
+            W=expert_weights.permute(0, 2, 1),
+            padded_block_idxs=padded_block_idxs,
+            sorted_expert_idxs=sorted_expert_idxs,
+            sorted_scattered_idxs=sorted_scattered_idxs,
+            k=1,
+            y_grouped=grouped_in,
+            out=d_expanded_input,  # Reuse grouped_x buffer
+        )
+
+        if k == 1:
+            d_input = d_expanded_input
+        else:
+            d_input = d_expanded_input.view(x.size(0), k, d_expanded_input.size(-1)).sum(-2)
+
+        # print("backward end.")
+        return (
+            # x, expert_weights, k,
+            d_input,
+            d_weights,
+            None,
+            # sorted_expert_idxs, sorted_scattered_idxs,
+            None,
+            None,
+            # padded_block_idxs, expert_offsets,
+            None,
+            None,
+            # gates
+            d_gates,
+            None,
+            None,
+        )
+
+
+def scattered_experts(
+    inputs,
+    expert_weights,
+    k,
+    sorted_expert_idxs,
+    sorted_scattered_idxs,
+    padded_block_idxs,
+    expert_offsets,
+    gates=None,
+    grouped_in=False,
+    grouped_out=False,
+):
+    return _ScatteredExperts.apply(
+        inputs,
+        expert_weights,
+        k,
+        sorted_expert_idxs,
+        sorted_scattered_idxs,
+        padded_block_idxs,
+        expert_offsets,
+        gates,
+        grouped_in,
+        grouped_out,
+    )
