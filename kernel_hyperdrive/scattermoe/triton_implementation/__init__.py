@@ -54,11 +54,7 @@ class MoE_Triton(MoE_Torch):
         self.hidden_size = hidden_size
         self.intermediate_size = intermediate_size
 
-        self.gate = nn.Linear(
-            in_features=self.hidden_size,
-            out_features=num_experts,
-            bias=False,
-        )
+        self.gate = nn.Linear(in_features=self.hidden_size, out_features=num_experts, bias=False)
 
         self.c_fc = Experts_Triton(
             num_experts=num_experts,
