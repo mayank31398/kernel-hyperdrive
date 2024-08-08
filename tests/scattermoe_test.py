@@ -60,7 +60,7 @@ class ScatterMoETest(TestCommons):
             is_glu=is_glu,
             add_bias=False,
             std=0.02,
-        )
+        ).to(device)
 
         moe_torch = MoE_Torch(
             num_experts=num_experts,
@@ -71,7 +71,7 @@ class ScatterMoETest(TestCommons):
             is_glu=is_glu,
             add_bias=False,
             std=0.02,
-        )
+        ).to(device)
 
         moe_torch.load_state_dict(moe.state_dict())
 
