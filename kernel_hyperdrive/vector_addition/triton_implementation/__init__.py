@@ -1,41 +1,32 @@
-from typing import Tuple
-
 import torch
 import torch.nn as nn
 import triton
-import triton.language as tl
 
-
-@triton.jit
-def _vector_addition_forward(x_ptr, y_ptr, output_ptr, num_elements, BLOCK_SIZE: tl.constexpr):
-    pid = tl.program_id(axis=0)
-
-    block_start = pid * BLOCK_SIZE
-    block_indices = block_start + tl.arange(0, BLOCK_SIZE)
-
-    mask = block_indices < num_elements
-
-    x = tl.load(x_ptr + block_indices, mask=mask)
-    y = tl.load(y_ptr + block_indices, mask=mask)
-
-    output = x + y
-
-    tl.store(output_ptr + block_indices, output, mask=mask)
+from .kernel import vector_addition_forward_triton_kernel
 
 
 class _VectorAddition_Triton(torch.autograd.Function):
+    @staticmethod
     def forward(ctx, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         assert x.dim() == 1
+
+        assert x.is_cuda
+        assert y.is_cuda
+
+        assert x.is_contiguous()
+        assert y.is_contiguous()
+
         output = torch.empty_like(x)
 
         num_elements = x.numel()
         grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE"]),)
 
-        _vector_addition_forward[grid](x, y, output, num_elements, BLOCK_SIZE=1024)
+        vector_addition_forward_triton_kernel[grid](x, y, output, num_elements, BLOCK_SIZE=1024)
 
         return output
 
-    def backward(ctx, output_grad: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    @staticmethod
+    def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         return output_grad, output_grad
 
 
