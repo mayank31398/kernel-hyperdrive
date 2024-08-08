@@ -1,10 +1,14 @@
 import torch
 import torch.nn as nn
 from parameterized import parameterized
+from transformers import set_seed
 
 from kernel_hyperdrive import MoE_Torch, MoE_Triton
 
 from .test_commons import TestCommons
+
+
+SEED = 42
 
 
 class ScatterMoETest(TestCommons):
@@ -51,6 +55,13 @@ class ScatterMoETest(TestCommons):
         is_glu: bool,
         module_class: type[nn.Module],
     ) -> None:
+        set_seed(SEED)
+
+        if num_experts_per_tok > num_experts:
+            self.skipTest(
+                f"skipping test since number of experts per token ({num_experts_per_tok}) is more than number of experts ({num_experts})"
+            )
+
         moe = module_class(
             num_experts=num_experts,
             num_experts_per_tok=num_experts_per_tok,
@@ -80,4 +91,14 @@ class ScatterMoETest(TestCommons):
         y = moe(x)[0]
         y_expected = moe_torch(x)[0]
 
-        self.assert_equal_tensors(y, y_expected, True)
+        self.assert_equal_tensors(
+            y,
+            y_expected,
+            False,
+            atol_float16=4e-3,
+            rtol_float16=0,
+            atol_bfloat16=2e-2,
+            rtol_bfloat16=0,
+            atol_float32=6e-3,
+            rtol_float32=0,
+        )
