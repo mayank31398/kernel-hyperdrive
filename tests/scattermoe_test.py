@@ -77,7 +77,7 @@ class ScatterMoETest(TestCommons):
 
         x = torch.randn(hidden_size, device=device, dtype=dtype)
 
-        y = moe(x)
-        y_expected = moe_torch(x)
+        y = moe(x)[0]
+        y_expected = moe_torch(x)[0]
 
         self.assert_equal_tensors(y, y_expected, True)
