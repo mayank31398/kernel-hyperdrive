@@ -1,5 +1,3 @@
-from typing import Tuple
-
 import torch
 import torch.nn as nn
 
@@ -12,7 +10,7 @@ class _VectorAddition_CUDA(torch.autograd.Function):
         return khd.vector_addition_forward(x, y)
 
     @staticmethod
-    def backward(ctx, output_grad: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         return output_grad, output_grad
 
 

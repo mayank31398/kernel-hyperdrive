@@ -1,22 +1,23 @@
 from itertools import product
-from typing import Any, List, Tuple
+from typing import Any
 from unittest import TestCase
 
 import torch
+import torch.nn as nn
 from torch.testing import assert_close
 
 
 class TestCommons(TestCase):
     @staticmethod
-    def get_all_devices() -> List[torch.device]:
+    def get_all_devices() -> list[torch.device]:
         return [torch.device("cpu"), torch.device("cuda")]
 
     @staticmethod
-    def get_dtypes() -> List[torch.dtype]:
+    def get_dtypes() -> list[torch.dtype]:
         return [torch.float32, torch.float16, torch.bfloat16]
 
     @staticmethod
-    def get_1d_tensor_sizes() -> List[Tuple[int]]:
+    def get_1d_tensor_sizes() -> list[tuple[int]]:
         sizes = set()
         for i in range(15):
             start = 2**i
@@ -24,7 +25,7 @@ class TestCommons(TestCase):
                 sizes.add(start + j)
         return sizes
 
-    def make_args_matrix(*args_lists) -> List[Any]:
+    def make_args_matrix(*args_lists) -> list[Any]:
         return [p for p in product(*args_lists)]
 
     def assert_equal_tensors(
@@ -53,3 +54,6 @@ class TestCommons(TestCase):
                 assert_close(x, y, rtol=rtol_bfloat16, atol=atol_bfloat16)
             else:
                 raise ValueError(f"unexpected dtype ({dtype})")
+
+    def get_activation_function(self, is_glu: bool) -> nn.Module:
+        return nn.GLU() if is_glu else nn.GELU(approximate="tanh")

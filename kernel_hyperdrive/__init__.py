@@ -1,3 +1,4 @@
+from .scattermoe import MoE_Torch, MoE_Triton
 from .utils import compile_helpers
 from .vector_addition import (
     VectorAddition_CUDA,
