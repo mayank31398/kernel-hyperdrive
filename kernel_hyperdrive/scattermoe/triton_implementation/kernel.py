@@ -21,12 +21,15 @@ def padded_block_indices(sorted_experts_idxs: torch.Tensor, k: int, N_BLOCK_SIZE
     expert_boundaries_end = expert_counts.cumsum(-1)
     expert_boundaries_start = expert_boundaries_end - expert_counts
     padded_expert_block_start = padded_expert_block_end - padded_block_counts
+
     block_idxs = torch.arange(
         padded_expert_block_end[-1], dtype=sorted_experts_idxs.dtype, device=sorted_experts_idxs.device
-    )
-    block_mask = (block_idxs[:, None] < padded_expert_block_start) | (block_idxs[:, None] >= padded_expert_block_end)
-    expanded_block_idxs = N_BLOCK_SIZE * (block_idxs[:, None] - padded_expert_block_start) + expert_boundaries_start
+    ).unsqueeze(1)
+
+    block_mask = (block_idxs < padded_expert_block_start) | (block_idxs >= padded_expert_block_end)
+    expanded_block_idxs = N_BLOCK_SIZE * (block_idxs - padded_expert_block_start) + expert_boundaries_start
     expanded_block_idxs = expanded_block_idxs.masked_fill(block_mask, 0).sum(-1)
+
     return expanded_block_idxs, expert_boundaries_end
 
 
