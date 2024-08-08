@@ -58,7 +58,6 @@ class MoE_Triton(MoE_Torch):
             in_features=self.hidden_size,
             out_features=num_experts,
             bias=False,
-            std=std,
         )
 
         self.c_fc = Experts_Triton(
