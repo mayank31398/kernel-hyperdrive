@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 
 from ..torch_implementation import Experts_Torch, MoE_Torch
-from .ops import flatten_and_sort, padded_block_indices, scattered_experts
+from .ops import padded_block_indices, scattered_experts
 
 
 class Experts_Triton(Experts_Torch):
