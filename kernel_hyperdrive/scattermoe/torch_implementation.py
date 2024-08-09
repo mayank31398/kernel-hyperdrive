@@ -131,6 +131,10 @@ class MoE_Torch(nn.Module):
             router_weights, selected_experts
         )
 
+        # batch_index -> (num_tokens * top_k)
+        # batch_gates -> (num_tokens * top_k)
+        # num_experts_per_token -> (num_experts)
+
         expert_inputs = hidden_states[batch_index]
 
         hidden_states = self.c_fc(expert_inputs, num_experts_per_token)
