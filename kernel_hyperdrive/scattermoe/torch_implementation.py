@@ -89,10 +89,16 @@ class MoE_Torch(nn.Module):
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         original_shape = hidden_states.shape
 
+        # hidden_states -> (batch_size, query_length, hidden_size)
         hidden_states = hidden_states.view(-1, self.hidden_size)
+        # hidden_states -> (total_q, hidden_size)
         router_logits, router_weights, selected_experts = self._compute_routing_weights(hidden_states)
-        hidden_states = self._compute_experts(hidden_states, router_weights, selected_experts)
 
+        # router_logits -> (total_q, num_experts)
+        # router_weights -> (total_q, top_k)
+        # selected_experts -> (total_q, top_k)
+
+        hidden_states = self._compute_experts(hidden_states, router_weights, selected_experts)
         hidden_states = hidden_states.view(original_shape)
 
         return hidden_states, router_logits
@@ -103,9 +109,11 @@ class MoE_Torch(nn.Module):
         # router_logits -> (total_q, num_experts)
 
         router_weights, selected_experts = self._get_topk(router_logits)
-        router_weights = F.softmax(router_weights.float(), dim=-1)
 
-        # we cast back to the input dtype
+        # router_weights -> (total_q, top_k)
+        # selected_experts -> (total_q, top_k)
+
+        router_weights = F.softmax(router_weights.float(), dim=-1)
         router_weights = router_weights.type_as(hidden_states)
 
         return router_logits, router_weights, selected_experts
@@ -114,6 +122,10 @@ class MoE_Torch(nn.Module):
         self, hidden_states: torch.Tensor, router_weights: torch.Tensor, selected_experts: torch.Tensor
     ) -> torch.Tensor:
         total_q = hidden_states.shape[0]
+
+        # hidden_states -> (total_q, hidden_size)
+        # router_weights -> (total_q, top_k)
+        # selected_experts -> (total_q, top_k)
 
         batch_index, batch_gates, num_experts_per_token = self._compute_expert_assignment(
             router_weights, selected_experts
@@ -134,17 +146,24 @@ class MoE_Torch(nn.Module):
     def _compute_expert_assignment(
         self, router_weights: torch.Tensor, selected_experts: torch.Tensor
     ) -> tuple[torch.Tensor]:
+        # router_weights -> (total_q, top_k)
+        # selected_experts -> (total_q, top_k)
         selected_experts = selected_experts.flatten()
+        # selected_experts -> (total_q * top_k)
 
         num_experts_per_token = selected_experts.bincount(minlength=self.num_experts)
+        # num_experts_per_token -> (num_experts)
 
-        # sort and group input tokens according to expert assignment
-        _, index_sorted_experts = selected_experts.sort(0)  # [num_tokens * top_k]
-        batch_index = index_sorted_experts // self.top_k  # [num_tokens * top_k]
+        _, index_sorted_experts = selected_experts.sort()
+        # index_sorted_experts -> (total_q * top_k)
+        batch_index = index_sorted_experts // self.top_k
+        # batch_index -> (num_tokens * top_k)
 
         # gather the gate values for grouped input tokens
-        router_weights = router_weights.flatten()  # [num_tokens * top_k]
-        batch_gates = router_weights[index_sorted_experts]  # [num_tokens * top_k]
+        router_weights = router_weights.flatten()
+        # router_weights -> (num_tokens * top_k)
+        batch_gates = router_weights[index_sorted_experts]
+        # batch_gates -> (num_tokens * top_k)
 
         return batch_index, batch_gates, num_experts_per_token
 
