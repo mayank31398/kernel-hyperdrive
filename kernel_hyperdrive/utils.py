@@ -12,5 +12,6 @@ def compile_helpers() -> None:
         ],
         with_cuda=True,
         extra_cflags=["-O3", "-Wall", "-shared", "-fPIC", "-fdiagnostics-color"],
+        build_directory="build",
         verbose=True,
     )
