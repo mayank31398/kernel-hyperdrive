@@ -127,9 +127,7 @@ class MoE_Torch(nn.Module):
         # router_weights -> (total_q, top_k)
         # selected_experts -> (total_q, top_k)
 
-        batch_index, batch_gates, num_experts_per_token = self._compute_expert_assignment(
-            router_weights, selected_experts
-        )
+        batch_index, batch_gates, expert_frequency = self._compute_expert_assignment(router_weights, selected_experts)
 
         # batch_index -> (num_tokens * top_k)
         # batch_gates -> (num_tokens * top_k)
@@ -137,9 +135,9 @@ class MoE_Torch(nn.Module):
 
         expert_inputs = hidden_states[batch_index]
 
-        hidden_states = self.c_fc(expert_inputs, num_experts_per_token)
+        hidden_states = self.c_fc(expert_inputs, expert_frequency)
         hidden_states = self.act(hidden_states)
-        hidden_states = self.c_proj(hidden_states, num_experts_per_token)
+        hidden_states = self.c_proj(hidden_states, expert_frequency)
 
         hidden_states = hidden_states * batch_gates.unsqueeze(-1)  # [:, None]
         zeros = torch.zeros((total_q, self.hidden_size), dtype=hidden_states.dtype, device=hidden_states.device)
@@ -155,8 +153,8 @@ class MoE_Torch(nn.Module):
         selected_experts = selected_experts.flatten()
         # selected_experts -> (total_q * top_k)
 
-        num_experts_per_token = selected_experts.bincount(minlength=self.num_experts)
-        # num_experts_per_token -> (num_experts)
+        expert_frequency = selected_experts.bincount(minlength=self.num_experts)
+        # expert_frequency -> (num_experts)
 
         _, index_sorted_experts = selected_experts.sort()
         # index_sorted_experts -> (total_q * top_k)
@@ -169,7 +167,7 @@ class MoE_Torch(nn.Module):
         batch_gates = router_weights[index_sorted_experts]
         # batch_gates -> (num_tokens * top_k)
 
-        return batch_index, batch_gates, num_experts_per_token
+        return batch_index, batch_gates, expert_frequency
 
     def _get_topk(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         if self.top_k == 1:
