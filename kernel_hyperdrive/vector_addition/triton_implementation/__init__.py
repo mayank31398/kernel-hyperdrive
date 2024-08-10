@@ -1,5 +1,4 @@
 import torch
-import torch.nn as nn
 import triton
 
 from .kernel import vector_addition_forward_triton_kernel
@@ -32,8 +31,3 @@ class _VectorAddition_Triton(torch.autograd.Function):
 
 def vector_addition_triton(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     return _VectorAddition_Triton.apply(x, y)
-
-
-class VectorAddition_Triton(nn.Module):
-    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        return vector_addition_triton(x, y)

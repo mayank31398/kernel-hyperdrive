@@ -1,5 +1,4 @@
 import torch
-import torch.nn as nn
 
 
 class _VectorAddition_CUDA(torch.autograd.Function):
@@ -24,8 +23,3 @@ def vector_addition_cuda(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
 @vector_addition_cuda.register_fake
 def _(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     return torch.empty_like(x)
-
-
-class VectorAddition_CUDA(nn.Module):
-    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        return vector_addition_cuda(x, y)
