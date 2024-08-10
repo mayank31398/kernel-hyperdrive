@@ -127,13 +127,13 @@ class MoE_Torch(nn.Module):
         # router_weights -> (total_q, top_k)
         # selected_experts -> (total_q, top_k)
 
-        batch_index, batch_gates, expert_frequency = self._compute_expert_assignment(router_weights, selected_experts)
+        fan_in_index, batch_gates, expert_frequency = self._compute_expert_assignment(router_weights, selected_experts)
 
-        # batch_index -> (num_tokens * top_k)
+        # fan_in_index -> (num_tokens * top_k)
         # batch_gates -> (num_tokens * top_k)
         # num_experts_per_token -> (num_experts)
 
-        expert_inputs = hidden_states[batch_index]
+        expert_inputs = hidden_states[fan_in_index]
 
         hidden_states = self.c_fc(expert_inputs, expert_frequency)
         hidden_states = self.act(hidden_states)
@@ -141,7 +141,7 @@ class MoE_Torch(nn.Module):
 
         hidden_states = hidden_states * batch_gates.unsqueeze(-1)  # [:, None]
         zeros = torch.zeros((total_q, self.hidden_size), dtype=hidden_states.dtype, device=hidden_states.device)
-        hidden_states = zeros.index_add(0, batch_index, hidden_states)
+        hidden_states = zeros.index_add(0, fan_in_index, hidden_states)
 
         return hidden_states
 
@@ -156,10 +156,10 @@ class MoE_Torch(nn.Module):
         expert_frequency = selected_experts.bincount(minlength=self.num_experts)
         # expert_frequency -> (num_experts)
 
-        _, index_sorted_experts = selected_experts.sort()
+        index_sorted_experts = selected_experts.argsort()
         # index_sorted_experts -> (total_q * top_k)
-        batch_index = index_sorted_experts // self.top_k
-        # batch_index -> (num_tokens * top_k)
+        fan_in_index = index_sorted_experts // self.top_k
+        # fan_in_index -> (num_tokens * top_k)
 
         # gather the gate values for grouped input tokens
         router_weights = router_weights.flatten()
@@ -167,7 +167,7 @@ class MoE_Torch(nn.Module):
         batch_gates = router_weights[index_sorted_experts]
         # batch_gates -> (num_tokens * top_k)
 
-        return batch_index, batch_gates, expert_frequency
+        return fan_in_index, batch_gates, expert_frequency
 
     def _get_topk(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         if self.top_k == 1:
