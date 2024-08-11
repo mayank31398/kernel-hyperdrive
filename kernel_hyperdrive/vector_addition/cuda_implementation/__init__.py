@@ -10,7 +10,6 @@ _KERNEL_NAME = "vector_addition_forward"
 register_kernel(
     _KERNEL_NAME,
     sources=[
-        os.path.join(os.path.dirname(__file__), "vector_addition.hpp"),
         os.path.join(os.path.dirname(__file__), "vector_addition.cpp"),
         os.path.join(os.path.dirname(__file__), "vector_addition.cu"),
     ],
