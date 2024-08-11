@@ -45,8 +45,13 @@ class Experts_Torch(nn.Module):
 
         return input
 
-    def forward_using_streams(self, input: torch.Tensor, expert_id: int) -> torch.Tensor | list[torch.Tensor]:
-        return F.linear(input, self.weight[expert_id], None if self.bias is None else self.bias[expert_id])
+    def forward_using_streams(
+        self, input: list[torch.Tensor], expert_ids: list[int]
+    ) -> torch.Tensor | list[torch.Tensor]:
+        return [
+            F.linear(input[i], self.weight[expert_id], None if self.bias is None else self.bias[expert_id])
+            for i, expert_id in enumerate(expert_ids)
+        ]
 
     def extra_repr(self):
         return "num_experts={}, in_features={}, out_features={}".format(
@@ -100,7 +105,9 @@ class MoE_Torch(nn.Module):
             std=std,
         )
 
-        self.use_streams = True
+        self.num_streams = 1
+        assert self.num_experts % self.num_streams == 0
+        self.experts_per_stream = self.num_experts // self.num_streams
 
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         original_shape = hidden_states.shape
@@ -153,7 +160,7 @@ class MoE_Torch(nn.Module):
 
         expert_inputs = hidden_states[fan_in_index]
 
-        if self.use_streams:
+        if self.num_streams > 1:
             hidden_states = self._compute_experts_using_streams(expert_inputs, expert_frequency)
         else:
             hidden_states = self.c_fc(expert_inputs, expert_frequency, return_list=True)
@@ -171,21 +178,31 @@ class MoE_Torch(nn.Module):
     ) -> torch.Tensor:
         hidden_states = hidden_states.split(expert_frequency.tolist(), dim=0)
 
-        streams = [torch.cuda.Stream() for _ in range(self.num_experts - 1)]
+        streams = [torch.cuda.Stream() for _ in range(self.num_streams - 1)]
         output = [None] * self.num_experts
 
-        for expert_id, stream in enumerate(streams, start=1):
+        for stream in enumerate(streams):
             stream.wait_stream(torch.cuda.default_stream(torch.cuda.current_device()))
 
+        for stream_id, stream in enumerate(streams, start=1):
+            expert_ids = list(range(self.experts_per_stream * stream_id, self.experts_per_stream * (stream_id + 1)))
+
             with torch.cuda.stream(stream):
-                output[expert_id] = self.c_fc.forward_using_streams(hidden_states[expert_id], expert_id)
-                output[expert_id] = self.act(output[expert_id])
-                output[expert_id] = self.c_proj.forward_using_streams(output[expert_id], expert_id)
+                x = self.c_fc.forward_using_streams([hidden_states[i] for i in expert_ids], expert_ids)
+                x = [self.act(i) for i in x]
+                x = self.c_proj.forward_using_streams(x, expert_ids)
+
+                for i, j in zip(expert_ids, x):
+                    output[i] = j
 
         # default stream
-        output[0] = self.c_fc.forward_using_streams(hidden_states[0], 0)
-        output[0] = self.act(output[0])
-        output[0] = self.c_proj.forward_using_streams(output[0], 0)
+        expert_ids = list(range(self.experts_per_stream))
+        x = self.c_fc.forward_using_streams([hidden_states[i] for i in expert_ids], expert_ids)
+        x = [self.act(i) for i in x]
+        x = self.c_proj.forward_using_streams(x, expert_ids)
+
+        for i, j in zip(expert_ids, x):
+            output[i] = j
 
         for expert_id, stream in enumerate(streams, start=1):
             output[expert_id].record_stream(stream)
