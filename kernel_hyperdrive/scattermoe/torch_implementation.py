@@ -32,7 +32,7 @@ class Experts_Torch(nn.Module):
         num_experts_per_token: torch.Tensor,
         return_list: bool,
     ) -> torch.Tensor | list[torch.Tensor]:
-        if isinstance(torch.Tensor):
+        if isinstance(input, torch.Tensor):
             input = input.split(num_experts_per_token.tolist(), dim=0)
 
         input = [
@@ -99,6 +99,8 @@ class MoE_Torch(nn.Module):
             add_bias=add_bias,
             std=std,
         )
+
+        self.use_streams = False
 
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         original_shape = hidden_states.shape
