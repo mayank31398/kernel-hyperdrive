@@ -28,44 +28,23 @@ class Experts_Torch(nn.Module):
 
     def forward(
         self,
-        input: torch.Tensor,
+        input: torch.Tensor | tuple[torch.Tensor],
         num_experts_per_token: torch.Tensor,
         return_list: bool,
-        stream_id: int = -1,
-        stream: torch.cuda.Stream | None = None,
     ) -> torch.Tensor | list[torch.Tensor]:
-        if isinstance(input, torch.Tensor):
-            input = input.split(num_experts_per_token.tolist(), dim=0)
-
-        if stream is None:
-            input = [
-                F.linear(input[i], self.weight[i], None if self.bias is None else self.bias[i])
-                for i in range(self.num_experts)
-            ]
-        else:
-            input = self._compute_experts_on_streams(input)
+        input = input.split(num_experts_per_token.tolist(), dim=0)
+        input = [
+            F.linear(input[i], self.weight[i], None if self.bias is None else self.bias[i])
+            for i in range(self.num_experts)
+        ]
 
         if not return_list:
             input = torch.cat(input)
 
         return input
 
-    def _compute_experts_on_streams(self, input: tuple[torch.Tensor]) -> list[torch.Tensor]:
-        # we run the first expert on default stream
-        streams = [torch.cuda.Stream() for _ in range(self.num_experts - 1)]
-        output = [None] * self.num_experts
-
-        for i, stream in enumerate(streams, start=1):
-            stream.wait_stream(torch.cuda.default_stream(torch.cuda.current_device()))
-
-            with torch.cuda.stream(stream):
-                output[i] = F.linear(input[i], self.weight[i], None if self.bias is None else self.bias[i])
-                output[i].record_stream(stream)
-
-        # default stream
-        output[0] = F.linear(input[0], self.weight[0], None if self.bias is None else self.bias[0])
-
-        return output
+    def forward_using_streams(self, input: torch.Tensor, expert_id: int) -> torch.Tensor | list[torch.Tensor]:
+        return F.linear(input[expert_id], self.weight[expert_id], None if self.bias is None else self.bias[expert_id])
 
     def extra_repr(self):
         return "num_experts={}, in_features={}, out_features={}".format(
@@ -170,15 +149,44 @@ class MoE_Torch(nn.Module):
 
         expert_inputs = hidden_states[fan_in_index]
 
-        hidden_states = self.c_fc(expert_inputs, expert_frequency, return_list=True)
-        hidden_states = [self.act(i) for i in hidden_states]
-        hidden_states = self.c_proj(hidden_states, expert_frequency, return_list=False)
+        if self.use_streams:
+            self._compute_experts_using_streams(expert_inputs, expert_frequency)
+        else:
+            hidden_states = self.c_fc(expert_inputs, expert_frequency, return_list=True)
+            hidden_states = [self.act(i) for i in hidden_states]
+            hidden_states = self.c_proj(hidden_states, expert_frequency, return_list=False)
 
         hidden_states = hidden_states * batch_gates.unsqueeze(-1)  # [:, None]
         zeros = torch.zeros((total_q, self.hidden_size), dtype=hidden_states.dtype, device=hidden_states.device)
         hidden_states = zeros.index_add(0, fan_in_index, hidden_states)
 
         return hidden_states
+
+    def _compute_experts_using_streams(
+        self, hidden_states: torch.Tensor, expert_frequency: torch.Tensor
+    ) -> torch.Tensor:
+        hidden_states = hidden_states.split(expert_frequency.tolist(), dim=0)
+
+        streams = [torch.cuda.Stream() for _ in range(self.num_experts - 1)]
+        output = [None] * self.num_experts
+
+        for expert_id, stream in enumerate(streams, start=1):
+            stream.wait_stream(torch.cuda.default_stream(torch.cuda.current_device()))
+
+            with torch.cuda.stream(stream):
+                output[expert_id] = self.c_fc.forward_using_streams(hidden_states[expert_id], expert_id)
+                output[expert_id] = self.act(output[expert_id])
+                output[expert_id] = self.c_proj.forward_using_streams(output[expert_id], expert_id)
+
+        # default stream
+        output[0] = self.c_fc.forward_using_streams(hidden_states[0], 0)
+        output[0] = self.act(output[0])
+        output[0] = self.c_proj.forward_using_streams(output[0], 0)
+
+        for expert_id, stream in enumerate(streams, start=1):
+            output[expert_id].record_stream(stream)
+
+        return torch.cat(output)
 
     @record_function("MoE_Torch:_compute_expert_assignment")
     def _compute_expert_assignment(
