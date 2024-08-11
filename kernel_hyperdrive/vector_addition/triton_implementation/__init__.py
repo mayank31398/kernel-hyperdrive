@@ -7,13 +7,17 @@ from .kernel import vector_addition_forward_triton_kernel
 class _VectorAddition_Triton(torch.autograd.Function):
     @staticmethod
     def forward(ctx, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        assert x.dim() == 1
+        assert x.is_cuda, "tensor x is not on GPU"
+        assert y.is_cuda, "tensor y is not on GPU"
 
-        assert x.is_cuda
-        assert y.is_cuda
+        assert x.is_contiguous(), "tensor x is not a contiguous"
+        assert y.is_contiguous(), "tensor y is not a contiguous"
 
-        assert x.is_contiguous()
-        assert y.is_contiguous()
+        assert x.dim() == 1, "tensor x should be 1 dimensional"
+        assert y.dim() == 1, "tensor y should be 1 dimensional"
+
+        assert x.numel() == y.numel(), "both tensors should have same number of elements"
+        assert x.type() == y.type(), "both tensors should have same dtype"
 
         output = torch.empty_like(x)
 
