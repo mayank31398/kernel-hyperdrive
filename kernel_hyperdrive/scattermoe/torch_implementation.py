@@ -24,7 +24,7 @@ class Experts_Torch(nn.Module):
         self.in_features = in_features
         self.out_features = out_features
 
-        self.use_cuda_streams = False
+        self.use_cuda_streams = True
 
         self.reset_parameters()
 
@@ -32,23 +32,7 @@ class Experts_Torch(nn.Module):
         input = input.split(num_experts_per_token.tolist(), dim=0)
 
         if self.use_cuda_streams:
-            # we run the first expert on default stream
-            streams = [torch.cuda.Stream() for _ in range(self.num_experts - 1)]
-
-            for stream_id, stream in streams:
-                stream.wait_stream(torch.cuda.default_stream(torch.cuda.current_device()))
-
-                with torch.cuda.stream(stream):
-                    input[stream_id + 1] = F.linear(
-                        input[stream_id + 1],
-                        self.weight[stream_id + 1],
-                        None if self.bias is None else self.bias[stream_id + 1],
-                    )
-
-                    input[stream_id + 1].wait_stream(stream)
-
-                # default stream
-                input[0] = F.linear(input[0], self.weight[0], None if self.bias is None else self.bias[0])
+            input = self._compute_experts_on_streams(input)
         else:
             input = [
                 F.linear(input[i], self.weight[i], None if self.bias is None else self.bias[i])
@@ -57,6 +41,23 @@ class Experts_Torch(nn.Module):
 
         input = torch.cat(input, dim=0)
         return input
+
+    def _compute_experts_on_streams(self, input: tuple[torch.Tensor]) -> list[torch.Tensor]:
+        # we run the first expert on default stream
+        streams = [torch.cuda.Stream() for _ in range(self.num_experts - 1)]
+        output = [None] * self.num_experts
+
+        for i, stream in enumerate(streams, start=1):
+            stream.wait_stream(torch.cuda.default_stream(torch.cuda.current_device()))
+
+            with torch.cuda.stream(stream):
+                output[i] = F.linear(input[i], self.weight[i], None if self.bias is None else self.bias[i])
+                output[i].record_stream(stream)
+
+            # default stream
+            output[0] = F.linear(input[0], self.weight[0], None if self.bias is None else self.bias[0])
+
+        return output
 
     def extra_repr(self):
         return "num_experts={}, in_features={}, out_features={}".format(
