@@ -24,22 +24,30 @@ class Experts_Torch(nn.Module):
         self.in_features = in_features
         self.out_features = out_features
 
-        self.use_cuda_streams = True
-
         self.reset_parameters()
 
-    def forward(self, input: torch.Tensor, num_experts_per_token: torch.Tensor) -> torch.Tensor:
-        input = input.split(num_experts_per_token.tolist(), dim=0)
+    def forward(
+        self,
+        input: torch.Tensor,
+        num_experts_per_token: torch.Tensor,
+        return_list: bool,
+        stream_id: int = -1,
+        stream: torch.cuda.Stream | None = None,
+    ) -> torch.Tensor | list[torch.Tensor]:
+        if isinstance(input, torch.Tensor):
+            input = input.split(num_experts_per_token.tolist(), dim=0)
 
-        if self.use_cuda_streams:
-            input = self._compute_experts_on_streams(input)
-        else:
+        if stream is None:
             input = [
                 F.linear(input[i], self.weight[i], None if self.bias is None else self.bias[i])
                 for i in range(self.num_experts)
             ]
+        else:
+            input = self._compute_experts_on_streams(input)
 
-        input = torch.cat(input, dim=0)
+        if return_list:
+            input = torch.cat(input)
+
         return input
 
     def _compute_experts_on_streams(self, input: tuple[torch.Tensor]) -> list[torch.Tensor]:
@@ -162,9 +170,9 @@ class MoE_Torch(nn.Module):
 
         expert_inputs = hidden_states[fan_in_index]
 
-        hidden_states = self.c_fc(expert_inputs, expert_frequency)
-        hidden_states = self.act(hidden_states)
-        hidden_states = self.c_proj(hidden_states, expert_frequency)
+        hidden_states = self.c_fc(expert_inputs, expert_frequency, return_list=True)
+        hidden_states = [self.act(i) for i in hidden_states]
+        hidden_states = self.c_proj(hidden_states, expert_frequency, return_list=False)
 
         hidden_states = hidden_states * batch_gates.unsqueeze(-1)  # [:, None]
         zeros = torch.zeros((total_q, self.hidden_size), dtype=hidden_states.dtype, device=hidden_states.device)
