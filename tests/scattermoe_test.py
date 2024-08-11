@@ -62,27 +62,28 @@ class ScatterMoETest(TestCommons):
                 f"skipping test since number of experts per token ({num_experts_per_tok}) is more than number of experts ({num_experts})"
             )
 
-        moe = module_class(
-            num_experts=num_experts,
-            num_experts_per_tok=num_experts_per_tok,
-            hidden_size=hidden_size,
-            intermediate_size=intermediate_size,
-            activation_function=self.get_activation_function(is_glu=is_glu),
-            is_glu=is_glu,
-            add_bias=False,
-            std=0.02,
-        ).to(dtype=dtype, device=device)
+        with torch.device(device):
+            moe = module_class(
+                num_experts=num_experts,
+                num_experts_per_tok=num_experts_per_tok,
+                hidden_size=hidden_size,
+                intermediate_size=intermediate_size,
+                activation_function=self.get_activation_function(is_glu=is_glu),
+                is_glu=is_glu,
+                add_bias=False,
+                std=0.02,
+            ).to(dtype=dtype)
 
-        moe_torch = MoE_Torch(
-            num_experts=num_experts,
-            num_experts_per_tok=num_experts_per_tok,
-            hidden_size=hidden_size,
-            intermediate_size=intermediate_size,
-            activation_function=self.get_activation_function(is_glu=is_glu),
-            is_glu=is_glu,
-            add_bias=False,
-            std=0.02,
-        ).to(dtype=dtype, device=device)
+            moe_torch = MoE_Torch(
+                num_experts=num_experts,
+                num_experts_per_tok=num_experts_per_tok,
+                hidden_size=hidden_size,
+                intermediate_size=intermediate_size,
+                activation_function=self.get_activation_function(is_glu=is_glu),
+                is_glu=is_glu,
+                add_bias=False,
+                std=0.02,
+            ).to(dtype=dtype)
 
         moe_torch.load_state_dict(moe.state_dict())
 
