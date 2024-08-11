@@ -95,6 +95,7 @@ class ScatterMoETest(TestCommons):
         self.assert_equal_tensors(
             y,
             y_expected,
+            False,
             atol_float16=4e-3,
             rtol_float16=0,
             atol_bfloat16=2e-2,
