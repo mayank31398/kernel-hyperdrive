@@ -1,7 +1,5 @@
+#include "vector_addition.hpp"
 #include <torch/extension.h>
-
-// CUDA kernel declarations
-torch::Tensor vector_addition_forward_kernel_launcher(torch::Tensor x, torch::Tensor y, const int BLOCK_SIZE);
 
 torch::Tensor vector_addition_forward(torch::Tensor x, torch::Tensor y)
 {
