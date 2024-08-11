@@ -32,7 +32,9 @@ class Experts_Torch(nn.Module):
         num_experts_per_token: torch.Tensor,
         return_list: bool,
     ) -> torch.Tensor | list[torch.Tensor]:
-        input = input.split(num_experts_per_token.tolist(), dim=0)
+        if isinstance(torch.Tensor):
+            input = input.split(num_experts_per_token.tolist(), dim=0)
+
         input = [
             F.linear(input[i], self.weight[i], None if self.bias is None else self.bias[i])
             for i in range(self.num_experts)
