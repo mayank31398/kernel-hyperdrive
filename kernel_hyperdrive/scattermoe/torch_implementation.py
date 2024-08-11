@@ -29,11 +29,11 @@ class Experts_Torch(nn.Module):
     def forward(
         self,
         input: torch.Tensor | tuple[torch.Tensor],
-        num_experts_per_token: torch.Tensor,
+        expert_frequency: torch.Tensor,
         return_list: bool,
     ) -> torch.Tensor | list[torch.Tensor]:
         if isinstance(input, torch.Tensor):
-            input = input.split(num_experts_per_token.tolist(), dim=0)
+            input = input.split(expert_frequency.tolist(), dim=0)
 
         input = [
             F.linear(input[i], self.weight[i], None if self.bias is None else self.bias[i])
@@ -112,6 +112,8 @@ class MoE_Torch(nn.Module):
         hidden_states = self._compute_experts(hidden_states, router_weights, selected_experts)
         hidden_states = hidden_states.view(original_shape)
 
+        # hidden_states -> (batch_size, query_length, hidden_size)
+
         return hidden_states, router_logits
 
     @record_function("MoE_Torch:_compute_routing_weights")
@@ -142,19 +144,26 @@ class MoE_Torch(nn.Module):
 
         fan_in_index, batch_gates, expert_frequency = self._compute_expert_assignment(router_weights, selected_experts)
 
-        # fan_in_index -> (num_tokens * top_k)
-        # batch_gates -> (num_tokens * top_k)
-        # num_experts_per_token -> (num_experts)
+        # fan_in_index -> (total_q * top_k)
+        # batch_gates -> (total_q * top_k)
+        # expert_frequency -> (num_experts)
 
         hidden_states = hidden_states[fan_in_index]
 
-        hidden_states = self.c_fc(hidden_states, expert_frequency, return_list=True)
-        hidden_states = [self.act(i) for i in hidden_states]
-        hidden_states = self.c_proj(hidden_states, expert_frequency, return_list=False)
+        # hidden_states -> (total_q * top_k, hidden_size)
 
-        hidden_states = hidden_states * batch_gates.unsqueeze(-1)  # [:, None]
+        hidden_states = self.c_fc(hidden_states, expert_frequency, return_list=True)
+        # hidden_states -> num_experts x (?, hidden_size)
+        hidden_states = [self.act(i) for i in hidden_states]
+        # hidden_states -> num_experts x (?, intermediate_size)
+        hidden_states = self.c_proj(hidden_states, expert_frequency, return_list=False)
+        # hidden_states -> (total_q * top_k, hidden_size)
+
+        hidden_states = hidden_states * batch_gates.unsqueeze(-1)
         zeros = torch.zeros((total_q, self.hidden_size), dtype=hidden_states.dtype, device=hidden_states.device)
         hidden_states = zeros.index_add(0, fan_in_index, hidden_states)
+
+        # hidden_states -> (total_q, hidden_size)
 
         return hidden_states
 
@@ -173,13 +182,13 @@ class MoE_Torch(nn.Module):
         index_sorted_experts = selected_experts.argsort()
         # index_sorted_experts -> (total_q * top_k)
         fan_in_index = index_sorted_experts // self.top_k
-        # fan_in_index -> (num_tokens * top_k)
+        # fan_in_index -> (total_q * top_k)
 
         # gather the gate values for grouped input tokens
         router_weights = router_weights.flatten()
-        # router_weights -> (num_tokens * top_k)
+        # router_weights -> (total_q * top_k)
         batch_gates = router_weights[index_sorted_experts]
-        # batch_gates -> (num_tokens * top_k)
+        # batch_gates -> (total_q * top_k)
 
         return fan_in_index, batch_gates, expert_frequency
 
