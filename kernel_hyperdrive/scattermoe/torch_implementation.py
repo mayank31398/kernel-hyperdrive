@@ -24,14 +24,37 @@ class Experts_Torch(nn.Module):
         self.in_features = in_features
         self.out_features = out_features
 
+        self.use_cuda_streams = False
+
         self.reset_parameters()
 
     def forward(self, input: torch.Tensor, num_experts_per_token: torch.Tensor) -> torch.Tensor:
         input = input.split(num_experts_per_token.tolist(), dim=0)
-        input = [
-            F.linear(input[i], self.weight[i], None if self.bias is None else self.bias[i])
-            for i in range(self.num_experts)
-        ]
+
+        if self.use_cuda_streams:
+            # we run the first expert on default stream
+            streams = [torch.cuda.Stream() for _ in range(self.num_experts - 1)]
+
+            for stream_id, stream in streams:
+                stream.wait_stream(torch.cuda.default_stream(torch.cuda.current_device()))
+
+                with torch.cuda.stream(stream):
+                    input[stream_id + 1] = F.linear(
+                        input[stream_id + 1],
+                        self.weight[stream_id + 1],
+                        None if self.bias is None else self.bias[stream_id + 1],
+                    )
+
+                    input[stream_id + 1].wait_stream(stream)
+
+                # default stream
+                input[0] = F.linear(input[0], self.weight[0], None if self.bias is None else self.bias[0])
+        else:
+            input = [
+                F.linear(input[i], self.weight[i], None if self.bias is None else self.bias[i])
+                for i in range(self.num_experts)
+            ]
+
         input = torch.cat(input, dim=0)
         return input
 
