@@ -5,21 +5,23 @@ import torch
 from ...kernel_registry import get_kernel, register_kernel
 
 
+_KERNEL_NAME = "vector_addition_forward"
+
+register_kernel(
+    _KERNEL_NAME,
+    sources=[
+        os.path.join(os.path.dirname(__file__), "vector_addition.cpp"),
+        os.path.join(os.path.dirname(__file__), "vector_addition.cu"),
+    ],
+)
+
+
 class _VectorAddition_CUDA(torch.autograd.Function):
     @staticmethod
     def forward(ctx, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        kernel_name = "vector_addition_forward"
+        global _KERNEL_NAME
 
-        register_kernel(
-            kernel_name,
-            sources=[
-                os.path.join(os.path.dirname(__file__), "vector_addition.cpp"),
-                os.path.join(os.path.dirname(__file__), "vector_addition.cu"),
-            ],
-        )
-
-        function = get_kernel(kernel_name)
-
+        function = get_kernel(_KERNEL_NAME)
         return function(x, y)
 
     @staticmethod
