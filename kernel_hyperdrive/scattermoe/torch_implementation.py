@@ -46,7 +46,7 @@ class Experts_Torch(nn.Module):
         return input
 
     def forward_using_streams(self, input: torch.Tensor, expert_id: int) -> torch.Tensor | list[torch.Tensor]:
-        return F.linear(input[expert_id], self.weight[expert_id], None if self.bias is None else self.bias[expert_id])
+        return F.linear(input, self.weight[expert_id], None if self.bias is None else self.bias[expert_id])
 
     def extra_repr(self):
         return "num_experts={}, in_features={}, out_features={}".format(
@@ -100,7 +100,7 @@ class MoE_Torch(nn.Module):
             std=std,
         )
 
-        self.use_streams = False
+        self.use_streams = True
 
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         original_shape = hidden_states.shape
@@ -154,7 +154,7 @@ class MoE_Torch(nn.Module):
         expert_inputs = hidden_states[fan_in_index]
 
         if self.use_streams:
-            self._compute_experts_using_streams(expert_inputs, expert_frequency)
+            hidden_states = self._compute_experts_using_streams(expert_inputs, expert_frequency)
         else:
             hidden_states = self.c_fc(expert_inputs, expert_frequency, return_list=True)
             hidden_states = [self.act(i) for i in hidden_states]
