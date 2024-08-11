@@ -49,6 +49,7 @@ class ScatterMoETest(TestCommons):
             intermediate_size=intermediate_size,
             is_glu=is_glu,
             module_class=partial(MoE_Torch, num_streams=num_streams),
+            exact_match=True,
         )
 
     @parameterized.expand(
@@ -93,6 +94,7 @@ class ScatterMoETest(TestCommons):
         intermediate_size: int,
         is_glu: bool,
         module_class: type[nn.Module],
+        exact_match: bool = False,
     ) -> None:
         set_seed(SEED)
 
@@ -134,7 +136,7 @@ class ScatterMoETest(TestCommons):
         self.assert_equal_tensors(
             y,
             y_expected,
-            False,
+            exact_match=exact_match,
             atol_float16=4e-3,
             rtol_float16=0,
             atol_bfloat16=2e-2,
