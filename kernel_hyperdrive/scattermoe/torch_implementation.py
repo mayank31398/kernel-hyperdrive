@@ -45,7 +45,7 @@ class Experts_Torch(nn.Module):
         else:
             input = self._compute_experts_on_streams(input)
 
-        if return_list:
+        if not return_list:
             input = torch.cat(input)
 
         return input
