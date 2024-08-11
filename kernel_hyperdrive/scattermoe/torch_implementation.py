@@ -54,8 +54,8 @@ class Experts_Torch(nn.Module):
                 output[i] = F.linear(input[i], self.weight[i], None if self.bias is None else self.bias[i])
                 output[i].record_stream(stream)
 
-            # default stream
-            output[0] = F.linear(input[0], self.weight[0], None if self.bias is None else self.bias[0])
+        # default stream
+        output[0] = F.linear(input[0], self.weight[0], None if self.bias is None else self.bias[0])
 
         return output
 
