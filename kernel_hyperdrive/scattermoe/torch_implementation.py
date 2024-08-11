@@ -76,6 +76,7 @@ class MoE_Torch(nn.Module):
         is_glu: bool,
         add_bias: bool,
         std: float,
+        num_streams: int = 1,
     ) -> None:
         super().__init__()
 
@@ -105,7 +106,7 @@ class MoE_Torch(nn.Module):
             std=std,
         )
 
-        self.num_streams = 1
+        self.num_streams = num_streams
         assert self.num_experts % self.num_streams == 0
         self.experts_per_stream = self.num_experts // self.num_streams
 
@@ -181,7 +182,7 @@ class MoE_Torch(nn.Module):
         streams = [torch.cuda.Stream() for _ in range(self.num_streams - 1)]
         output = [None] * self.num_experts
 
-        for stream in enumerate(streams):
+        for stream in streams:
             stream.wait_stream(torch.cuda.default_stream(torch.cuda.current_device()))
 
         for stream_id, stream in enumerate(streams, start=1):

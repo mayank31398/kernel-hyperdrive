@@ -1,3 +1,5 @@
+from functools import partial
+
 import torch
 import torch.nn as nn
 from parameterized import parameterized
@@ -12,6 +14,43 @@ SEED = 42
 
 
 class ScatterMoETest(TestCommons):
+    @parameterized.expand(
+        TestCommons.make_args_matrix(
+            [torch.device("cuda")],
+            TestCommons.get_dtypes(),
+            [2, 4, 6, 8],  # num_experts
+            [2, 4],  # num_experts_per_tok
+            [2048],  # hidden_size
+            [8192],  # intermediate_size
+            [True, False],  # is_glu
+            [2, 4, 6, 8],
+        )
+    )
+    def test_moe_with_and_without_streams(
+        self,
+        device: torch.device,
+        dtype: torch.dtype,
+        num_experts: int,
+        num_experts_per_tok: int,
+        hidden_size: int,
+        intermediate_size: int,
+        is_glu: bool,
+        num_streams: int,
+    ) -> None:
+        if num_streams > num_experts or num_experts % num_streams != 0:
+            self.skipTest("skipping test since config is invalid")
+
+        self._test_scattermoe(
+            device=device,
+            dtype=dtype,
+            num_experts=num_experts,
+            num_experts_per_tok=num_experts_per_tok,
+            hidden_size=hidden_size,
+            intermediate_size=intermediate_size,
+            is_glu=is_glu,
+            module_class=partial(MoE_Torch, num_streams=num_streams),
+        )
+
     @parameterized.expand(
         TestCommons.make_args_matrix(
             [torch.device("cuda")],
