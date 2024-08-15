@@ -38,10 +38,12 @@ class KernelRegistry:
             verbose=True,
         )
 
-    def get_sources(self) -> list[str]:
+    @staticmethod
+    def get_sources() -> list[str]:
         global _CUDA_KERNEL_SOURCES
         return _CUDA_KERNEL_SOURCES
 
-    def get_kernel(self, name: str) -> Callable:
+    @staticmethod
+    def get_kernel(name: str) -> Callable:
         global _CUDA_KERNEL_MODULE
         return getattr(_CUDA_KERNEL_MODULE, name)
