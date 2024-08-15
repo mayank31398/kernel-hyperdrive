@@ -4,7 +4,7 @@ from setuptools import find_packages, setup
 VERSION = "0.0.0.dev"
 
 setup(
-    name="kernels",
+    name="kernel-hyperdrive",
     version=VERSION,
     author="Mayank Mishra",
     author_email="mayank31398@ibm.com",
