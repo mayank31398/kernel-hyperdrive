@@ -1,0 +1,5 @@
+- functions:
+    - vector_addition_forward
+  sources:
+    - vector_addition/cuda_implementation/helper.cpp
+    - vector_addition/cuda_implementation/kernel.cu
