@@ -24,6 +24,7 @@ class KernelRegistry:
 
         for module in registry:
             _CUDA_KERNEL_SOURCES.extend(module["sources"])
+        _CUDA_KERNEL_SOURCES = [os.path.join(os.path.dirname(__file__), filename) for filename in _CUDA_KERNEL_SOURCES]
 
         _CUDA_KERNEL_MODULE = load_cpp_extension(
             _MODULE_NAME,
