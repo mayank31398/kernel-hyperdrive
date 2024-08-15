@@ -1,4 +1,4 @@
-import importlib
+import os
 from typing import Callable
 
 import yaml
@@ -14,7 +14,7 @@ class KernelRegistry:
     def __init__(self) -> None:
         global _CUDA_KERNEL_MODULE, _CUDA_KERNEL_SOURCES
 
-        registry: dict = yaml.load(open("kernel_registry.yml", "r"))
+        registry: dict = yaml.safe_load(open(os.path.join(os.path.dirname(__file__), "kernel_registry.yml"), "r"))
 
         functions = []
         for module in registry:
