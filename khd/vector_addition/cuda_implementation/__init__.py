@@ -1,6 +1,6 @@
 import torch
 
-from ...kernel_registry import get_kernel
+from ...kernel_registry import KernelRegistry
 
 
 _KERNEL_NAME = "vector_addition_forward"
@@ -11,7 +11,7 @@ class _VectorAddition_CUDA(torch.autograd.Function):
     def forward(ctx, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         global _KERNEL_NAME
 
-        function = get_kernel(_KERNEL_NAME)
+        function = KernelRegistry.get_kernel(_KERNEL_NAME)
         return function(x, y)
 
     @staticmethod
