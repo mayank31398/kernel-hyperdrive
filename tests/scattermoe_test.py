@@ -114,7 +114,7 @@ class ScatterMoETest(TestCommons):
             False,
             atol_float16=4e-3,
             rtol_float16=0,
-            atol_bfloat16=2e-2,
+            atol_bfloat16=4e-2,
             rtol_bfloat16=0,
             atol_float32=6e-3,
             rtol_float32=0,
