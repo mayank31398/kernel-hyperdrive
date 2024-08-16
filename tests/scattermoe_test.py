@@ -87,14 +87,30 @@ class ScatterMoETest(TestCommons):
 
         moe_torch.load_state_dict(moe.state_dict())
 
-        x = torch.randn(hidden_size, device=device, dtype=dtype)
+        x_torch = torch.randn(hidden_size, device=device, dtype=dtype, requires_grad=True)
+        x_moe = x_torch.clone()
 
-        y = moe(x)[0]
-        y_expected = moe_torch(x)[0]
+        y_torch = moe_torch(x_torch)[0]
+        y_moe = moe(x_moe)[0]
 
         self.assert_equal_tensors(
-            y,
-            y_expected,
+            y_moe,
+            y_torch,
+            False,
+            atol_float16=4e-3,
+            rtol_float16=0,
+            atol_bfloat16=2e-2,
+            rtol_bfloat16=0,
+            atol_float32=6e-3,
+            rtol_float32=0,
+        )
+
+        y_torch.sum().backward()
+        y_moe.sum().backward()
+
+        self.assert_equal_tensors(
+            x_moe.grad,
+            x_torch.grad,
             False,
             atol_float16=4e-3,
             rtol_float16=0,
