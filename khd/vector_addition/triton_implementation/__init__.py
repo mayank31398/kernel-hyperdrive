@@ -1,7 +1,7 @@
 import torch
 import triton
 
-from .kernel import vector_addition_forward_triton_kernel
+from .kernels import vector_addition_forward_triton_kernel
 
 
 class _VectorAddition_Triton(torch.autograd.Function):
