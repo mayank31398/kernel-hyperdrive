@@ -63,7 +63,7 @@ class ScatterMoETest(TestCommons):
             )
 
         with torch.device(device):
-            moe = module_class(
+            moe_custom = module_class(
                 num_experts=num_experts,
                 num_experts_per_tok=num_experts_per_tok,
                 hidden_size=hidden_size,
@@ -85,20 +85,36 @@ class ScatterMoETest(TestCommons):
                 std=0.02,
             ).to(dtype=dtype)
 
-        moe_torch.load_state_dict(moe.state_dict())
+        moe_torch.load_state_dict(moe_custom.state_dict())
 
-        x = torch.randn(hidden_size, device=device, dtype=dtype)
+        x_torch = torch.randn(hidden_size, device=device, dtype=dtype, requires_grad=True)
+        x_custom = x_torch.clone().detach().requires_grad_()
 
-        y = moe(x)[0]
-        y_expected = moe_torch(x)[0]
+        y_torch = moe_torch(x_torch)[0]
+        y_custom = moe_custom(x_custom)[0]
 
         self.assert_equal_tensors(
-            y,
-            y_expected,
+            y_custom,
+            y_torch,
             False,
             atol_float16=4e-3,
             rtol_float16=0,
             atol_bfloat16=2e-2,
+            rtol_bfloat16=0,
+            atol_float32=6e-3,
+            rtol_float32=0,
+        )
+
+        y_torch.sum().backward()
+        y_custom.sum().backward()
+
+        self.assert_equal_tensors(
+            x_custom.grad,
+            x_torch.grad,
+            False,
+            atol_float16=4e-3,
+            rtol_float16=0,
+            atol_bfloat16=4e-2,
             rtol_bfloat16=0,
             atol_float32=6e-3,
             rtol_float32=0,

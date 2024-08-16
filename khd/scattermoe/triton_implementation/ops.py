@@ -2,7 +2,7 @@ import torch
 import triton
 import triton.language as tl
 
-from .kernel import group_triton_kernel, groupXtY_triton_kernel, scatter2scatter_triton_kernel
+from .kernels import group_triton_kernel, groupXtY_triton_kernel, scatter2scatter_triton_kernel
 
 
 BLOCK_M = 128
@@ -72,7 +72,6 @@ def scatter2scatter(
             E=W.size(0),
             BLOCK_M=BLOCK_M,
             ACC_TYPE=tl.float32,
-            OUT_M=O.size(0),
             allow_tf32=True,
             x_grouped=x_grouped,
             y_grouped=y_grouped,
@@ -109,7 +108,6 @@ def group_bwd_W(DY, X, expert_offsets, E):
             # expert_offsets_ptr,
             expert_offsets,
             # K: tl.constexpr, N: tl.constexpr,
-            M=DY.size(0),
             N=DY.size(-1),
             K=X.size(-1),
             # ACC_TYPE: tl.constexpr,

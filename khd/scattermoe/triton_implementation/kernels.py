@@ -39,7 +39,6 @@ def scatter2scatter_triton_kernel(
     BLOCK_N: tl.constexpr,
     BLOCK_K: tl.constexpr,
     ACC_TYPE: tl.constexpr,
-    OUT_M,
     allow_tf32: tl.constexpr,
     x_grouped: tl.constexpr,
     y_grouped: tl.constexpr,
@@ -53,12 +52,13 @@ def scatter2scatter_triton_kernel(
     N_block_id = pid % N_BLOCK_COUNT
     M_range = tl.arange(0, BLOCK_M)
     block_start_idx = tl.load(block_start_idx_ptr + M_block_id)
-    # M_block = tl.max_contiguous((block_start_idx + M_range) % OUT_M, BLOCK_M)
+
     M_block = tl.max_contiguous(block_start_idx + M_range, BLOCK_M)
     E_idxs = tl.load(expert_idxs_ptr + M_block, mask=M_block < (FAN_OUT * M), other=E)
     E_idx = tl.min(E_idxs)
     E_mask = E_idxs == E_idx
     M_idx = tl.load(grouped_idx_ptr + M_block, mask=E_mask, other=0)
+
     if x_grouped:
         M_in_idx = M_block
     else:
@@ -73,17 +73,17 @@ def scatter2scatter_triton_kernel(
 
     N_block = N_block_id * BLOCK_N + tl.arange(0, BLOCK_N)
     N_mask = N_block < N
-    # N_block = tl.max_contiguous(tl.multiple_of(N_block % N, BLOCK_N), BLOCK_N)
-    # N_block = N_block_id * BLOCK_N + tl.arange(0, BLOCK_N)
 
     X_blk_ptrs = X_ptr + M_in_idx[:, None] * stride_xm + K_block[None, :] * stride_xk
     W_blk_ptrs = W_ptr + K_block[:, None] * stride_wk + N_block[None, :] * stride_wn + E_idx * stride_we
 
     acc = tl.zeros((BLOCK_M, BLOCK_N), dtype=ACC_TYPE)
     iters = tl.cdiv(K, BLOCK_K)
+
     for K_block_id in range(0, iters):
         if NO_K_MASK:
             x = tl.load(X_blk_ptrs, mask=E_mask[:, None])
+
             if NO_N_MASK or K_block_id < (iters - 1):
                 w = tl.load(W_blk_ptrs)
             else:
@@ -92,6 +92,7 @@ def scatter2scatter_triton_kernel(
             K_mask = (K_block_id * BLOCK_K + K_block) < K
             x = tl.load(X_blk_ptrs, mask=E_mask[:, None] & K_mask[None, :])
             w = tl.load(W_blk_ptrs, mask=K_mask[:, None] & N_mask[None, :])
+
         X_blk_ptrs += BLOCK_K * stride_xk
         W_blk_ptrs += BLOCK_K * stride_wk
         acc += tl.dot(x, w, allow_tf32=allow_tf32, out_dtype=ACC_TYPE)
@@ -102,7 +103,7 @@ def scatter2scatter_triton_kernel(
 
 @triton.autotune(
     configs=[triton.Config({"BLOCK_N": 128, "BLOCK_K": 128, "BLOCK_M": 32}, num_stages=4, num_warps=4)],
-    key=["M", "N", "K"],
+    key=["N", "K"],
 )
 @triton.heuristics(
     {
@@ -123,7 +124,6 @@ def groupXtY_triton_kernel(
     stride_dwk,
     stride_dwn,
     expert_offsets_ptr,
-    M,
     K: tl.constexpr,
     N: tl.constexpr,
     BLOCK_M: tl.constexpr,
@@ -149,6 +149,7 @@ def groupXtY_triton_kernel(
         start_idx = 0
     else:
         start_idx = tl.load(expert_offsets_ptr + E_idx - 1).to(tl.int32)
+
     end_idx = tl.load(expert_offsets_ptr + E_idx).to(tl.int32)
 
     if end_idx > start_idx:
@@ -170,15 +171,17 @@ def groupXtY_triton_kernel(
         iters = tl.cdiv(end_idx - start_idx, BLOCK_M)
         for i in range(0, iters):
             M_mask = (i * BLOCK_M + M_block) < end_idx
+
             if NO_K_MASK:
                 xt = tl.load(xt_blk_ptrs, mask=M_mask[None, :])
             else:
                 xt = tl.load(xt_blk_ptrs, mask=K_mask[:, None] & M_mask[None, :])
+
             if NO_N_MASK:
                 dy = tl.load(dy_blk_ptrs, mask=M_mask[:, None])
             else:
                 dy = tl.load(dy_blk_ptrs, mask=M_mask[:, None] & N_mask[None, :])
-            # acc += tl.dot(xt, dy, out_dtype=ACC_TYPE, allow_tf32=allow_tf32)
+
             xt_blk_ptrs += BLOCK_M * stride_xm
             dy_blk_ptrs += BLOCK_M * stride_dym
             acc += tl.dot(xt, dy, out_dtype=ACC_TYPE, allow_tf32=allow_tf32)
@@ -227,16 +230,20 @@ def group_triton_kernel(
     for i in range(0, iters):
         if NO_K_MASK or i < iters - 1:
             block = tl.load(src_blk_ptrs, mask=N_mask[:, None])
+
             if has_coeff:
                 block *= c
-            tl.store(tgt_blk_ptrs, block, mask=N_mask[:, None])
 
+            tl.store(tgt_blk_ptrs, block, mask=N_mask[:, None])
         else:
             K_mask = (i * BLOCK_K + K_blk) < K
             mask = N_mask[:, None] & K_mask[None, :]
             block = tl.load(src_blk_ptrs, mask=mask)
+
             if has_coeff:
                 block *= c
+
             tl.store(tgt_blk_ptrs, block, mask=mask)
+
         src_blk_ptrs += BLOCK_K * stride_sk
         tgt_blk_ptrs += BLOCK_K * stride_ti
