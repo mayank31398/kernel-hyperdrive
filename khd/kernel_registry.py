@@ -32,7 +32,7 @@ class KernelRegistry:
 
             sources = module["sources"]
             sources = [os.path.join(os.path.dirname(__file__), source) for source in sources]
-            source_map.append(module["sources"])
+            source_map.append(sources)
 
         assert len(all_functions) == len(set(all_functions)), "function names are not unique"
 
