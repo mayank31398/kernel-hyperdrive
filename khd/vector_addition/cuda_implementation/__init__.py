@@ -4,13 +4,7 @@ from ...kernel_registry import KernelRegistry
 
 
 _KERNEL_NAME = "vector_addition_forward"
-
-
-def _cuda_kernel(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    if not hasattr(_cuda_kernel, "_kernel"):
-        _cuda_kernel._kernel = KernelRegistry.get_kernel(_KERNEL_NAME)
-
-    return _cuda_kernel._kernel(x, y)
+_cuda_kernel = KernelRegistry.get_kernel(_KERNEL_NAME)
 
 
 # this registers the kernel with PyTorch to make it work with torch.compile
