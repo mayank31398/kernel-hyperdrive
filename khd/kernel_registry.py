@@ -31,6 +31,8 @@ class KernelRegistry:
             all_functions.extend(module["functions"])
             source_map.append(module["sources"])
 
+        source_map = [os.path.join(os.path.dirname(__file__), source) for source in source_map]
+
         assert len(all_functions) == len(set(all_functions)), "function names are not unique"
 
         build_directory = KernelRegistry.build_directory
