@@ -11,10 +11,9 @@ def vector_addition_forward_triton_kernel(x_ptr, y_ptr, output_ptr, num_elements
     block_indices = block_start + tl.arange(0, BLOCK_SIZE)
 
     is_last_block = pid == num_blocks - 1
+    mask = block_indices < num_elements
 
     if is_last_block:
-        mask = block_indices < num_elements
-
         x = tl.load(x_ptr + block_indices, mask=mask)
         y = tl.load(y_ptr + block_indices, mask=mask)
     else:
