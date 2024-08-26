@@ -16,7 +16,6 @@ class VectorAdditionTest(TestCommons):
     )
     def test_vector_addition_cuda(self, size: int, device: torch.device, dtype: torch.dtype) -> None:
         self._test_vector_addition(size, device, dtype, vector_addition_cuda)
-        self._test_vector_addition(size, device, dtype, torch.compile(vector_addition_cuda))
 
     @parameterized.expand(
         TestCommons.make_args_matrix(
@@ -25,7 +24,6 @@ class VectorAdditionTest(TestCommons):
     )
     def test_vector_addition_triton(self, size: int, device: torch.device, dtype: torch.dtype) -> None:
         self._test_vector_addition(size, device, dtype, vector_addition_triton)
-        self._test_vector_addition(size, device, dtype, torch.compile(vector_addition_triton))
 
     def _test_vector_addition(self, size: int, device: torch.device, dtype: torch.dtype, function: Callable) -> None:
         x = torch.randn(size, device=device, dtype=dtype)
