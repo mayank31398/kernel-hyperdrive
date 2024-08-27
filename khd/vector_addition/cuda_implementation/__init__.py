@@ -6,17 +6,13 @@ from ...kernel_registry import KernelRegistry
 _KERNEL_NAME = "vector_addition_forward"
 
 
-def _vector_addition_forward_cuda_kernel(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    if not hasattr(_vector_addition_forward_cuda_kernel, "_kernel"):
-        _vector_addition_forward_cuda_kernel._kernel = KernelRegistry.get_kernel(_KERNEL_NAME)
-
-    return _vector_addition_forward_cuda_kernel._kernel(x, y)
-
-
 class _VectorAddition_CUDA(torch.autograd.Function):
     @staticmethod
     def forward(ctx, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        return _vector_addition_forward_cuda_kernel(x, y)
+        if not hasattr(_VectorAddition_CUDA.forward, "_kernel"):
+            _VectorAddition_CUDA.forward._kernel = KernelRegistry.get_kernel(_KERNEL_NAME)
+
+        return _VectorAddition_CUDA.forward._kernel(x, y)
 
     @staticmethod
     def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:

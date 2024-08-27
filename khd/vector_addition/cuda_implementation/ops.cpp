@@ -13,10 +13,13 @@ torch::Tensor vector_addition_forward(torch::Tensor x, torch::Tensor y) {
     TORCH_CHECK(x.dim() == 1, "tensor x should be 1 dimensional")
     TORCH_CHECK(y.dim() == 1, "tensor y should be 1 dimensional")
 
-    TORCH_CHECK(x.numel() == y.numel(), "both tensors should have same number of elements");
+    int num_elements = x.numel();
+    TORCH_CHECK(num_elements == y.numel(), "both tensors should have same number of elements");
     TORCH_CHECK(x.type() == y.type(), "both tensors should have same dtype");
 
-    return vector_addition_forward_kernel_launcher(x, y, 1024);
+    // TODO use num_elements
+
+    return vector_addition_forward_kernel_launcher(x, y, BLOCK_SIZE);
 }
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
