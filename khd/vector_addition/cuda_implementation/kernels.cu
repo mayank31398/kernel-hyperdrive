@@ -8,8 +8,9 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
                                                scalar_t *output,
                                                const int num_elements) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
-    if (index < num_elements)
+    if (index < num_elements) {
         output[index] = x[index] + y[index];
+    }
 }
 
 torch::Tensor vector_addition_forward_kernel_launcher(torch::Tensor x, torch::Tensor y, const int BLOCK_SIZE) {
