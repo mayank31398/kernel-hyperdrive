@@ -13,11 +13,19 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
     }
 }
 
-torch::Tensor vector_addition_forward_kernel_launcher(torch::Tensor x, torch::Tensor y, const int BLOCK_SIZE) {
+torch::Tensor vector_addition_forward_kernel_launcher(torch::Tensor x,
+                                                      torch::Tensor y,
+                                                      const bool in_place,
+                                                      const int BLOCK_SIZE) {
     int num_elements = x.numel();
-    torch::Tensor output = torch::empty_like(x);
-
     int blocks = (int)ceil((float)num_elements / BLOCK_SIZE);
+
+    torch::Tensor output;
+    if (in_place) {
+        output = x;
+    } else {
+        output = torch::empty_like(x);
+    }
 
     if (at::isReducedFloatingType(x.scalar_type())) {
         AT_DISPATCH_REDUCED_FLOATING_TYPES(

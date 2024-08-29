@@ -6,7 +6,7 @@ from .kernels import vector_addition_forward_triton_kernel
 
 class _VectorAddition_Triton(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    def forward(ctx, x: torch.Tensor, y: torch.Tensor, in_place: bool) -> torch.Tensor:
         assert x.is_cuda, "tensor x is not on GPU"
         assert y.is_cuda, "tensor y is not on GPU"
 
@@ -19,7 +19,7 @@ class _VectorAddition_Triton(torch.autograd.Function):
         assert x.numel() == y.numel(), "both tensors should have same number of elements"
         assert x.type() == y.type(), "both tensors should have same dtype"
 
-        output = torch.empty_like(x)
+        output = x if in_place else torch.empty_like(x)
 
         num_elements = x.numel()
         grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE"]),)
@@ -30,8 +30,8 @@ class _VectorAddition_Triton(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        return output_grad, output_grad
+        return output_grad, output_grad, None
 
 
-def vector_addition_triton(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    return _VectorAddition_Triton.apply(x, y)
+def vector_addition_triton(x: torch.Tensor, y: torch.Tensor, in_place: bool) -> torch.Tensor:
+    return _VectorAddition_Triton.apply(x, y, in_place)
