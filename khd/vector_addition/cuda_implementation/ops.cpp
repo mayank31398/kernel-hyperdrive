@@ -17,7 +17,7 @@ torch::Tensor vector_addition_forward(torch::Tensor x, torch::Tensor y, const bo
     int num_elements = x.numel();
 
     TORCH_CHECK(y.numel() == num_elements, "both tensors should have same number of elements");
-    TORCH_CHECK(x.type() == y.type(), "both tensors should have same dtype");
+    TORCH_CHECK(x.scalar_type() == y.scalar_type(), "both tensors should have same dtype");
 
     int BLOCK_SIZE = 1024;
     int NUM_BLOCKS = (int)ceil((float)num_elements / BLOCK_SIZE);
