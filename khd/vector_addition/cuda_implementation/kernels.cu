@@ -13,14 +13,12 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
     }
 }
 
-torch::Tensor vector_addition_forward_kernel_launcher(
+torch::Tensor vector_addition_forward_kernel_dispatcher(
     torch::Tensor x, torch::Tensor y, torch::Tensor output, const int NUM_BLOCKS, const int BLOCK_SIZE) {
-    int num_elements = x.numel();
-
     AT_DISPATCH_FLOATING_TYPES_AND2(
         at::ScalarType::Half, at::ScalarType::BFloat16, x.scalar_type(), "vector_addition_forward_kernel", ([&] {
             vector_addition_forward_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(
-                x.data<scalar_t>(), y.data<scalar_t>(), output.data<scalar_t>(), num_elements);
+                x.data<scalar_t>(), y.data<scalar_t>(), output.data<scalar_t>(), x.numel());
         }));
 
     return output;
