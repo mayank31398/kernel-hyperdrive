@@ -19,7 +19,7 @@ class VectorAdditionTest(TestCommons):
 
     @parameterized.expand(
         TestCommons.make_args_matrix(
-            TestCommons.get_1d_tensor_sizes(), [torch.device("cuda")], TestCommons.get_dtypes(), [False, True]
+            TestCommons.get_1d_tensor_sizes(), [torch.device("cuda")], TestCommons.get_dtypes()
         )
     )
     def test_vector_addition_triton(self, size: int, device: torch.device, dtype: torch.dtype) -> None:
