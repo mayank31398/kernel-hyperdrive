@@ -21,7 +21,7 @@ torch::Tensor vector_addition_forward(torch::Tensor x, torch::Tensor y, const bo
 
     // TODO use num_elements
 
-    return vector_addition_forward_kernel_launcher(x, y, in_place, BLOCK_SIZE);
+    return vector_addition_forward_kernel_launcher(x, y, in_place, 1024);
 }
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
