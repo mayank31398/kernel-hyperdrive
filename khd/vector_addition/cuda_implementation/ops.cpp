@@ -1,10 +1,8 @@
 #include <torch/extension.h>
 
 // CUDA kernel declarations
-torch::Tensor vector_addition_forward_kernel_launcher(torch::Tensor x,
-                                                      torch::Tensor y,
-                                                      const bool in_place,
-                                                      const int BLOCK_SIZE);
+torch::Tensor vector_addition_forward_kernel_launcher(
+    torch::Tensor x, torch::Tensor y, torch::Tensor output, const int NUM_BLOCKS, const int BLOCK_SIZE);
 
 torch::Tensor vector_addition_forward(torch::Tensor x, torch::Tensor y, const bool in_place) {
     TORCH_CHECK(x.device().is_cuda(), "tensor x is not on GPU")
@@ -19,9 +17,19 @@ torch::Tensor vector_addition_forward(torch::Tensor x, torch::Tensor y, const bo
     TORCH_CHECK(x.numel() == y.numel(), "both tensors should have same number of elements");
     TORCH_CHECK(x.type() == y.type(), "both tensors should have same dtype");
 
-    // TODO use num_elements
+    int num_elements = x.numel();
 
-    return vector_addition_forward_kernel_launcher(x, y, in_place, 1024);
+    int BLOCK_SIZE = 1024;
+    int NUM_BLOCKS = (int)ceil((float)num_elements / BLOCK_SIZE);
+
+    torch::Tensor output;
+    if (in_place) {
+        output = x;
+    } else {
+        output = torch::empty_like(x);
+    }
+
+    return vector_addition_forward_kernel_launcher(x, y, output, NUM_BLOCKS, BLOCK_SIZE);
 }
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {

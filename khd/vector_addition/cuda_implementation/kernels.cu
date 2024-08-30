@@ -13,30 +13,20 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
     }
 }
 
-torch::Tensor vector_addition_forward_kernel_launcher(torch::Tensor x,
-                                                      torch::Tensor y,
-                                                      const bool in_place,
-                                                      const int BLOCK_SIZE) {
+torch::Tensor vector_addition_forward_kernel_launcher(
+    torch::Tensor x, torch::Tensor y, torch::Tensor output, const int NUM_BLOCKS, const int BLOCK_SIZE) {
     int num_elements = x.numel();
-    int blocks = (int)ceil((float)num_elements / BLOCK_SIZE);
-
-    torch::Tensor output;
-    if (in_place) {
-        output = x;
-    } else {
-        output = torch::empty_like(x);
-    }
 
     if (at::isReducedFloatingType(x.scalar_type())) {
         AT_DISPATCH_REDUCED_FLOATING_TYPES(
             x.scalar_type(), "vector_addition_forward_kernel", ([&] {
-                vector_addition_forward_kernel<scalar_t><<<blocks, BLOCK_SIZE>>>(
+                vector_addition_forward_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(
                     x.data<scalar_t>(), y.data<scalar_t>(), output.data<scalar_t>(), num_elements);
             }));
     } else {
         AT_DISPATCH_FLOATING_TYPES(
             x.scalar_type(), "vector_addition_forward_kernel", ([&] {
-                vector_addition_forward_kernel<scalar_t><<<blocks, BLOCK_SIZE>>>(
+                vector_addition_forward_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(
                     x.data<scalar_t>(), y.data<scalar_t>(), output.data<scalar_t>(), num_elements);
             }));
     }
