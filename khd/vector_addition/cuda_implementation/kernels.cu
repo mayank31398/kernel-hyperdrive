@@ -11,10 +11,11 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
                                                scalar_t *output,
                                                const int num_elements) {
     int thread_id = blockIdx.x * blockDim.x + threadIdx.x;
+    int num_threads = blockIdx * BLOCK_SIZE;
 
 #pragma unroll
     for (int i = 0; i < NUM_ELEMENTS_PER_THREAD; i++) {
-        int index = NUM_ELEMENTS_PER_THREAD * i + thread_id;
+        int index = num_threads * i + thread_id;
         if (index < num_elements) {
             output[index] = x[index] + y[index];
         }
