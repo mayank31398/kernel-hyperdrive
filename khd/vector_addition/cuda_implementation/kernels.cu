@@ -23,6 +23,8 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
 }
 
 torch::Tensor vector_addition_forward_kernel_dispatcher(torch::Tensor x, torch::Tensor y) {
+    int num_elements = x.numel();
+
     int num_elements_per_block = BLOCK_SIZE * NUM_ELEMENTS_PER_THREAD;
     int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
 
@@ -31,7 +33,7 @@ torch::Tensor vector_addition_forward_kernel_dispatcher(torch::Tensor x, torch::
     AT_DISPATCH_FLOATING_TYPES_AND2(
         at::ScalarType::Half, at::ScalarType::BFloat16, x.scalar_type(), "vector_addition_forward_kernel", ([&] {
             vector_addition_forward_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(
-                x.data<scalar_t>(), y.data<scalar_t>(), output.data<scalar_t>(), x.numel());
+                x.data<scalar_t>(), y.data<scalar_t>(), output.data<scalar_t>(), num_elements);
         }));
 
     return output;
