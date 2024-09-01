@@ -7,7 +7,7 @@
 
 #define NUM_ELEMENTS_PER_THREAD_FP32 4 // vectorized load store
 #define NUM_ELEMENTS_PER_THREAD_FP16 2 // vectorized load store
-#define NUM_ELEMENTS_PER_THREAD_BF16 1 // vectorized load store
+#define NUM_ELEMENTS_PER_THREAD_BF16 2 // vectorized load store
 
 template <typename scalar_t>
 __global__ void vector_addition_forward_kernel(const scalar_t *x,
@@ -17,8 +17,8 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
                                                const int num_elements_per_thread) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (std::is_same_v<scalar_t, float>) {
-        if (index * num_elements_per_thread < num_elements) {
+    if (index * num_elements_per_thread < num_elements) {
+        if (std::is_same_v<scalar_t, float>) {
             // float4 is a datatype used for vectorized loads and stores
             float4 *x4 = (float4 *)x;
             float4 *y4 = (float4 *)y;
@@ -35,18 +35,18 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
             tmp.w = _x4.w + _y4.w;
 
             output4[index] = tmp;
-        }
-    } else if (std::is_same_v<scalar_t, c10::Half>) {
-        if (index * num_elements_per_thread < num_elements) {
+        } else if (std::is_same_v<scalar_t, c10::Half>) {
             __half2 *x2 = (__half2 *)x;
             __half2 *y2 = (__half2 *)y;
             __half2 *output2 = (__half2 *)output;
 
             output2[index] = __hadd2(x2[index], y2[index]);
-        }
-    } else {
-        if (index < num_elements) {
-            output[index] = x[index] + y[index];
+        } else {
+            __nv_bfloat162 *x2 = (__nv_bfloat162 *)x;
+            __nv_bfloat162 *y2 = (__nv_bfloat162 *)y;
+            __nv_bfloat162 *output2 = (__nv_bfloat162 *)output;
+
+            output2[index] = __hadd2(x2[index], y2[index]);
         }
     }
 }
