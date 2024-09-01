@@ -13,7 +13,7 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
                                                const int num_elements) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (std::is_same<scalar_t, float>::value) {
+    if (std::is_same_v<scalar_t, float>) {
         if (index * NUM_ELEMENTS_PER_THREAD < num_elements) {
             // float4 is a datatype used for vectorized loads and stores
             float4 *x4 = (float4 *)x;
@@ -44,7 +44,7 @@ torch::Tensor vector_addition_forward_kernel_dispatcher(torch::Tensor x, torch::
     AT_DISPATCH_FLOATING_TYPES_AND2(
         at::ScalarType::Half, at::ScalarType::BFloat16, x.scalar_type(), "vector_addition_forward_kernel", ([&] {
             int num_elements_per_thread = 1;
-            if (std::is_same<scalar_t, float>::value) {
+            if (std::is_same_v<scalar_t, float>) {
                 num_elements_per_thread = NUM_ELEMENTS_PER_THREAD;
             }
 
