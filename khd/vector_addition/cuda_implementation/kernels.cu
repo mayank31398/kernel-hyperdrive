@@ -38,40 +38,40 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
             tmp.w = _x4.w + _y4.w;
 
             output4[thread_id] = tmp;
-            else if (start < num_elements) {
+        } else if (start < num_elements) {
 #pragma unroll
-                for (int i = start; i < num_elements; i++) {
-                    output[i] = x[i] + y[i];
-                }
+            for (int i = start; i < num_elements; i++) {
+                output[i] = x[i] + y[i];
             }
-        } else if (std::is_same_v<scalar_t, c10::Half>) {
-            if (start < num_elements && end < num_elements) {
-                __half2 *x2 = (__half2 *)x;
-                __half2 *y2 = (__half2 *)y;
-                __half2 *output2 = (__half2 *)output;
+        }
+    } else if (std::is_same_v<scalar_t, c10::Half>) {
+        if (start < num_elements && end < num_elements) {
+            __half2 *x2 = (__half2 *)x;
+            __half2 *y2 = (__half2 *)y;
+            __half2 *output2 = (__half2 *)output;
 
-                output2[thread_id] = __hadd2(x2[thread_id], y2[thread_id]);
-            } else if (start < num_elements) {
+            output2[thread_id] = __hadd2(x2[thread_id], y2[thread_id]);
+        } else if (start < num_elements) {
 #pragma unroll
-                for (int i = start; i < num_elements; i++) {
-                    output[i] = __hadd(x[i], y[i]);
-                }
+            for (int i = start; i < num_elements; i++) {
+                output[i] = __hadd(x[i], y[i]);
             }
-        } else {
-            if (start < num_elements && end < num_elements) {
-                __nv_bfloat162 *x2 = (__nv_bfloat162 *)x;
-                __nv_bfloat162 *y2 = (__nv_bfloat162 *)y;
-                __nv_bfloat162 *output2 = (__nv_bfloat162 *)output;
+        }
+    } else {
+        if (start < num_elements && end < num_elements) {
+            __nv_bfloat162 *x2 = (__nv_bfloat162 *)x;
+            __nv_bfloat162 *y2 = (__nv_bfloat162 *)y;
+            __nv_bfloat162 *output2 = (__nv_bfloat162 *)output;
 
-                output2[thread_id] = __hadd2(x2[thread_id], y2[thread_id]);
-            } else if (start < num_elements) {
+            output2[thread_id] = __hadd2(x2[thread_id], y2[thread_id]);
+        } else if (start < num_elements) {
 #pragma unroll
-                for (int i = start; i < num_elements; i++) {
-                    output[i] = __hadd(x[i], y[i]);
-                }
+            for (int i = start; i < num_elements; i++) {
+                output[i] = __hadd(x[i], y[i]);
             }
         }
     }
+}
 }
 
 torch::Tensor vector_addition_forward_kernel_dispatcher(torch::Tensor x, torch::Tensor y) {
