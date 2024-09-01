@@ -4,30 +4,45 @@
 #include <torch/extension.h>
 
 #define BLOCK_SIZE 256
-#define NUM_ELEMENTS_PER_THREAD 4 // vectorized load store
+
+#define NUM_ELEMENTS_PER_THREAD_FP32 4 // vectorized load store
+#define NUM_ELEMENTS_PER_THREAD_FP16 2 // vectorized load store
+#define NUM_ELEMENTS_PER_THREAD_BF16 1 // vectorized load store
 
 template <typename scalar_t>
 __global__ void vector_addition_forward_kernel(const scalar_t *x,
                                                const scalar_t *y,
                                                scalar_t *output,
-                                               const int num_elements) {
+                                               const int num_elements,
+                                               const int num_elements_per_thread) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (std::is_same_v<scalar_t, float>) {
-        if (index * NUM_ELEMENTS_PER_THREAD < num_elements) {
+        if (index * num_elements_per_thread < num_elements) {
             // float4 is a datatype used for vectorized loads and stores
             float4 *x4 = (float4 *)x;
             float4 *y4 = (float4 *)y;
             float4 *output4 = (float4 *)output;
 
             // tmp is initialized here to avoid doing multiple writes
+            float4 _x4 = x4[index];
+            float4 _y4 = y4[index];
             float4 tmp;
-            tmp.x = x4[index].x + y4[index].x;
-            tmp.y = x4[index].y + y4[index].y;
-            tmp.z = x4[index].z + y4[index].z;
-            tmp.w = x4[index].w + y4[index].w;
+
+            tmp.x = _x4.x + _y4.x;
+            tmp.y = _x4.y + _y4.y;
+            tmp.z = _x4.z + _y4.z;
+            tmp.w = _x4.w + _y4.w;
 
             output4[index] = tmp;
+        }
+    } else if (std::is_same_v<scalar_t, c10::Half>) {
+        if (index * num_elements_per_thread < num_elements) {
+            __half2 *x2 = (__half2 *)x;
+            __half2 *y2 = (__half2 *)y;
+            __half2 *output2 = (__half2 *)output;
+
+            output2[index] = __hadd2(x2[index], y2[index]);
         }
     } else {
         if (index < num_elements) {
@@ -43,16 +58,23 @@ torch::Tensor vector_addition_forward_kernel_dispatcher(torch::Tensor x, torch::
 
     AT_DISPATCH_FLOATING_TYPES_AND2(
         at::ScalarType::Half, at::ScalarType::BFloat16, x.scalar_type(), "vector_addition_forward_kernel", ([&] {
-            int num_elements_per_thread = 1;
+            int num_elements_per_thread;
             if (std::is_same_v<scalar_t, float>) {
-                num_elements_per_thread = NUM_ELEMENTS_PER_THREAD;
+                num_elements_per_thread = NUM_ELEMENTS_PER_THREAD_FP32;
+            } else if (std::is_same_v<scalar_t, c10::Half>) {
+                num_elements_per_thread = NUM_ELEMENTS_PER_THREAD_FP16;
+            } else if (std::is_same_v<scalar_t, c10::BFloat16>) {
+                num_elements_per_thread = NUM_ELEMENTS_PER_THREAD_BF16;
             }
 
             int NUM_BLOCKS =
                 (num_elements + num_elements_per_thread * BLOCK_SIZE - 1) / (num_elements_per_thread * BLOCK_SIZE);
 
-            vector_addition_forward_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(
-                x.data<scalar_t>(), y.data<scalar_t>(), output.data<scalar_t>(), num_elements);
+            vector_addition_forward_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(x.data<scalar_t>(),
+                                                                                 y.data<scalar_t>(),
+                                                                                 output.data<scalar_t>(),
+                                                                                 num_elements,
+                                                                                 num_elements_per_thread);
         }));
 
     return output;
