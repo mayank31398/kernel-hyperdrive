@@ -54,7 +54,7 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
         } else if (start < num_elements) {
 #pragma unroll
             for (int i = start; i < num_elements; i++) {
-                output[i] = __hadd(x[i], y[i]);
+                output[i] = x[i] + y[i];
             }
         }
     } else {
@@ -67,11 +67,10 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
         } else if (start < num_elements) {
 #pragma unroll
             for (int i = start; i < num_elements; i++) {
-                output[i] = __hadd(x[i], y[i]);
+                output[i] = x[i] + y[i];
             }
         }
     }
-}
 }
 
 torch::Tensor vector_addition_forward_kernel_dispatcher(torch::Tensor x, torch::Tensor y) {
