@@ -50,7 +50,7 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
                 __half2 *y2 = (__half2 *)y;
                 __half2 *output2 = (__half2 *)output;
 
-                output2[index] = __hadd2(x2[index], y2[index]);
+                output2[thread_id] = __hadd2(x2[thread_id], y2[thread_id]);
             } else if (start < num_elements) {
 #pragma unroll
                 for (int i = start; i < num_elements; i++) {
@@ -63,7 +63,7 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
                 __nv_bfloat162 *y2 = (__nv_bfloat162 *)y;
                 __nv_bfloat162 *output2 = (__nv_bfloat162 *)output;
 
-                output2[index] = __hadd2(x2[index], y2[index]);
+                output2[thread_id] = __hadd2(x2[thread_id], y2[thread_id]);
             } else if (start < num_elements) {
 #pragma unroll
                 for (int i = start; i < num_elements; i++) {
