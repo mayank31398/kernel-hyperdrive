@@ -3,7 +3,7 @@
 #include <cuda_runtime.h>
 #include <torch/extension.h>
 
-#define BLOCK_SIZE 256
+#define BLOCK_SIZE 1024
 
 #define NUM_ELEMENTS_PER_THREAD_FP32 4 // vectorized load store
 #define NUM_ELEMENTS_PER_THREAD_FP16 2 // vectorized load store
