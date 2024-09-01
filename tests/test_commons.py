@@ -1,3 +1,4 @@
+import random
 from itertools import product
 from typing import Any
 from unittest import TestCase
@@ -19,10 +20,14 @@ class TestCommons(TestCase):
     @staticmethod
     def get_1d_tensor_sizes() -> list[tuple[int]]:
         sizes = set()
+        # powers of 2
         for i in range(15):
             start = 2**i
             for j in range(10):
                 sizes.add(start + j)
+        # not powers of 2
+        for _ in range(50):
+            sizes.add(3000 + random.randint(-1000, 1000))
         return sizes
 
     def make_args_matrix(*args_lists) -> list[Any]:

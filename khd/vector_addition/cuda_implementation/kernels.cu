@@ -15,18 +15,21 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
                                                scalar_t *output,
                                                const int num_elements,
                                                const int num_elements_per_thread) {
-    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    int thread_id = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (index * num_elements_per_thread < num_elements) {
+    const int start = thread_id * num_elements_per_thread;
+    const int end = (thread_id + 1) * num_elements_per_thread - 1; // inclusive of last element
+
+    if (start < num_elements && end < num_elements) {
         if (std::is_same_v<scalar_t, float>) {
             // float4 is a datatype used for vectorized loads and stores
-            float4 *x4 = (float4 *)x;
-            float4 *y4 = (float4 *)y;
+            const float4 *x4 = (const float4 *)x;
+            const float4 *y4 = (const float4 *)y;
             float4 *output4 = (float4 *)output;
 
             // tmp is initialized here to avoid doing multiple writes
-            float4 _x4 = x4[index];
-            float4 _y4 = y4[index];
+            const float4 _x4 = x4[thread_id];
+            const float4 _y4 = y4[thread_id];
             float4 tmp;
 
             tmp.x = _x4.x + _y4.x;
@@ -34,19 +37,24 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
             tmp.z = _x4.z + _y4.z;
             tmp.w = _x4.w + _y4.w;
 
-            output4[index] = tmp;
+            output4[thread_id] = tmp;
         } else if (std::is_same_v<scalar_t, c10::Half>) {
             __half2 *x2 = (__half2 *)x;
             __half2 *y2 = (__half2 *)y;
             __half2 *output2 = (__half2 *)output;
 
-            output2[index] = __hadd2(x2[index], y2[index]);
-        } else {
+            output2[thread_id] = __hadd2(x2[thread_id], y2[thread_id]);
+        } else if (std::is_same_v<scalar_t, c10::BFloat16>) {
             __nv_bfloat162 *x2 = (__nv_bfloat162 *)x;
             __nv_bfloat162 *y2 = (__nv_bfloat162 *)y;
             __nv_bfloat162 *output2 = (__nv_bfloat162 *)output;
 
-            output2[index] = __hadd2(x2[index], y2[index]);
+            output2[thread_id] = __hadd2(x2[thread_id], y2[thread_id]);
+        }
+    } else if (start < num_elements) {
+#pragma unroll
+        for (int i = start; i < num_elements; i++) {
+            output[i] = x[i] + y[i];
         }
     }
 }
@@ -67,8 +75,8 @@ torch::Tensor vector_addition_forward_kernel_dispatcher(torch::Tensor x, torch::
                 num_elements_per_thread = NUM_ELEMENTS_PER_THREAD_BF16;
             }
 
-            int NUM_BLOCKS =
-                (num_elements + num_elements_per_thread * BLOCK_SIZE - 1) / (num_elements_per_thread * BLOCK_SIZE);
+            int num_elements_per_block = BLOCK_SIZE * num_elements_per_thread;
+            int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
 
             vector_addition_forward_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(x.data<scalar_t>(),
                                                                                  y.data<scalar_t>(),
