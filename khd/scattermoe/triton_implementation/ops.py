@@ -72,7 +72,7 @@ def scatter2scatter(
             E=W.size(0),
             BLOCK_M=BLOCK_M,
             ACC_TYPE=tl.float32,
-            allow_tf32=True,
+            allow_tf32=torch.backends.cudnn.allow_tf32,
             x_grouped=x_grouped,
             y_grouped=y_grouped,
         )
@@ -112,7 +112,7 @@ def group_bwd_W(DY, X, expert_offsets, E):
             K=X.size(-1),
             # ACC_TYPE: tl.constexpr,
             ACC_TYPE=tl.float32,
-            allow_tf32=True,
+            allow_tf32=torch.backends.cudnn.allow_tf32,
         )
         return DW
 
