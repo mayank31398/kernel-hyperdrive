@@ -3,7 +3,7 @@ import triton.language as tl
 
 
 @triton.jit
-def rmsnorm_triton_kernel(x_ptr, y_ptr, output_ptr, num_elements, BLOCK_SIZE: tl.constexpr):
+def rmsnorm_triton_kernel(x_ptr, weight_ptr, output_ptr, num_elements, BLOCK_SIZE: tl.constexpr):
     pid = tl.program_id(axis=0)
 
     block_start = pid * BLOCK_SIZE
@@ -12,6 +12,9 @@ def rmsnorm_triton_kernel(x_ptr, y_ptr, output_ptr, num_elements, BLOCK_SIZE: tl
     mask = block_indices < num_elements
 
     x = tl.load(x_ptr + block_indices, mask=mask)
+
+    (x * x)
+
     y = tl.load(y_ptr + block_indices, mask=mask)
 
     output = x + y
