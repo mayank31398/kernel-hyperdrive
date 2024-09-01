@@ -89,8 +89,8 @@ torch::Tensor vector_addition_forward_kernel_dispatcher(torch::Tensor x, torch::
                 num_elements_per_thread = NUM_ELEMENTS_PER_THREAD_BF16;
             }
 
-            int NUM_BLOCKS =
-                (num_elements + num_elements_per_thread * BLOCK_SIZE - 1) / (num_elements_per_thread * BLOCK_SIZE);
+            int num_elements_per_block = BLOCK_SIZE * num_elements_per_thread;
+            int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
 
             vector_addition_forward_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(x.data<scalar_t>(),
                                                                                  y.data<scalar_t>(),
