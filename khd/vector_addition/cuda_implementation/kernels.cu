@@ -43,7 +43,7 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
             if (std::is_same_v<scalar_t, fp32>) {
                 _tmp[i] = _x[i] + _y[i];
             } else if constexpr (std::is_same_v<scalar_t, c10::Half> || std::is_same_v<scalar_t, c10::BFloat16>) {
-                using q = DType<scalar_t>;
+                DType<scalar_t> q;
                 _tmp[i] = q.pack_to_fp32(__hadd2(q.unpack_from_fp32(_x[i]), q.unpack_from_fp32(_y[i])));
             } else {
                 assert(false && "Function not implemented");
