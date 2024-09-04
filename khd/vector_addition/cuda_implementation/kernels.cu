@@ -33,24 +33,24 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
         const fp32 *_y = (fp32 *)(&y4[thread_id]);
 
         // tmp is initialized here to avoid doing multiple writes
-        fp32_4 tmp;
-        fp32 *_tmp = (fp32 *)(&tmp);
+        fp32_4 tmp4;
+        fp32 *tmp = (fp32 *)(&tmp4);
 
         // clang-format off
         #pragma unroll
         // clang-format on
         for (int i = 0; i < NUM_FP32_ELEMENTS_PER_THREAD; i++) {
             if (std::is_same_v<scalar_t, fp32>) {
-                _tmp[i] = _x[i] + _y[i];
+                tmp[i] = _x[i] + _y[i];
             } else if constexpr (std::is_same_v<scalar_t, c10::Half> || std::is_same_v<scalar_t, c10::BFloat16>) {
                 DType<scalar_t> q;
-                _tmp[i] = q.pack_to_fp32(__hadd2(q.unpack_from_fp32(_x[i]), q.unpack_from_fp32(_y[i])));
+                tmp[i] = q.pack_to_fp32(__hadd2(q.unpack_from_fp32(_x[i]), q.unpack_from_fp32(_y[i])));
             } else {
                 assert(false && "Function not implemented");
             }
         }
 
-        output4[thread_id] = tmp;
+        output4[thread_id] = tmp4;
     } else if (start < num_elements) {
         // clang-format off
         #pragma unroll
