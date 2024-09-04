@@ -17,8 +17,10 @@ __device__ float get_float_from_upper_and_lower_16_bits(uint16_t upper_16, uint1
     return __int_as_float(int_value);
 }
 
+// base struct for converting torch ScalarType to NVIDIA's dtype
 template <typename scalar_t> struct TorchDtype2NVDtype;
 
+// struct for c10::Half
 template <> struct TorchDtype2NVDtype<c10::Half> {
     using torch_dtype = c10::Half;
     using nv_dtype = half;
@@ -44,8 +46,10 @@ template <> struct TorchDtype2NVDtype<c10::Half> {
     }
 };
 
-template <> struct TorchDtype2NVDtype<half>;
+// struct for half (basically another alias for the above)
+template <> struct TorchDtype2NVDtype<half> : public TorchDtype2NVDtype<c10::Half> {};
 
+// struct for c10::BFloat16
 template <> struct TorchDtype2NVDtype<c10::BFloat16> {
     using torch_dtype = c10::BFloat16;
     using nv_dtype = __nv_bfloat16;
@@ -71,4 +75,5 @@ template <> struct TorchDtype2NVDtype<c10::BFloat16> {
     }
 };
 
-template <> struct TorchDtype2NVDtype<__nv_bfloat16>;
+// struct for bf16 (basically another alias for the above)
+template <> struct TorchDtype2NVDtype<__nv_bfloat16> : public TorchDtype2NVDtype<c10::BFloat16> {};
