@@ -6,6 +6,9 @@
 
 #define BLOCK_SIZE 1024
 
+std::unordered_map<std::type_index, int> num_elements_per_thread_mapping = {
+    {typeid(fp32), 4}, {typeid(c10::Half), 8}, {typeid(c10::BFloat16), 8}};
+
 // for vectorized load store
 #define NUM_ELEMENTS_PER_THREAD_FP32 4
 #define NUM_ELEMENTS_PER_THREAD_FP16 8
@@ -65,14 +68,7 @@ torch::Tensor vector_addition_forward_kernel_dispatcher(torch::Tensor x, torch::
 
     AT_DISPATCH_FLOATING_TYPES_AND2(
         at::ScalarType::Half, at::ScalarType::BFloat16, x.scalar_type(), "vector_addition_forward_kernel", ([&] {
-            int num_elements_per_thread;
-            if (std::is_same_v<scalar_t, float>) {
-                num_elements_per_thread = NUM_ELEMENTS_PER_THREAD_FP32;
-            } else if (std::is_same_v<scalar_t, c10::Half>) {
-                num_elements_per_thread = NUM_ELEMENTS_PER_THREAD_FP16;
-            } else if (std::is_same_v<scalar_t, c10::BFloat16>) {
-                num_elements_per_thread = NUM_ELEMENTS_PER_THREAD_BF16;
-            }
+            int num_elements_per_thread = num_elements_per_thread_mapping[std::type_index(typeid(scalar_t))];
 
             int num_elements_per_block = BLOCK_SIZE * num_elements_per_thread;
             int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
