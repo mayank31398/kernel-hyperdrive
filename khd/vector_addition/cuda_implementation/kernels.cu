@@ -6,13 +6,9 @@
 
 #define BLOCK_SIZE 1024
 
+// for vectorized load store
 std::unordered_map<std::type_index, int> num_elements_per_thread_mapping = {
     {typeid(fp32), 4}, {typeid(c10::Half), 8}, {typeid(c10::BFloat16), 8}};
-
-// for vectorized load store
-#define NUM_ELEMENTS_PER_THREAD_FP32 4
-#define NUM_ELEMENTS_PER_THREAD_FP16 8
-#define NUM_ELEMENTS_PER_THREAD_BF16 8
 
 template <typename scalar_t>
 __global__ void vector_addition_forward_kernel(const scalar_t *x,
