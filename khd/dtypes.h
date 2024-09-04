@@ -3,7 +3,14 @@
 #include <cuda_runtime.h>
 #include <torch/extension.h>
 
-__device__ std::tuple<uint16_t, uint16_t> get_upper_and_lower_16_bits(float value) {
+// define dtype aliases
+using fp32 = float;
+using fp16 = half;
+using fp16_2 = half2;
+using bf16 = __nv_bfloat16;
+using bf16_2 = __nv_bfloat162;
+
+__device__ std::tuple<uint16_t, uint16_t> get_upper_and_lower_16_bits(fp32 value) {
     uint32_t int_value = __float_as_int(value);
 
     uint16_t lower_16 = int_value & 0xFFFF;
@@ -12,32 +19,32 @@ __device__ std::tuple<uint16_t, uint16_t> get_upper_and_lower_16_bits(float valu
     return std::make_tuple(lower_16, upper_16);
 }
 
-__device__ float get_float_from_upper_and_lower_16_bits(uint16_t upper_16, uint16_t lower_16) {
+__device__ fp32 get_float_from_upper_and_lower_16_bits(uint16_t upper_16, uint16_t lower_16) {
     uint32_t int_value = (static_cast<uint32_t>(upper_16) << 16) | lower_16;
     return __int_as_float(int_value);
 }
 
 // base struct for converting torch ScalarType to NVIDIA's dtype
-template <typename scalar_t> struct TorchDtype2NVDtype;
+template <typename scalar_t> struct DType;
 
 // struct for c10::Half
-template <> struct TorchDtype2NVDtype<c10::Half> {
+template <> struct DType<c10::Half> {
     using torch_dtype = c10::Half;
-    using nv_dtype = half;
-    using nv_dtype2 = half2; // vectorized half
+    using nv_dtype = fp16;
+    using nv_dtype2 = fp16_2; // vectorized half
 
-    __device__ half2 unpack(float value) {
+    __device__ fp16_2 unpack(fp32 value) {
         auto [lower_16, upper_16] = get_upper_and_lower_16_bits(value);
 
-        half lower_half = __ushort_as_half(lower_16);
-        half upper_half = __ushort_as_half(upper_16);
+        fp16 lower_half = __ushort_as_half(lower_16);
+        fp16 upper_half = __ushort_as_half(upper_16);
 
         return __halves2half2(lower_half, upper_half);
     }
 
-    __device__ float pack(half2 value) {
-        half lower_half = __low2half(value);
-        half upper_half = __high2half(value);
+    __device__ fp32 pack(fp16_2 value) {
+        fp16 lower_half = __low2half(value);
+        fp16 upper_half = __high2half(value);
 
         uint16_t lower_16 = __half_as_short(lower_half);
         uint16_t upper_16 = __half_as_short(upper_half);
@@ -47,15 +54,15 @@ template <> struct TorchDtype2NVDtype<c10::Half> {
 };
 
 // struct for half (basically another alias for the above)
-template <> struct TorchDtype2NVDtype<half> : public TorchDtype2NVDtype<c10::Half> {};
+template <> struct DType<fp16> : public DType<c10::Half> {};
 
 // struct for c10::BFloat16
-template <> struct TorchDtype2NVDtype<c10::BFloat16> {
+template <> struct DType<c10::BFloat16> {
     using torch_dtype = c10::BFloat16;
-    using nv_dtype = __nv_bfloat16;
-    using nv_dtype2 = __nv_bfloat162; // vectorized bf16
+    using nv_dtype = bf16;
+    using nv_dtype2 = bf16_2; // vectorized bf16
 
-    __device__ __nv_bfloat162 unpack(float value) {
+    __device__ bf16_2 unpack(fp32 value) {
         auto [lower_16, upper_16] = get_upper_and_lower_16_bits(value);
 
         __nv_bfloat16 lower_half = __ushort_as_bfloat16(lower_16);
@@ -64,9 +71,9 @@ template <> struct TorchDtype2NVDtype<c10::BFloat16> {
         return __halves2bfloat162(lower_half, upper_half);
     }
 
-    __device__ float pack(__nv_bfloat162 value) {
-        __nv_bfloat16 lower_half = __low2bfloat16(value);
-        __nv_bfloat16 upper_half = __high2bfloat16(value);
+    __device__ fp32 pack(bf16_2 value) {
+        bf16 lower_half = __low2bfloat16(value);
+        bf16 upper_half = __high2bfloat16(value);
 
         uint16_t lower_16 = __bfloat16_as_short(lower_half);
         uint16_t upper_16 = __bfloat16_as_short(upper_half);
@@ -76,4 +83,4 @@ template <> struct TorchDtype2NVDtype<c10::BFloat16> {
 };
 
 // struct for bf16 (basically another alias for the above)
-template <> struct TorchDtype2NVDtype<__nv_bfloat16> : public TorchDtype2NVDtype<c10::BFloat16> {};
+template <> struct DType<bf16> : public DType<c10::BFloat16> {};
