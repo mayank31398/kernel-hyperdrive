@@ -39,19 +39,17 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
             tmp.z = _x4.z + _y4.z;
             tmp.w = _x4.w + _y4.w;
         } else if (std::is_same_v<scalar_t, c10::Half>) {
-            tmp.x = pack<half2>(__hadd2(unpack<half, half2>(_x4.x), unpack<half, half2>(_y4.x)));
-            tmp.y = pack<half2>(__hadd2(unpack<half, half2>(_x4.y), unpack<half, half2>(_y4.y)));
-            tmp.z = pack<half2>(__hadd2(unpack<half, half2>(_x4.z), unpack<half, half2>(_y4.z)));
-            tmp.w = pack<half2>(__hadd2(unpack<half, half2>(_x4.w), unpack<half, half2>(_y4.w)));
+            TorchDtype2NVDtype<c10::Half> q;
+            tmp.x = q.pack(__hadd2(q.unpack(_x4.x), q.unpack(_y4.x)));
+            tmp.y = q.pack(__hadd2(q.unpack(_x4.y), q.unpack(_y4.y)));
+            tmp.z = q.pack(__hadd2(q.unpack(_x4.z), q.unpack(_y4.z)));
+            tmp.w = q.pack(__hadd2(q.unpack(_x4.w), q.unpack(_y4.w)));
         } else if (std::is_same_v<scalar_t, c10::BFloat16>) {
-            tmp.x = pack<__nv_bfloat162>(
-                __hadd2(unpack<__nv_bfloat16, __nv_bfloat162>(_x4.x), unpack<__nv_bfloat16, __nv_bfloat162>(_y4.x)));
-            tmp.y = pack<__nv_bfloat162>(
-                __hadd2(unpack<__nv_bfloat16, __nv_bfloat162>(_x4.y), unpack<__nv_bfloat16, __nv_bfloat162>(_y4.y)));
-            tmp.z = pack<__nv_bfloat162>(
-                __hadd2(unpack<__nv_bfloat16, __nv_bfloat162>(_x4.z), unpack<__nv_bfloat16, __nv_bfloat162>(_y4.z)));
-            tmp.w = pack<__nv_bfloat162>(
-                __hadd2(unpack<__nv_bfloat16, __nv_bfloat162>(_x4.w), unpack<__nv_bfloat16, __nv_bfloat162>(_y4.w)));
+            TorchDtype2NVDtype<c10::BFloat16> q;
+            tmp.x = q.pack(__hadd2(q.unpack(_x4.x), q.unpack(_y4.x)));
+            tmp.y = q.pack(__hadd2(q.unpack(_x4.y), q.unpack(_y4.y)));
+            tmp.z = q.pack(__hadd2(q.unpack(_x4.z), q.unpack(_y4.z)));
+            tmp.w = q.pack(__hadd2(q.unpack(_x4.w), q.unpack(_y4.w)));
         }
 
         output4[thread_id] = tmp;
