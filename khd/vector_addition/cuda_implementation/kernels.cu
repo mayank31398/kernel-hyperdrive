@@ -5,6 +5,8 @@
 #include <torch/extension.h>
 
 #define BLOCK_SIZE 1024
+#define NUM_FP32_ELEMENTS_PER_THREAD \
+    4 // number of fp32 elements equivalent per thread, this is equivalent to 8 fp16 elements
 
 // for vectorized load store
 std::unordered_map<std::type_index, int> num_elements_per_thread_mapping = {
@@ -34,29 +36,25 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
         fp32_4 tmp;
         fp32 *_tmp = (fp32 *)(&tmp);
 
-        if (std::is_same_v<scalar_t, fp32>) {
-            // clang-format off
-            #pragma unroll
-            // clang-format on
-            for (int i = 0; i < 4; i++) {
+        // clang-format off
+        #pragma unroll
+        // clang-format on
+        for (int i = 0; i < NUM_FP32_ELEMENTS_PER_THREAD; i++) {
+            if (std::is_same_v<scalar_t, fp32>) {
                 _tmp[i] = _x[i] + _y[i];
-            }
-        } else if constexpr (std::is_same_v<scalar_t, c10::Half> || std::is_same_v<scalar_t, c10::BFloat16>) {
-            DType<scalar_t> q;
-
-            // clang-format off
-            #pragma unroll
-            // clang-format on
-            for (int i = 0; i < 4; i++) {
+            } else if constexpr (std::is_same_v<scalar_t, c10::Half> || std::is_same_v<scalar_t, c10::BFloat16>) {
+                DType<scalar_t> q;
                 _tmp[i] = q.pack_to_fp32(__hadd2(q.unpack_from_fp32(_x[i]), q.unpack_from_fp32(_y[i])));
+            } else {
+                assert(false && "Function not implemented");
             }
-        } else {
-            assert(false && "Function not implemented");
         }
 
         output4[thread_id] = tmp;
     } else if (start < num_elements) {
-#pragma unroll
+        // clang-format off
+        #pragma unroll
+        // clang-format on
         for (int i = start; i < num_elements; i++) {
             output[i] = x[i] + y[i];
         }
