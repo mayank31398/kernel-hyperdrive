@@ -5,6 +5,8 @@
 #include <torch/extension.h>
 
 #define BLOCK_SIZE 1024
+#define NUM_FP32_ELEMENTS_PER_THREAD \
+    4 // number of fp32 elements equivalent per thread, this is equivalent to 8 fp16 elements
 
 // for vectorized load store
 std::unordered_map<std::type_index, int> num_elements_per_thread_mapping = {
@@ -27,30 +29,32 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
         const fp32_4 *y4 = (const fp32_4 *)y;
         fp32_4 *output4 = (fp32_4 *)output;
 
+        const fp32 *_x = (fp32 *)(&x4[thread_id]);
+        const fp32 *_y = (fp32 *)(&y4[thread_id]);
+
         // tmp is initialized here to avoid doing multiple writes
-        const fp32_4 _x4 = x4[thread_id];
-        const fp32_4 _y4 = y4[thread_id];
         fp32_4 tmp;
+        fp32 *_tmp = (fp32 *)(&tmp);
 
-        if (std::is_same_v<scalar_t, fp32>) {
-            tmp.x = _x4.x + _y4.x;
-            tmp.y = _x4.y + _y4.y;
-            tmp.z = _x4.z + _y4.z;
-            tmp.w = _x4.w + _y4.w;
-        } else if constexpr (std::is_same_v<scalar_t, c10::Half> || std::is_same_v<scalar_t, c10::BFloat16>) {
-            DType<scalar_t> q;
-
-            tmp.x = q.pack(__hadd2(q.unpack(_x4.x), q.unpack(_y4.x)));
-            tmp.y = q.pack(__hadd2(q.unpack(_x4.y), q.unpack(_y4.y)));
-            tmp.z = q.pack(__hadd2(q.unpack(_x4.z), q.unpack(_y4.z)));
-            tmp.w = q.pack(__hadd2(q.unpack(_x4.w), q.unpack(_y4.w)));
-        } else {
-            assert(false && "Function not implemented");
+        // clang-format off
+        #pragma unroll
+        // clang-format on
+        for (int i = 0; i < NUM_FP32_ELEMENTS_PER_THREAD; i++) {
+            if (std::is_same_v<scalar_t, fp32>) {
+                _tmp[i] = _x[i] + _y[i];
+            } else if constexpr (std::is_same_v<scalar_t, c10::Half> || std::is_same_v<scalar_t, c10::BFloat16>) {
+                DType<scalar_t> q;
+                _tmp[i] = q.pack_to_fp32(__hadd2(q.unpack_from_fp32(_x[i]), q.unpack_from_fp32(_y[i])));
+            } else {
+                assert(false && "Function not implemented");
+            }
         }
 
         output4[thread_id] = tmp;
     } else if (start < num_elements) {
-#pragma unroll
+        // clang-format off
+        #pragma unroll
+        // clang-format on
         for (int i = start; i < num_elements; i++) {
             output[i] = x[i] + y[i];
         }
