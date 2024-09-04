@@ -44,6 +44,8 @@ template <> struct TorchDtype2NVDtype<c10::Half> {
     }
 };
 
+template <> struct TorchDtype2NVDtype<half>;
+
 template <> struct TorchDtype2NVDtype<c10::BFloat16> {
     using torch_dtype = c10::BFloat16;
     using nv_dtype = __nv_bfloat16;
@@ -68,3 +70,5 @@ template <> struct TorchDtype2NVDtype<c10::BFloat16> {
         return get_float_from_upper_and_lower_16_bits(upper_16, lower_16);
     }
 };
+
+template <> struct TorchDtype2NVDtype<__nv_bfloat16>;
