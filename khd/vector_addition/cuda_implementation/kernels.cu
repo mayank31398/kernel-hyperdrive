@@ -23,17 +23,17 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
     const int end = (thread_id + 1) * num_elements_per_thread - 1; // inclusive of last element
 
     if (start < num_elements && end < num_elements) {
-        // float4 is a datatype used for vectorized loads and stores
-        const float4 *x4 = (const float4 *)x;
-        const float4 *y4 = (const float4 *)y;
-        float4 *output4 = (float4 *)output;
+        // fp32_4 is a datatype used for vectorized loads and stores
+        const fp32_4 *x4 = (const fp32_4 *)x;
+        const fp32_4 *y4 = (const fp32_4 *)y;
+        fp32_4 *output4 = (fp32_4 *)output;
 
         // tmp is initialized here to avoid doing multiple writes
-        const float4 _x4 = x4[thread_id];
-        const float4 _y4 = y4[thread_id];
-        float4 tmp;
+        const fp32_4 _x4 = x4[thread_id];
+        const fp32_4 _y4 = y4[thread_id];
+        fp32_4 tmp;
 
-        if (std::is_same_v<scalar_t, float>) {
+        if (std::is_same_v<scalar_t, fp32>) {
             tmp.x = _x4.x + _y4.x;
             tmp.y = _x4.y + _y4.y;
             tmp.z = _x4.z + _y4.z;

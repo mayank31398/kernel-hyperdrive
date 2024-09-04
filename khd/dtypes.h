@@ -5,6 +5,7 @@
 
 // define dtype aliases
 #define fp32 float
+#define fp32_4 float4
 #define fp16 half
 #define fp16_2 half2
 #define bf16 __nv_bfloat16
