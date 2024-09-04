@@ -81,9 +81,7 @@ template <> struct DType<c10::Half> {
 };
 
 // struct for half (basically another alias for the above)
-template <> struct DType<fp16> : public DType<c10::Half> {
-    using c10_dtype = c10::Half;
-};
+template <> struct DType<fp16> : public DType<c10::Half> {};
 
 // struct for c10::BFloat16
 template <> struct DType<c10::BFloat16> {
@@ -112,6 +110,4 @@ template <> struct DType<c10::BFloat16> {
 };
 
 // struct for bf16 (basically another alias for the above)
-template <> struct DType<bf16> : public DType<c10::BFloat16> {
-    using c10_dtype = c10::BFloat16;
-};
+template <> struct DType<bf16> : public DType<c10::BFloat16> {};
