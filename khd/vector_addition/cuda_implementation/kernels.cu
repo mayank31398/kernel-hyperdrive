@@ -40,10 +40,10 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
         } else if constexpr (std::is_same_v<scalar_t, c10::Half> || std::is_same_v<scalar_t, c10::BFloat16>) {
             DType<scalar_t> q;
 
-            tmp.x = q.pack(__hadd2(q.unpack(_x4.x), q.unpack(_y4.x)));
-            tmp.y = q.pack(__hadd2(q.unpack(_x4.y), q.unpack(_y4.y)));
-            tmp.z = q.pack(__hadd2(q.unpack(_x4.z), q.unpack(_y4.z)));
-            tmp.w = q.pack(__hadd2(q.unpack(_x4.w), q.unpack(_y4.w)));
+            tmp.x = q.pack_to_fp32(__hadd2(q.unpack_from_fp32(_x4.x), q.unpack_from_fp32(_y4.x)));
+            tmp.y = q.pack_to_fp32(__hadd2(q.unpack_from_fp32(_x4.y), q.unpack_from_fp32(_y4.y)));
+            tmp.z = q.pack_to_fp32(__hadd2(q.unpack_from_fp32(_x4.z), q.unpack_from_fp32(_y4.z)));
+            tmp.w = q.pack_to_fp32(__hadd2(q.unpack_from_fp32(_x4.w), q.unpack_from_fp32(_y4.w)));
         } else {
             assert(false && "Function not implemented");
         }
