@@ -27,10 +27,20 @@ __device__ fp32 get_float_from_upper_and_lower_16_bits(uint16_t upper_16, uint16
 }
 
 // base struct for converting torch ScalarType to NVIDIA's dtype
-template <typename scalar_t> struct DType {};
+template <typename scalar_t> struct DType {
+    __device__ scalar_t unpack(scalar_t value) {
+        assert(false && "Function not implemented");
+        return value;
+    }
+
+    __device__ scalar_t pack(scalar_t value) {
+        assert(false && "Function not implemented");
+        return value;
+    }
+};
 
 // struct for c10::Float
-template <> struct DType<c10::Float> {
+template <> struct DType<fp32> {
     using torch_dtype = fp32;
     using nv_dtype = fp32;
     using nv_dtype2 = fp32_2;
@@ -39,9 +49,6 @@ template <> struct DType<c10::Float> {
     __device__ fp32 unpack(fp32 value) { return value; }
     __device__ fp32 pack(fp32 value) { return value; }
 };
-
-// struct for half (basically another alias for the above)
-template <> struct DType<fp16> : public DType<c10::Half> {};
 
 // struct for c10::Half
 template <> struct DType<c10::Half> {

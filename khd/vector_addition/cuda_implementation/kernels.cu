@@ -38,18 +38,15 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
             tmp.y = _x4.y + _y4.y;
             tmp.z = _x4.z + _y4.z;
             tmp.w = _x4.w + _y4.w;
-        } else if (std::is_same_v<scalar_t, c10::Half>) {
-            DType<c10::Half> q;
+        } else if constexpr (std::is_same_v<scalar_t, c10::Half> || std::is_same_v<scalar_t, c10::BFloat16>) {
+            DType<scalar_t> q;
+
             tmp.x = q.pack(__hadd2(q.unpack(_x4.x), q.unpack(_y4.x)));
             tmp.y = q.pack(__hadd2(q.unpack(_x4.y), q.unpack(_y4.y)));
             tmp.z = q.pack(__hadd2(q.unpack(_x4.z), q.unpack(_y4.z)));
             tmp.w = q.pack(__hadd2(q.unpack(_x4.w), q.unpack(_y4.w)));
-        } else if (std::is_same_v<scalar_t, c10::BFloat16>) {
-            DType<c10::BFloat16> q;
-            tmp.x = q.pack(__hadd2(q.unpack(_x4.x), q.unpack(_y4.x)));
-            tmp.y = q.pack(__hadd2(q.unpack(_x4.y), q.unpack(_y4.y)));
-            tmp.z = q.pack(__hadd2(q.unpack(_x4.z), q.unpack(_y4.z)));
-            tmp.w = q.pack(__hadd2(q.unpack(_x4.w), q.unpack(_y4.w)));
+        } else {
+            assert(false && "Function not implemented");
         }
 
         output4[thread_id] = tmp;
