@@ -4,13 +4,15 @@
 #include <torch/extension.h>
 
 // define dtype aliases
+#define fp16 half
+#define fp16_2 half2
+
+#define bf16 __nv_bfloat16
+#define bf16_2 __nv_bfloat162
+
 #define fp32 float
 #define fp32_2 float2
 #define fp32_4 float4
-#define fp16 half
-#define fp16_2 half2
-#define bf16 __nv_bfloat16
-#define bf16_2 __nv_bfloat162
 
 __device__ std::tuple<uint16_t, uint16_t> get_upper_and_lower_16_bits(fp32 value) {
     uint32_t int_value = __float_as_int(value);
@@ -28,6 +30,8 @@ __device__ fp32 get_float_from_upper_and_lower_16_bits(uint16_t upper_16, uint16
 
 // base struct for converting torch ScalarType to NVIDIA's dtype
 template <typename scalar_t> struct DType {
+    using torch_dtype = scalar_t;
+
     __device__ scalar_t unpack(scalar_t value) {
         assert(false && "Function not implemented");
         return value;
@@ -41,7 +45,6 @@ template <typename scalar_t> struct DType {
 
 // struct for c10::Float
 template <> struct DType<fp32> {
-    using torch_dtype = fp32;
     using nv_dtype = fp32;
     using nv_dtype2 = fp32_2;
     using nv_dtype4 = fp32_4;
@@ -52,7 +55,6 @@ template <> struct DType<fp32> {
 
 // struct for c10::Half
 template <> struct DType<c10::Half> {
-    using torch_dtype = c10::Half;
     using nv_dtype = fp16;
     using nv_dtype2 = fp16_2;
 
@@ -77,11 +79,12 @@ template <> struct DType<c10::Half> {
 };
 
 // struct for half (basically another alias for the above)
-template <> struct DType<fp16> : public DType<c10::Half> {};
+template <> struct DType<fp16> : public DType<c10::Half> {
+    using torch_dtype = c10::Half;
+};
 
 // struct for c10::BFloat16
 template <> struct DType<c10::BFloat16> {
-    using torch_dtype = c10::BFloat16;
     using nv_dtype = bf16;
     using nv_dtype2 = bf16_2;
 
@@ -106,4 +109,6 @@ template <> struct DType<c10::BFloat16> {
 };
 
 // struct for bf16 (basically another alias for the above)
-template <> struct DType<bf16> : public DType<c10::BFloat16> {};
+template <> struct DType<bf16> : public DType<c10::BFloat16> {
+    using torch_dtype = c10::BFloat16;
+};
