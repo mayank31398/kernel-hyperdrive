@@ -27,23 +27,29 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
         const fp32_4 *y4 = (const fp32_4 *)y;
         fp32_4 *output4 = (fp32_4 *)output;
 
+        const fp32 *_x = (fp32 *)(&x4[thread_id]);
+        const fp32 *_y = (fp32 *)(&y4[thread_id]);
+
         // tmp is initialized here to avoid doing multiple writes
-        const fp32_4 _x4 = x4[thread_id];
-        const fp32_4 _y4 = y4[thread_id];
         fp32_4 tmp;
+        fp32 *_tmp = (fp32 *)(&tmp);
 
         if (std::is_same_v<scalar_t, fp32>) {
-            tmp.x = _x4.x + _y4.x;
-            tmp.y = _x4.y + _y4.y;
-            tmp.z = _x4.z + _y4.z;
-            tmp.w = _x4.w + _y4.w;
+            // clang-format off
+            #pragma unroll
+            // clang-format on
+            for (int i = 0; i < 4; i++) {
+                _tmp[i] = _x[i] + _y[i];
+            }
         } else if constexpr (std::is_same_v<scalar_t, c10::Half> || std::is_same_v<scalar_t, c10::BFloat16>) {
             DType<scalar_t> q;
 
-            tmp.x = q.pack_to_fp32(__hadd2(q.unpack_from_fp32(_x4.x), q.unpack_from_fp32(_y4.x)));
-            tmp.y = q.pack_to_fp32(__hadd2(q.unpack_from_fp32(_x4.y), q.unpack_from_fp32(_y4.y)));
-            tmp.z = q.pack_to_fp32(__hadd2(q.unpack_from_fp32(_x4.z), q.unpack_from_fp32(_y4.z)));
-            tmp.w = q.pack_to_fp32(__hadd2(q.unpack_from_fp32(_x4.w), q.unpack_from_fp32(_y4.w)));
+            // clang-format off
+            #pragma unroll
+            // clang-format on
+            for (int i = 0; i < 4; i++) {
+                _tmp[i] = q.pack_to_fp32(__hadd2(q.unpack_from_fp32(_x[i]), q.unpack_from_fp32(_y[i])));
+            }
         } else {
             assert(false && "Function not implemented");
         }
