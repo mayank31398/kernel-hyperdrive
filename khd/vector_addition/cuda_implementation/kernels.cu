@@ -10,32 +10,60 @@
 #define NUM_ELEMENTS_PER_THREAD_FP16 8
 #define NUM_ELEMENTS_PER_THREAD_BF16 8
 
-__device__ half2 unpack(float value) {
-    uint32_t intValue = __float_as_int(value);
+__device__ std::tuple<uint16_t, uint16_t> get_upper_and_lower_16_bits(float value) {
+    uint32_t int_value = __float_as_int(value);
 
-    uint16_t lower16Bits = intValue & 0xFFFF;
-    uint16_t higher16Bits = (intValue >> 16) & 0xFFFF;
+    uint16_t lower_16 = int_value & 0xFFFF;
+    uint16_t upper_16 = (int_value >> 16) & 0xFFFF;
 
-    half lowerHalf = __ushort_as_half(lower16Bits);
-    half higherHalf = __ushort_as_half(higher16Bits);
-
-    return __halves2half2(lowerHalf, higherHalf);
+    return std::make_tuple(lower_16, upper_16);
 }
 
-__device__ float pack(half2 value) {
-    // Extract the two half values from half2
-    half lowerHalf = __low2half(value);
-    half higherHalf = __high2half(value);
+template <typename scalar_t, typename scalar_t2> __device__ scalar_t2 unpack(float value);
 
-    // Convert the half values to uint16_t
-    uint16_t lower16Bits = __half_as_short(lowerHalf);
-    uint16_t higher16Bits = __half_as_short(higherHalf);
+template <> __device__ half2 unpack<half, half2>(float value) {
+    auto [lower_16, upper_16] = get_upper_and_lower_16_bits(value);
 
-    // Combine the 16-bit values into a single 32-bit integer
-    uint32_t intValue = (static_cast<uint32_t>(higher16Bits) << 16) | lower16Bits;
+    half lower_half = __ushort_as_half(lower_16);
+    half upper_half = __ushort_as_half(upper_16);
 
-    // Convert the 32-bit integer back to float
-    return __int_as_float(intValue);
+    return __halves2half2(lower_half, upper_half);
+}
+
+template <> __device__ __nv_bfloat162 unpack<__nv_bfloat16, __nv_bfloat162>(float value) {
+    auto [lower_16, upper_16] = get_upper_and_lower_16_bits(value);
+
+    __nv_bfloat16 lower_half = __ushort_as_bfloat16(lower_16);
+    __nv_bfloat16 upper_half = __ushort_as_bfloat16(upper_16);
+
+    return __halves2bfloat162(lower_half, upper_half);
+}
+
+__device__ float get_float_from_upper_and_lower_16_bits(uint16_t upper_16, uint16_t lower_16) {
+    uint32_t int_value = (static_cast<uint32_t>(upper_16) << 16) | lower_16;
+    return __int_as_float(int_value);
+}
+
+template <typename scalar_t2> __device__ float pack(scalar_t2 value);
+
+template <> __device__ float pack<half2>(half2 value) {
+    half lower_half = __low2half(value);
+    half upper_half = __high2half(value);
+
+    uint16_t lower_16 = __half_as_short(lower_half);
+    uint16_t upper_16 = __half_as_short(upper_half);
+
+    return get_float_from_upper_and_lower_16_bits(upper_16, lower_16);
+}
+
+template <> __device__ float pack<__nv_bfloat162>(__nv_bfloat162 value) {
+    __nv_bfloat16 lower_half = __low2bfloat16(value);
+    __nv_bfloat16 upper_half = __high2bfloat16(value);
+
+    uint16_t lower_16 = __bfloat16_as_short(lower_half);
+    uint16_t upper_16 = __bfloat16_as_short(upper_half);
+
+    return get_float_from_upper_and_lower_16_bits(upper_16, lower_16);
 }
 
 template <typename scalar_t>
@@ -66,15 +94,19 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
             tmp.z = _x4.z + _y4.z;
             tmp.w = _x4.w + _y4.w;
         } else if (std::is_same_v<scalar_t, c10::Half>) {
-            tmp.x = pack(unpack(_x4.x) + unpack(_y4.x));
-            tmp.y = pack(unpack(_x4.y) + unpack(_y4.y));
-            tmp.z = pack(unpack(_x4.z) + unpack(_y4.z));
-            tmp.w = pack(unpack(_x4.w) + unpack(_y4.w));
+            tmp.x = pack<half2>(__hadd2(unpack<half, half2>(_x4.x), unpack<half, half2>(_y4.x)));
+            tmp.y = pack<half2>(__hadd2(unpack<half, half2>(_x4.y), unpack<half, half2>(_y4.y)));
+            tmp.z = pack<half2>(__hadd2(unpack<half, half2>(_x4.z), unpack<half, half2>(_y4.z)));
+            tmp.w = pack<half2>(__hadd2(unpack<half, half2>(_x4.w), unpack<half, half2>(_y4.w)));
         } else if (std::is_same_v<scalar_t, c10::BFloat16>) {
-            tmp.x = pack(unpack(_x4.x) + unpack(_y4.x));
-            tmp.y = pack(unpack(_x4.y) + unpack(_y4.y));
-            tmp.z = pack(unpack(_x4.z) + unpack(_y4.z));
-            tmp.w = pack(unpack(_x4.w) + unpack(_y4.w));
+            tmp.x = pack<__nv_bfloat162>(
+                __hadd2(unpack<__nv_bfloat16, __nv_bfloat162>(_x4.x), unpack<__nv_bfloat16, __nv_bfloat162>(_y4.x)));
+            tmp.y = pack<__nv_bfloat162>(
+                __hadd2(unpack<__nv_bfloat16, __nv_bfloat162>(_x4.y), unpack<__nv_bfloat16, __nv_bfloat162>(_y4.y)));
+            tmp.z = pack<__nv_bfloat162>(
+                __hadd2(unpack<__nv_bfloat16, __nv_bfloat162>(_x4.z), unpack<__nv_bfloat16, __nv_bfloat162>(_y4.z)));
+            tmp.w = pack<__nv_bfloat162>(
+                __hadd2(unpack<__nv_bfloat16, __nv_bfloat162>(_x4.w), unpack<__nv_bfloat16, __nv_bfloat162>(_y4.w)));
         }
 
         output4[thread_id] = tmp;
