@@ -4,15 +4,15 @@
 #include <torch/extension.h>
 
 // define dtype aliases
+#define fp32 float
+#define fp32_2 float2
+#define fp32_4 float4
+
 #define fp16 half
 #define fp16_2 half2
 
 #define bf16 __nv_bfloat16
 #define bf16_2 __nv_bfloat162
-
-#define fp32 float
-#define fp32_2 float2
-#define fp32_4 float4
 
 __device__ std::tuple<uint16_t, uint16_t> get_upper_and_lower_16_bits(fp32 value) {
     uint32_t int_value = __float_as_int(value);
