@@ -4,11 +4,11 @@
 #include <torch/extension.h>
 
 // define dtype aliases
-using fp32 = float;
-using fp16 = half;
-using fp16_2 = half2;
-using bf16 = __nv_bfloat16;
-using bf16_2 = __nv_bfloat162;
+#define fp32 float
+#define fp16 half
+#define fp16_2 half2
+#define bf16 __nv_bfloat16
+#define bf16_2 __nv_bfloat162
 
 __device__ std::tuple<uint16_t, uint16_t> get_upper_and_lower_16_bits(fp32 value) {
     uint32_t int_value = __float_as_int(value);
@@ -65,8 +65,8 @@ template <> struct DType<c10::BFloat16> {
     __device__ bf16_2 unpack(fp32 value) {
         auto [lower_16, upper_16] = get_upper_and_lower_16_bits(value);
 
-        __nv_bfloat16 lower_half = __ushort_as_bfloat16(lower_16);
-        __nv_bfloat16 upper_half = __ushort_as_bfloat16(upper_16);
+        bf16 lower_half = __ushort_as_bfloat16(lower_16);
+        bf16 upper_half = __ushort_as_bfloat16(upper_16);
 
         return __halves2bfloat162(lower_half, upper_half);
     }
