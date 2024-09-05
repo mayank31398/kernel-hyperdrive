@@ -1,4 +1,5 @@
 #include "../../utils/dtypes.h"
+#include "../../utils/thread.h"
 #include <cuda.h>
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
@@ -18,7 +19,7 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
                                                scalar_t *output,
                                                const int num_elements,
                                                const int num_elements_per_thread) {
-    const int thread_id = blockIdx.x * blockDim.x + threadIdx.x;
+    const int thread_id = get_global_thread_id();
 
     const int start = thread_id * num_elements_per_thread;
     const int end = (thread_id + 1) * num_elements_per_thread - 1; // inclusive of last element
