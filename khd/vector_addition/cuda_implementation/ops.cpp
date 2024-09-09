@@ -1,6 +1,7 @@
 #include <torch/extension.h>
 
-torch::Tensor vector_addition_forward_kernel_dispatcher(torch::Tensor x, torch::Tensor y);
+void vector_addition_forward_kernel_dispatcher(
+    torch::Tensor x, torch::Tensor y, torch::Tensor output, const int num_elements, const int BLOCK_SIZE);
 
 torch::Tensor vector_addition_forward(torch::Tensor x, torch::Tensor y) {
     TORCH_CHECK(x.device().is_cuda(), "tensor x is not on GPU");
