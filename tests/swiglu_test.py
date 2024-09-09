@@ -32,7 +32,7 @@ class SwigluTest(TestCommons):
         )
     )
     def test_swiglu_triton_backward(self, size: tuple[int], device: torch.device, dtype: torch.dtype) -> None:
-        self._test_swiglu(size, device, dtype, swiglu_triton)
+        self._test_swiglu_backward(size, device, dtype, swiglu_triton)
 
     def _test_swiglu_backward(self, size: int, device: torch.device, dtype: torch.dtype, function: Callable) -> None:
         x_kernel = torch.randn(size, device=device, dtype=dtype, requires_grad=True)
