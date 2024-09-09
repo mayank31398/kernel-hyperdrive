@@ -19,24 +19,17 @@ class _VectorAddition_Triton(torch.autograd.Function):
 
         output = torch.empty_like(x)
 
-        original_shape = x.size()
-        ctx.original_shape = original_shape
-
-        x = x.view(-1)
-        y = y.view(-1)
-
         num_elements = x.numel()
         grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE"]),)
 
-        vector_addition_forward_triton_kernel[grid](x, y, output, num_elements, BLOCK_SIZE=1024)
-
-        output = output.view(original_shape)
+        vector_addition_forward_triton_kernel[grid](
+            x.view(-1), y.view(-1), output.view(-1), num_elements, BLOCK_SIZE=1024
+        )
 
         return output
 
     @staticmethod
     def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        output_grad = output_grad.view(ctx.original_shape)
         return output_grad, output_grad
 
 

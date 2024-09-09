@@ -17,16 +17,10 @@ class _Swiglu_Triton(torch.autograd.Function):
 
         output = torch.empty_like(gate)
 
-        original_shape = gate.size()
-        gate = gate.view(-1)
-        up = up.view(-1)
-
         num_elements = gate.numel()
         grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE"]),)
 
-        swiglu_forward_triton_kernel[grid](gate, up, output, num_elements, BLOCK_SIZE=1024)
-
-        output = output.view(original_shape)
+        swiglu_forward_triton_kernel[grid](gate.view(-1), up.view(-1), output, num_elements, BLOCK_SIZE=1024)
 
         return output
 
@@ -34,18 +28,13 @@ class _Swiglu_Triton(torch.autograd.Function):
     def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         gate, up = ctx.saved_tensors
 
-        original_shape = gate.size()
-        gate = gate.view(-1)
-        up = up.view(-1)
-
         num_elements = output_grad.numel()
         grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE"]),)
 
         # the kernel uses the gate and up tensors to store the gradients in-place for memory savings
-        swiglu_backward_triton_kernel[grid](gate, up, output_grad, num_elements, BLOCK_SIZE=1024)
-
-        gate = gate.view(original_shape)
-        up = up.view(original_shape)
+        swiglu_backward_triton_kernel[grid](
+            gate.view(-1), up.view(-1), output_grad.view(-1), num_elements, BLOCK_SIZE=1024
+        )
 
         return gate, up
 

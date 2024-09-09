@@ -10,14 +10,11 @@ torch::Tensor vector_addition_forward_cuda(torch::Tensor x, torch::Tensor y, con
     TORCH_CHECK(x.sizes() == y.sizes(), "tensor x and y should be of the same sizes");
     TORCH_CHECK(x.scalar_type() == y.scalar_type(), "both tensors should have same dtype");
 
-    x = x.view(-1);
-    y = y.view(-1);
+    torch::Tensor output = torch::empty_like(x);
 
     int num_elements = x.numel();
 
-    torch::Tensor output = torch::empty_like(x);
-
-    vector_addition_forward_cuda_kernel(x, y, output, num_elements, BLOCK_SIZE);
+    vector_addition_forward_cuda_kernel(x.view(-1), y.view(-1), output.view(-1), num_elements, BLOCK_SIZE);
 
     return output;
 }
