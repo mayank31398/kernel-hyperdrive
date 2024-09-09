@@ -17,20 +17,26 @@ class _VectorAddition_Triton(torch.autograd.Function):
         assert x.size() == y.size(), "tensors x and y should have same shape"
         assert x.type() == y.type(), "tensors x and y should have same dtype"
 
+        output = torch.empty_like(x)
+
+        original_shape = x.size()
+        ctx.original_shape = original_shape
+
         x = x.view(-1)
         y = y.view(-1)
-
-        output = torch.empty_like(x)
 
         num_elements = x.numel()
         grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE"]),)
 
         vector_addition_forward_triton_kernel[grid](x, y, output, num_elements, BLOCK_SIZE=1024)
 
+        output = output.view(original_shape)
+
         return output
 
     @staticmethod
     def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        output_grad = output_grad.view(ctx.original_shape)
         return output_grad, output_grad
 
 
