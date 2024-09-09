@@ -10,14 +10,14 @@ _KERNEL_NAME = "vector_addition_forward_triton"
 class _VectorAddition_Triton(torch.autograd.Function):
     @torch.profiler.record_function(_KERNEL_NAME)
     @staticmethod
-    def forward(ctx, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    def forward(ctx, x: torch.Tensor, y: torch.Tensor, in_place: bool) -> torch.Tensor:
         assert x.is_cuda, "tensor x is not on GPU"
         assert y.is_cuda, "tensor y is not on GPU"
 
         assert x.size() == y.size(), "tensors x and y should have same shape"
         assert x.type() == y.type(), "tensors x and y should have same dtype"
 
-        output = torch.empty_like(x)
+        output = x if in_place else torch.empty_like(x)
 
         num_elements = x.numel()
         grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE"]),)
@@ -33,5 +33,5 @@ class _VectorAddition_Triton(torch.autograd.Function):
         return output_grad, output_grad
 
 
-def vector_addition_triton(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    return _VectorAddition_Triton.apply(x, y)
+def vector_addition_triton(x: torch.Tensor, y: torch.Tensor, in_place: bool = False) -> torch.Tensor:
+    return _VectorAddition_Triton.apply(x, y, in_place)
