@@ -12,7 +12,7 @@ class _VectorAddition_CUDA(torch.autograd.Function):
         if not hasattr(_VectorAddition_CUDA.forward, "_kernel"):
             _VectorAddition_CUDA.forward._kernel = KernelRegistry.get_kernel(_KERNEL_NAME)
 
-        return _VectorAddition_CUDA.forward._kernel(x, y)
+        return _VectorAddition_CUDA.forward._kernel(x, y, 1024)
 
     @staticmethod
     def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
