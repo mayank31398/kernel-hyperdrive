@@ -10,16 +10,16 @@ class _Swiglu_Triton(torch.autograd.Function):
         assert gate.is_cuda, "tensor gate is not on GPU"
         assert up.is_cuda, "tensor up is not on GPU"
 
-        output = torch.empty_like(gate)
+        assert gate.size() == up.size(), "tensors gate and up should have same shape"
+        assert gate.type() == up.type(), "tensors gate and up should have same dtype"
 
         ctx.save_for_backward(gate, up)
+
+        output = torch.empty_like(gate)
 
         original_shape = gate.size()
         gate = gate.view(-1)
         up = up.view(-1)
-
-        assert gate.numel() == up.numel(), "both tensors should have same number of elements"
-        assert gate.type() == up.type(), "both tensors should have same dtype"
 
         num_elements = gate.numel()
         grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE"]),)

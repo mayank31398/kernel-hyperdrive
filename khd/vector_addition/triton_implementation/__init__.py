@@ -10,14 +10,8 @@ class _VectorAddition_Triton(torch.autograd.Function):
         assert x.is_cuda, "tensor x is not on GPU"
         assert y.is_cuda, "tensor y is not on GPU"
 
-        assert x.is_contiguous(), "tensor x is not a contiguous"
-        assert y.is_contiguous(), "tensor y is not a contiguous"
-
-        assert x.dim() == 1, "tensor x should be 1 dimensional"
-        assert y.dim() == 1, "tensor y should be 1 dimensional"
-
-        assert x.numel() == y.numel(), "both tensors should have same number of elements"
-        assert x.type() == y.type(), "both tensors should have same dtype"
+        assert x.size() == y.size(), "tensors x and y should have same shape"
+        assert x.type() == y.type(), "tensors x and y should have same dtype"
 
         output = torch.empty_like(x)
 
