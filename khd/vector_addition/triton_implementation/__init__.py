@@ -4,7 +4,11 @@ import triton
 from .kernels import vector_addition_forward_triton_kernel
 
 
+_KERNEL_NAME = "vector_addition_forward_triton"
+
+
 class _VectorAddition_Triton(torch.autograd.Function):
+    @torch.profiler.record_function(_KERNEL_NAME)
     @staticmethod
     def forward(ctx, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         assert x.is_cuda, "tensor x is not on GPU"
@@ -13,8 +17,8 @@ class _VectorAddition_Triton(torch.autograd.Function):
         assert x.size() == y.size(), "tensors x and y should have same shape"
         assert x.type() == y.type(), "tensors x and y should have same dtype"
 
-        x = x.reshape(-1)
-        y = y.reshape(-1)
+        x = x.view(-1)
+        y = y.view(-1)
 
         output = torch.empty_like(x)
 

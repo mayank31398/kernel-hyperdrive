@@ -3,10 +3,11 @@ import torch
 from ...kernel_registry import KernelRegistry
 
 
-_KERNEL_NAME = "vector_addition_forward"
+_KERNEL_NAME = "vector_addition_forward_cuda"
 
 
 class _VectorAddition_CUDA(torch.autograd.Function):
+    @torch.profiler.record_function(_KERNEL_NAME)
     @staticmethod
     def forward(ctx, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         if not hasattr(_VectorAddition_CUDA.forward, "_kernel"):

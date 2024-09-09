@@ -3,15 +3,15 @@
 void vector_addition_forward_cuda_kernel(
     torch::Tensor x, torch::Tensor y, torch::Tensor output, const int num_elements, const int BLOCK_SIZE);
 
-torch::Tensor vector_addition_forward(torch::Tensor x, torch::Tensor y, const int BLOCK_SIZE) {
+torch::Tensor vector_addition_forward_cuda(torch::Tensor x, torch::Tensor y, const int BLOCK_SIZE) {
     TORCH_CHECK(x.device().is_cuda(), "tensor x is not on GPU");
     TORCH_CHECK(y.device().is_cuda(), "tensor y is not on GPU");
 
     TORCH_CHECK(x.sizes() == y.sizes(), "tensor x and y should be of the same sizes");
     TORCH_CHECK(x.scalar_type() == y.scalar_type(), "both tensors should have same dtype");
 
-    x = x.reshape(-1);
-    y = y.reshape(-1);
+    x = x.view(-1);
+    y = y.view(-1);
 
     int num_elements = x.numel();
 
@@ -23,5 +23,5 @@ torch::Tensor vector_addition_forward(torch::Tensor x, torch::Tensor y, const in
 }
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-    m.def("vector_addition_forward", &vector_addition_forward, "Vector addition forward (CUDA)");
+    m.def("vector_addition_forward_cuda", &vector_addition_forward_cuda, "Vector addition forward (CUDA)");
 }
