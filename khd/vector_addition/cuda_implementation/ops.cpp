@@ -1,6 +1,6 @@
 #include <torch/extension.h>
 
-void vector_addition_forward_kernel_dispatcher(
+void vector_addition_forward_cuda_kernel(
     torch::Tensor x, torch::Tensor y, torch::Tensor output, const int num_elements, const int BLOCK_SIZE);
 
 torch::Tensor vector_addition_forward(torch::Tensor x, torch::Tensor y) {
@@ -15,11 +15,12 @@ torch::Tensor vector_addition_forward(torch::Tensor x, torch::Tensor y) {
 
     torch::Tensor output = torch::empty_like(x);
 
-    vector_addition_forward_kernel_dispatcher(x, y, output, num_elements, BLOCK_SIZE);
+    vector_addition_forward_cuda_kernel(x, y, output, num_elements, BLOCK_SIZE);
 
     return output;
 }
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-    m.def("vector_addition_forward", &vector_addition_forward, "Vector addition forward (CUDA)");
+    m.def(
+        "vector_addition_forward_cuda_kernel", &vector_addition_forward_cuda_kernel, "Vector addition forward (CUDA)");
 }
