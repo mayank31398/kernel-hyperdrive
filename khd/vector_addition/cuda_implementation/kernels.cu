@@ -5,10 +5,6 @@
 #include <cuda_runtime.h>
 #include <torch/extension.h>
 
-#define BLOCK_SIZE 1024
-#define NUM_FP32_ELEMENTS_PER_THREAD \
-    4 // number of fp32 elements equivalent per thread, this is equivalent to 8 fp16 elements
-
 // for vectorized load store
 std::unordered_map<std::type_index, int> num_elements_per_thread_mapping = {
     {typeid(fp32), 4}, {typeid(c10::Half), 8}, {typeid(c10::BFloat16), 8}};
@@ -40,7 +36,7 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
         // clang-format off
         #pragma unroll
         // clang-format on
-        for (int i = 0; i < NUM_FP32_ELEMENTS_PER_THREAD; i++) {
+        for (int i = 0; i < 4; i++) {
             if (std::is_same_v<scalar_t, fp32>) {
                 tmp[i] = _x[i] + _y[i];
             } else if constexpr (std::is_same_v<scalar_t, c10::Half> || std::is_same_v<scalar_t, c10::BFloat16>) {
@@ -62,11 +58,8 @@ __global__ void vector_addition_forward_kernel(const scalar_t *x,
     }
 }
 
-torch::Tensor vector_addition_forward_kernel_dispatcher(torch::Tensor x, torch::Tensor y) {
-    int num_elements = x.numel();
-
-    torch::Tensor output = torch::empty_like(x);
-
+void vector_addition_forward_kernel_dispatcher(
+    torch::Tensor x, torch::Tensor y, torch::Tensor output, const int num_elements, const int BLOCK_SIZE) {
     AT_DISPATCH_FLOATING_TYPES_AND2(
         at::ScalarType::Half, at::ScalarType::BFloat16, x.scalar_type(), "vector_addition_forward_kernel", ([&] {
             int num_elements_per_thread = num_elements_per_thread_mapping[std::type_index(typeid(scalar_t))];
@@ -80,6 +73,4 @@ torch::Tensor vector_addition_forward_kernel_dispatcher(torch::Tensor x, torch::
                                                                                  num_elements,
                                                                                  num_elements_per_thread);
         }));
-
-    return output;
 }
