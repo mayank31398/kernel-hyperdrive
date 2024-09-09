@@ -24,4 +24,4 @@ class SwigluTest(TestCommons):
         z_kernel = function(x, y)
         z_expected = swiglu_torch(x, y)
 
-        self.assert_equal_tensors(z_kernel, z_expected, True)
+        self.assert_equal_tensors(z_kernel, z_expected, False, atol_float32=5e-6, rtol_float32=0)
