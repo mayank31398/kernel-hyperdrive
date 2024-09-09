@@ -7,7 +7,7 @@ torch::Tensor vector_addition_forward(torch::Tensor x, torch::Tensor y) {
     TORCH_CHECK(x.device().is_cuda(), "tensor x is not on GPU");
     TORCH_CHECK(y.device().is_cuda(), "tensor y is not on GPU");
 
-    TORCH_CHECK(x.size() == y.size(), "tensor x and y should be of the same sizes");
+    TORCH_CHECK(x.sizes() == y.sizes(), "tensor x and y should be of the same sizes");
     TORCH_CHECK(x.scalar_type() == y.scalar_type(), "both tensors should have same dtype");
 
     int num_elements = x.numel();
