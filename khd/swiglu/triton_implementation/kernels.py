@@ -41,5 +41,5 @@ def swiglu_backward_triton_kernel(gate_ptr, up_ptr, output_grad_ptr, num_element
     up_grad = output_grad * gate_silu
     gate_grad = output_grad * up * (gate_sigmoid + gate_silu * (1 - gate_sigmoid))
 
-    tl.store(gate_grad + block_indices, gate_grad, mask=mask)
-    tl.store(up_grad + block_indices, up_grad, mask=mask)
+    tl.store(gate_ptr + block_indices, gate_grad, mask=mask)
+    tl.store(up_ptr + block_indices, up_grad, mask=mask)
