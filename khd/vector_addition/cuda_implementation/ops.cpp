@@ -10,8 +10,8 @@ torch::Tensor vector_addition_forward(torch::Tensor x, torch::Tensor y, const in
     TORCH_CHECK(x.sizes() == y.sizes(), "tensor x and y should be of the same sizes");
     TORCH_CHECK(x.scalar_type() == y.scalar_type(), "both tensors should have same dtype");
 
-    x = x.view(-1);
-    y = y.view(-1);
+    x = x.reshape(-1);
+    y = y.reshape(-1);
 
     int num_elements = x.numel();
 

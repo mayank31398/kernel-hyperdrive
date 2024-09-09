@@ -13,6 +13,9 @@ class _VectorAddition_Triton(torch.autograd.Function):
         assert x.size() == y.size(), "tensors x and y should have same shape"
         assert x.type() == y.type(), "tensors x and y should have same dtype"
 
+        x = x.reshape(-1)
+        y = y.reshape(-1)
+
         output = torch.empty_like(x)
 
         num_elements = x.numel()
