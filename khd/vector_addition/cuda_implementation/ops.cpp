@@ -21,6 +21,5 @@ torch::Tensor vector_addition_forward(torch::Tensor x, torch::Tensor y) {
 }
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-    m.def(
-        "vector_addition_forward_cuda_kernel", &vector_addition_forward_cuda_kernel, "Vector addition forward (CUDA)");
+    m.def("vector_addition_forward", &vector_addition_forward, "Vector addition forward (CUDA)");
 }
