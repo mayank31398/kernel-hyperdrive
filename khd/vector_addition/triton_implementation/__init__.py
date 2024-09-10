@@ -18,7 +18,9 @@ class _VectorAddition_Triton(torch.autograd.Function):
         assert x.type() == y.type(), "tensors x and y should have same dtype"
 
         if in_place:
-            assert not x.is_leaf, "leaf variables can't be used in an in-place operation"
+            if not x.is_leaf:
+                raise RuntimeError("leaf variables can't be used in an in-place operation")
+
             output = x
         else:
             output = torch.empty_like(x)
