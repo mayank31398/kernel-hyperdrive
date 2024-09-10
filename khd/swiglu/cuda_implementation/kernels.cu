@@ -1,3 +1,4 @@
+#include "../../utils/activations.cpp"
 #include "../../utils/dtypes.h"
 #include "../../utils/threads.h"
 #include <cuda.h>
@@ -10,8 +11,8 @@ std::unordered_map<std::type_index, int> num_elements_per_thread_mapping = {
     {typeid(fp32), 4}, {typeid(c10::Half), 8}, {typeid(c10::BFloat16), 8}};
 
 template <typename scalar_t>
-__global__ void _swiglu_forward_cuda_kernel(const scalar_t *x,
-                                            const scalar_t *y,
+__global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
+                                            const scalar_t *up,
                                             scalar_t *output,
                                             const int num_elements,
                                             const int num_elements_per_thread) {
@@ -22,12 +23,12 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *x,
 
     if (start < num_elements && end < num_elements) {
         // fp32_4 is a datatype used for vectorized loads and stores
-        const fp32_4 *x4 = (const fp32_4 *)x;
-        const fp32_4 *y4 = (const fp32_4 *)y;
+        const fp32_4 *gate4 = (const fp32_4 *)gate;
+        const fp32_4 *up4 = (const fp32_4 *)up;
         fp32_4 *output4 = (fp32_4 *)output;
 
-        const fp32 *_x = (fp32 *)(&x4[thread_id]);
-        const fp32 *_y = (fp32 *)(&y4[thread_id]);
+        const fp32 *_gate = (fp32 *)(&gate4[thread_id]);
+        const fp32 *_up = (fp32 *)(&up4[thread_id]);
 
         // tmp is initialized here to avoid doing multiple writes
         fp32_4 tmp4;
@@ -38,7 +39,7 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *x,
         // clang-format on
         for (int i = 0; i < 4; i++) {
             if (std::is_same_v<scalar_t, fp32>) {
-                tmp[i] = _x[i] + _y[i];
+                tmp[i] = up * gate * sigmoid(gate);
             } else if constexpr (std::is_same_v<scalar_t, c10::Half> || std::is_same_v<scalar_t, c10::BFloat16>) {
                 DType<scalar_t> q;
                 tmp[i] = q.pack_to_fp32(__hadd2(q.unpack_from_fp32(_x[i]), q.unpack_from_fp32(_y[i])));
@@ -58,11 +59,8 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *x,
     }
 }
 
-torch::Tensor swiglu_forward_cuda_kernel(torch::Tensor x, torch::Tensor y) {
-    int num_elements = x.numel();
-
-    torch::Tensor output = torch::empty_like(x);
-
+torch::Tensor swiglu_forward_cuda_kernel(
+    torch::Tensor gate, torch::Tensor up, torch::Tensor output, const int num_elements, const int BLOCK_SIZE) {
     AT_DISPATCH_FLOATING_TYPES_AND2(
         at::ScalarType::Half, at::ScalarType::BFloat16, x.scalar_type(), "vector_addition_forward_kernel", ([&] {
             int num_elements_per_thread = num_elements_per_thread_mapping[std::type_index(typeid(scalar_t))];
@@ -70,8 +68,8 @@ torch::Tensor swiglu_forward_cuda_kernel(torch::Tensor x, torch::Tensor y) {
             int num_elements_per_block = BLOCK_SIZE * num_elements_per_thread;
             int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
 
-            vector_addition_forward_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(x.data_ptr<scalar_t>(),
-                                                                                 y.data_ptr<scalar_t>(),
+            vector_addition_forward_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(gate.data_ptr<scalar_t>(),
+                                                                                 up.data_ptr<scalar_t>(),
                                                                                  output.data_ptr<scalar_t>(),
                                                                                  num_elements,
                                                                                  num_elements_per_thread);
