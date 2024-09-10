@@ -20,7 +20,6 @@ class SwigluTest(TestCommons):
                 partial(swiglu_triton, in_place=True),
                 partial(swiglu_torch, in_place=True),
             ],
-            [False, True],
         )
     )
     def test_swiglu(self, size: int, device: torch.device, dtype: torch.dtype, function: Callable) -> None:
