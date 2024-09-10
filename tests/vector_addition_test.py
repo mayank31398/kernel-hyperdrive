@@ -26,11 +26,16 @@ class VectorAdditionTest(TestCommons):
     def test_vector_addition(
         self, size: tuple[int], device: torch.device, dtype: torch.dtype, function: Callable
     ) -> None:
-        x_kernel, x_expected = self.get_random_duplicated_non_leaf_tensors(size, device=device, dtype=dtype)
-        y_kernel, y_expected = self.get_random_duplicated_non_leaf_tensors(size, device=device, dtype=dtype)
+        x_kernel, x_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
+        y_kernel, y_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
 
-        z_kernel = function(x_kernel, y_kernel)
-        z_expected = vector_addition_torch(x_expected, y_expected, in_place=False)
+        x_kernel_non_leaf = self.get_non_leaf_tensor(x_kernel)
+        x_expected_non_leaf = self.get_non_leaf_tensor(x_expected)
+        y_kernel_non_leaf = self.get_non_leaf_tensor(y_kernel)
+        y_expected_non_leaf = self.get_non_leaf_tensor(y_expected)
+
+        z_kernel = function(x_kernel_non_leaf, y_kernel_non_leaf)
+        z_expected = vector_addition_torch(x_expected_non_leaf, y_expected_non_leaf, in_place=False)
 
         z_kernel.mean().backward()
         z_expected.mean().backward()
