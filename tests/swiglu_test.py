@@ -15,13 +15,15 @@ class SwigluTest(TestCommons):
             TestCommons.get_2d_tensor_sizes(),
             [torch.device("cuda")],
             TestCommons.get_dtypes(),
-            [swiglu_triton],
+            [
+                partial(swiglu_triton, in_place=False),
+                partial(swiglu_triton, in_place=True),
+                partial(swiglu_torch, in_place=True),
+            ],
             [False, True],
         )
     )
-    def test_swiglu(
-        self, size: int, device: torch.device, dtype: torch.dtype, function: Callable, in_place: bool
-    ) -> None:
+    def test_swiglu(self, size: int, device: torch.device, dtype: torch.dtype, function: Callable) -> None:
         x_kernel = torch.randn(size, device=device, dtype=dtype, requires_grad=True)
         y_kernel = torch.randn(size, device=device, dtype=dtype, requires_grad=True)
 
@@ -29,7 +31,7 @@ class SwigluTest(TestCommons):
         y_expected = y_kernel.clone().detach().requires_grad_()
 
         z_kernel = function(x_kernel, y_kernel)
-        z_expected = swiglu_torch(x_expected, y_expected)
+        z_expected = swiglu_torch(x_expected, y_expected, in_place=False)
 
         z_kernel.mean().backward()
         z_expected.mean().backward()
