@@ -16,11 +16,11 @@ class VectorAdditionTest(TestCommons):
             [torch.device("cuda")],
             TestCommons.get_dtypes(),
             [
-                partial(vector_addition_torch, in_place=True),
-                partial(vector_addition_cuda, in_place=False),
-                partial(vector_addition_cuda, in_place=True),
-                partial(vector_addition_triton, in_place=False),
-                partial(vector_addition_triton, in_place=True),
+                partial(vector_addition_torch, memory_efficient=True),
+                partial(vector_addition_cuda, memory_efficient=False),
+                partial(vector_addition_cuda, memory_efficient=True),
+                partial(vector_addition_triton, memory_efficient=False),
+                partial(vector_addition_triton, memory_efficient=True),
             ],
         )
     )
@@ -36,7 +36,7 @@ class VectorAdditionTest(TestCommons):
         y_expected_non_leaf = self.get_non_leaf_tensor(y_expected)
 
         z_kernel = function(x_kernel_non_leaf, y_kernel_non_leaf)
-        z_expected = vector_addition_torch(x_expected_non_leaf, y_expected_non_leaf, in_place=False)
+        z_expected = vector_addition_torch(x_expected_non_leaf, y_expected_non_leaf, memory_efficient=False)
 
         z_kernel.mean().backward()
         z_expected.mean().backward()
@@ -51,12 +51,12 @@ class VectorAdditionTest(TestCommons):
             [torch.device("cuda")],
             TestCommons.get_dtypes(),
             [
-                partial(vector_addition_cuda, in_place=True),
-                partial(vector_addition_triton, in_place=True),
+                partial(vector_addition_cuda, memory_efficient=True),
+                partial(vector_addition_triton, memory_efficient=True),
             ],
         )
     )
-    def test_vector_addition_in_place_raises_error_with_leaf_tensors(
+    def test_vector_addition_memory_efficient_raises_error_with_leaf_tensors(
         self, size: tuple[int], device: torch.device, dtype: torch.dtype, function: Callable
     ) -> None:
         x, y = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
