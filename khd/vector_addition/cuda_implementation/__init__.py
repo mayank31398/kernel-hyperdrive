@@ -16,8 +16,8 @@ class _VectorAddition_CUDA(torch.autograd.Function):
         return _VectorAddition_CUDA.forward._kernel(x, y, in_place, 1024)
 
     @staticmethod
-    def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        return output_grad, output_grad
+    def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor | None]:
+        return output_grad, output_grad, None
 
 
 def vector_addition_cuda(x: torch.Tensor, y: torch.Tensor, in_place: bool = False) -> torch.Tensor:
