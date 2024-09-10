@@ -26,10 +26,18 @@ class VectorAdditionTest(TestCommons):
     def test_vector_addition(
         self, size: tuple[int], device: torch.device, dtype: torch.dtype, function: Callable
     ) -> None:
-        x = torch.randn(size, device=device, dtype=dtype)
-        y = torch.randn(size, device=device, dtype=dtype)
+        x_kernel = torch.randn(size, device=device, dtype=dtype, requires_grad=True)
+        y_kernel = torch.randn(size, device=device, dtype=dtype, requires_grad=True)
 
-        z_kernel = function(x, y)
-        z_expected = vector_addition_torch(x, y)
+        x_expected = x_kernel.clone().detach().requires_grad_()
+        y_expected = y_kernel.clone().detach().requires_grad_()
+
+        z_kernel = function(x_kernel, y_kernel)
+        z_expected = vector_addition_torch(x_expected, y_expected, in_place=False)
+
+        z_kernel.mean().backward()
+        z_expected.mean().backward()
 
         self.assert_equal_tensors(z_kernel, z_expected, True)
+        self.assert_equal_tensors(x_kernel.grad, x_expected.grad, True)
+        self.assert_equal_tensors(y_kernel.grad, y_expected.grad, True)
