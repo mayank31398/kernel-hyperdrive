@@ -10,14 +10,14 @@ _KERNEL_NAME = "vector_addition_forward_triton"
 class _VectorAddition_Triton(torch.autograd.Function):
     @torch.profiler.record_function(_KERNEL_NAME)
     @staticmethod
-    def forward(ctx, x: torch.Tensor, y: torch.Tensor, in_place: bool) -> torch.Tensor:
+    def forward(ctx, x: torch.Tensor, y: torch.Tensor, memory_efficient: bool) -> torch.Tensor:
         assert x.is_cuda, "tensor x is not on GPU"
         assert y.is_cuda, "tensor y is not on GPU"
 
         assert x.size() == y.size(), "tensors x and y should have same shape"
         assert x.type() == y.type(), "tensors x and y should have same dtype"
 
-        if in_place:
+        if memory_efficient:
             if x.is_leaf:
                 raise RuntimeError("leaf variables can't be used in an in-place operation")
 
@@ -39,16 +39,16 @@ class _VectorAddition_Triton(torch.autograd.Function):
         return output_grad, output_grad, None
 
 
-def vector_addition_triton(x: torch.Tensor, y: torch.Tensor, in_place: bool = False) -> torch.Tensor:
+def vector_addition_triton(x: torch.Tensor, y: torch.Tensor, memory_efficient: bool = False) -> torch.Tensor:
     """vector addition
 
     Args:
         x (torch.Tensor): input tensor
         y (torch.Tensor): input tensor
-        in_place (bool, optional): whether to do an in-place op, will modify `x` if set to True. Defaults to False.
+        memory_efficient (bool, optional): whether to do an in-place op, will modify `x` if set to True. Defaults to False.
 
     Returns:
         torch.Tensor: output tensor
     """
 
-    return _VectorAddition_Triton.apply(x, y, in_place)
+    return _VectorAddition_Triton.apply(x, y, memory_efficient)

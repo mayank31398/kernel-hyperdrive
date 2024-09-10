@@ -5,7 +5,7 @@ void vector_addition_forward_cuda_kernel(
 
 torch::Tensor vector_addition_forward_cuda(torch::Tensor x,
                                            torch::Tensor y,
-                                           const bool in_place,
+                                           const bool memory_efficient,
                                            const int BLOCK_SIZE) {
     TORCH_CHECK(x.device().is_cuda(), "tensor x is not on GPU");
     TORCH_CHECK(y.device().is_cuda(), "tensor y is not on GPU");
@@ -14,7 +14,7 @@ torch::Tensor vector_addition_forward_cuda(torch::Tensor x,
     TORCH_CHECK(x.scalar_type() == y.scalar_type(), "tensors x and y should have same dtype");
 
     torch::Tensor output;
-    if (in_place) {
+    if (memory_efficient) {
         TORCH_CHECK(!x.is_leaf(), "leaf variables can't be used in an in-place operation");
         output = x;
     } else {

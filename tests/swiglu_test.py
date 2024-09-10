@@ -16,9 +16,9 @@ class SwigluTest(TestCommons):
             [torch.device("cuda")],
             TestCommons.get_dtypes(),
             [
-                partial(swiglu_torch, in_place=True),
-                partial(swiglu_triton, in_place=False),
-                partial(swiglu_triton, in_place=True),
+                partial(swiglu_torch, memory_efficient=True),
+                partial(swiglu_triton, memory_efficient=False),
+                partial(swiglu_triton, memory_efficient=True),
             ],
         )
     )
@@ -32,7 +32,7 @@ class SwigluTest(TestCommons):
         y_expected_non_leaf = self.get_non_leaf_tensor(y_expected)
 
         z_kernel = function(x_kernel_non_leaf, y_kernel_non_leaf)
-        z_expected = swiglu_torch(x_expected_non_leaf, y_expected_non_leaf, in_place=False)
+        z_expected = swiglu_torch(x_expected_non_leaf, y_expected_non_leaf, memory_efficient=False)
 
         z_kernel.mean().backward()
         z_expected.mean().backward()
@@ -46,10 +46,10 @@ class SwigluTest(TestCommons):
             [4],
             [torch.device("cuda")],
             TestCommons.get_dtypes(),
-            [partial(swiglu_triton, in_place=True)],
+            [partial(swiglu_triton, memory_efficient=True)],
         )
     )
-    def test_swiglu_in_place_raises_error_with_leaf_tensors(
+    def test_swiglu_memory_efficient_raises_error_with_leaf_tensors(
         self, size: tuple[int], device: torch.device, dtype: torch.dtype, function: Callable
     ) -> None:
         x, y = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
