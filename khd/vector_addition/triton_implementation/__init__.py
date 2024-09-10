@@ -29,8 +29,8 @@ class _VectorAddition_Triton(torch.autograd.Function):
         return output
 
     @staticmethod
-    def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        return output_grad, output_grad
+    def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, None]:
+        return output_grad, output_grad, None
 
 
 def vector_addition_triton(x: torch.Tensor, y: torch.Tensor, in_place: bool = False) -> torch.Tensor:

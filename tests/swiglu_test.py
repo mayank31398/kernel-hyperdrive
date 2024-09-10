@@ -1,3 +1,4 @@
+from functools import partial
 from typing import Callable
 
 import torch
@@ -15,7 +16,8 @@ class SwigluTest(TestCommons):
         )
     )
     def test_swiglu_triton_forward(self, size: tuple[int], device: torch.device, dtype: torch.dtype) -> None:
-        self._test_swiglu_forward(size, device, dtype, swiglu_triton)
+        self._test_swiglu_forward(size, device, dtype, partial(swiglu_triton, in_place=False))
+        self._test_swiglu_forward(size, device, dtype, partial(swiglu_triton, in_place=True))
 
     def _test_swiglu_forward(self, size: int, device: torch.device, dtype: torch.dtype, function: Callable) -> None:
         x = torch.randn(size, device=device, dtype=dtype)
@@ -32,7 +34,8 @@ class SwigluTest(TestCommons):
         )
     )
     def test_swiglu_triton_backward(self, size: tuple[int], device: torch.device, dtype: torch.dtype) -> None:
-        self._test_swiglu_backward(size, device, dtype, swiglu_triton)
+        self._test_swiglu_backward(size, device, dtype, partial(swiglu_triton, in_place=False))
+        self._test_swiglu_backward(size, device, dtype, partial(swiglu_triton, in_place=False))
 
     def _test_swiglu_backward(self, size: int, device: torch.device, dtype: torch.dtype, function: Callable) -> None:
         x_kernel = torch.randn(size, device=device, dtype=dtype, requires_grad=True)

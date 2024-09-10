@@ -28,7 +28,7 @@ class _Swiglu_Triton(torch.autograd.Function):
         return output
 
     @staticmethod
-    def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, None]:
         gate, up = ctx.saved_tensors
         in_place = ctx.in_place
 
@@ -49,7 +49,7 @@ class _Swiglu_Triton(torch.autograd.Function):
             BLOCK_SIZE=1024,
         )
 
-        return gate_grad, up_grad
+        return gate_grad, up_grad, None
 
 
 def swiglu_triton(gate: torch.Tensor, up: torch.Tensor, in_place: bool = False) -> torch.Tensor:
