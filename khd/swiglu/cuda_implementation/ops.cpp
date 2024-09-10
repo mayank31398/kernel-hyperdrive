@@ -1,7 +1,15 @@
 #include <torch/extension.h>
 
 void swiglu_forward_cuda_kernel(
-    torch::Tensor x, torch::Tensor y, torch::Tensor output, const int num_elements, const int BLOCK_SIZE);
+    torch::Tensor gate, torch::Tensor up, torch::Tensor output, const int num_elements, const int BLOCK_SIZE);
+
+void swiglu_backward_cuda_kernel(torch::Tensor gate,
+                                 torch::Tensor up,
+                                 torch::Tensor output_grad,
+                                 torch::Tensor gate_grad,
+                                 torch::Tensor up_grad,
+                                 const int num_elements,
+                                 const int BLOCK_SIZE);
 
 torch::Tensor swiglu_forward_cuda(torch::Tensor gate,
                                   torch::Tensor up,
@@ -26,6 +34,28 @@ torch::Tensor swiglu_forward_cuda(torch::Tensor gate,
     return output;
 }
 
+torch::Tensor swiglu_backward_cuda(torch::Tensor gate,
+                                   torch::Tensor up,
+                                   torch::Tensor output_grad,
+                                   const bool memory_efficient,
+                                   const int BLOCK_SIZE) {
+    int num_elements = gate.numel();
+
+    torch::Tensor gate_grad, up_grad;
+    if (memory_efficient) {
+        gate_grad = gate;
+        up_grad = up;
+    } else {
+        gate_grad = torch::empty_like(gate);
+        up_grad = torch::empty_like(up);
+    }
+
+    swiglu_backward_cuda_kernel(gate.view(-1), up.view(-1), output.view(-1), num_elements, BLOCK_SIZE);
+
+    return {gate_grad, up_grad};
+}
+
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-    m.def("vector_addition_forward_cuda", &vector_addition_forward_cuda, "Vector addition forward (CUDA)");
+    m.def("swiglu_forward_cuda", &swiglu_forward_cuda, "SwiGLU forward (CUDA)");
+    m.def("swiglu_backward_cuda", &swiglu_backward_cuda, "SwiGLU backward (CUDA)");
 }
