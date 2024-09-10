@@ -16,6 +16,7 @@ class VectorAdditionTest(TestCommons):
             [torch.device("cuda")],
             TestCommons.get_dtypes(),
             [
+                partial(vector_addition_torch, in_place=True),
                 partial(vector_addition_cuda, in_place=False),
                 partial(vector_addition_cuda, in_place=True),
                 partial(vector_addition_triton, in_place=False),
@@ -43,3 +44,22 @@ class VectorAdditionTest(TestCommons):
         self.assert_equal_tensors(z_kernel, z_expected, True)
         self.assert_equal_tensors(x_kernel.grad, x_expected.grad, True)
         self.assert_equal_tensors(y_kernel.grad, y_expected.grad, True)
+
+    @parameterized.expand(
+        TestCommons.make_args_matrix(
+            [4],
+            [torch.device("cuda")],
+            TestCommons.get_dtypes(),
+            [
+                partial(vector_addition_cuda, in_place=True),
+                partial(vector_addition_triton, in_place=True),
+            ],
+        )
+    )
+    def test_vector_addition_in_place_raises_error_with_leaf_tensors(
+        self, size: tuple[int], device: torch.device, dtype: torch.dtype, function: Callable
+    ) -> None:
+        x, y = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
+        function(x, y)
+
+        self.assertRaises(RuntimeError, msg="leaf variables can't be used in an in-place operation")
