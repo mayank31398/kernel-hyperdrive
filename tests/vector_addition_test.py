@@ -1,3 +1,4 @@
+from functools import partial
 from typing import Callable
 
 import torch
@@ -14,7 +15,12 @@ class VectorAdditionTest(TestCommons):
             TestCommons.get_2d_tensor_sizes(),
             [torch.device("cuda")],
             TestCommons.get_dtypes(),
-            [vector_addition_cuda, vector_addition_triton],
+            [
+                partial(vector_addition_cuda, in_place=False),
+                partial(vector_addition_cuda, in_place=True),
+                partial(vector_addition_triton, in_place=False),
+                partial(vector_addition_triton, in_place=False),
+            ],
         )
     )
     def test_vector_addition(
