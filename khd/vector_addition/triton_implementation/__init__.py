@@ -8,7 +8,7 @@ _KERNEL_NAME = "vector_addition_forward_triton"
 
 
 class _VectorAddition_Triton(torch.autograd.Function):
-    @torch.profiler.record_function(_KERNEL_NAME)
+    @torch.profiler.record_function(f"khd:{_KERNEL_NAME}")
     @staticmethod
     def forward(ctx, x: torch.Tensor, y: torch.Tensor, memory_efficient: bool) -> torch.Tensor:
         assert x.is_cuda, "tensor x is not on GPU"
