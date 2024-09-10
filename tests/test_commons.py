@@ -75,3 +75,11 @@ class TestCommons(TestCase):
 
     def get_activation_function(self, is_glu: bool) -> nn.Module:
         return nn.GLU() if is_glu else nn.GELU(approximate="tanh")
+
+    def get_random_duplicated_tensors(
+        self, size: tuple[int], device: torch.device, dtype: torch.dtype
+    ) -> tuple[torch.Tensor]:
+        x = torch.randn(size, device=device, dtype=dtype, requires_grad=True)
+        x_clone = x.clone().detach().requires_grad_()
+
+        return x, x_clone

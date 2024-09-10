@@ -23,11 +23,8 @@ class SwigluTest(TestCommons):
         )
     )
     def test_swiglu(self, size: int, device: torch.device, dtype: torch.dtype, function: Callable) -> None:
-        x_kernel = torch.randn(size, device=device, dtype=dtype, requires_grad=True)
-        y_kernel = torch.randn(size, device=device, dtype=dtype, requires_grad=True)
-
-        x_expected = x_kernel.clone().detach().requires_grad_()
-        y_expected = y_kernel.clone().detach().requires_grad_()
+        x_kernel, x_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
+        y_kernel, y_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
 
         z_kernel = function(x_kernel, y_kernel)
         z_expected = swiglu_torch(x_expected, y_expected, in_place=False)
