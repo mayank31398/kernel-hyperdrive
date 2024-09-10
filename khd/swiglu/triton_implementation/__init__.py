@@ -12,20 +12,19 @@ class _Swiglu_Triton(torch.autograd.Function):
     @torch.profiler.record_function(f"khd:{_FORWARD_KERNEL_NAME}")
     @staticmethod
     def forward(ctx, gate: torch.Tensor, up: torch.Tensor, memory_efficient: bool) -> torch.Tensor:
+        ctx.save_for_backward(gate, up)
+        ctx.memory_efficient = memory_efficient
+
         assert gate.is_cuda, "tensor gate is not on GPU"
         assert up.is_cuda, "tensor up is not on GPU"
 
         assert gate.size() == up.size(), "tensors gate and up should have same shape"
         assert gate.type() == up.type(), "tensors gate and up should have same dtype"
 
-        if memory_efficient:
-            if gate.is_leaf or up.is_leaf:
-                # forward pass if fine but backward pass will be incorrect due to in-place ops
-                # we raise error in forward pass though
-                raise RuntimeError("leaf variables can't be used in an in-place operation")
-
-        ctx.save_for_backward(gate, up)
-        ctx.memory_efficient = memory_efficient
+        if memory_efficient and (gate.is_leaf or up.is_leaf):
+            # forward pass if fine but backward pass will be incorrect due to in-place ops
+            # we raise error in forward pass though
+            raise RuntimeError("leaf variables can't be used in an in-place operation")
 
         output = torch.empty_like(gate)
 

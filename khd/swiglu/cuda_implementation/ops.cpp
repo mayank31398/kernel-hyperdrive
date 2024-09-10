@@ -1,19 +1,31 @@
 #include <torch/extension.h>
 
-torch::Tensor swiglu_forward_kernel_dispatcher(torch::Tensor x, torch::Tensor y);
+void swiglu_forward_cuda_kernel(
+    torch::Tensor x, torch::Tensor y, torch::Tensor output, const int num_elements, const int BLOCK_SIZE);
 
-torch::Tensor swiglu_forward(torch::Tensor gate, torch::Tensor up) {
-    TORCH_CHECK(gate.device().is_cuda(), "tensor gate is not on GPU")
-    TORCH_CHECK(up.device().is_cuda(), "tensor up is not on GPU")
+torch::Tensor swiglu_forward_cuda(torch::Tensor gate,
+                                  torch::Tensor up,
+                                  const bool memory_efficient,
+                                  const int BLOCK_SIZE) {
+    TORCH_CHECK(gate.device().is_cuda(), "tensor gate is not on GPU");
+    TORCH_CHECK(up.device().is_cuda(), "tensor up is not on GPU");
 
-    gate.shape up.view()
+    TORCH_CHECK(gate.sizes() == up.sizes(), "tensors gate and up should have same shape");
+    TORCH_CHECK(gate.scalar_type() == up.scalar_type(), "tensors gate and up should have same dtype");
 
-        TORCH_CHECK(x.numel() == y.numel(), "both tensors should have same number of elements");
-    TORCH_CHECK(x.scalar_type() == y.scalar_type(), "both tensors should have same dtype");
+    if (memory_efficient && (gate.is_leaf() || up.is_leaf())) {
+        throw runtime_error("leaf variables can't be used in an in-place operation");
+    }
 
-    return vector_addition_forward_kernel_dispatcher(x, y);
+    torch::Tensor output = torch::empty_like(gate);
+
+    int num_elements = gate.numel();
+
+    swiglu_forward_cuda_kernel(gate.view(-1), up.view(-1), output.view(-1), num_elements, BLOCK_SIZE);
+
+    return output;
 }
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-    m.def("vector_addition_forward", &vector_addition_forward, "Vector addition forward (CUDA)");
+    m.def("vector_addition_forward_cuda", &vector_addition_forward_cuda, "Vector addition forward (CUDA)");
 }
