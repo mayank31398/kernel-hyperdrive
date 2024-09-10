@@ -12,12 +12,13 @@ from .test_commons import TestCommons
 class SwigluTest(TestCommons):
     @parameterized.expand(
         TestCommons.make_args_matrix(
-            TestCommons.get_2d_tensor_sizes(), [torch.device("cuda")], TestCommons.get_dtypes()
+            TestCommons.get_2d_tensor_sizes(), [torch.device("cuda")], TestCommons.get_dtypes(), [False, True]
         )
     )
-    def test_swiglu_triton_forward(self, size: tuple[int], device: torch.device, dtype: torch.dtype) -> None:
-        self._test_swiglu_forward(size, device, dtype, partial(swiglu_triton, in_place=False))
-        self._test_swiglu_forward(size, device, dtype, partial(swiglu_triton, in_place=True))
+    def test_swiglu_triton_forward(
+        self, size: tuple[int], device: torch.device, dtype: torch.dtype, in_place: bool
+    ) -> None:
+        self._test_swiglu_forward(size, device, dtype, partial(swiglu_triton, in_place=in_place))
 
     def _test_swiglu_forward(self, size: int, device: torch.device, dtype: torch.dtype, function: Callable) -> None:
         x = torch.randn(size, device=device, dtype=dtype)
@@ -30,12 +31,13 @@ class SwigluTest(TestCommons):
 
     @parameterized.expand(
         TestCommons.make_args_matrix(
-            TestCommons.get_2d_tensor_sizes(), [torch.device("cuda")], TestCommons.get_dtypes()
+            TestCommons.get_2d_tensor_sizes(), [torch.device("cuda")], TestCommons.get_dtypes(), [False, True]
         )
     )
-    def test_swiglu_triton_backward(self, size: tuple[int], device: torch.device, dtype: torch.dtype) -> None:
-        self._test_swiglu_backward(size, device, dtype, partial(swiglu_triton, in_place=False))
-        self._test_swiglu_backward(size, device, dtype, partial(swiglu_triton, in_place=False))
+    def test_swiglu_triton_backward(
+        self, size: tuple[int], device: torch.device, dtype: torch.dtype, in_place: bool
+    ) -> None:
+        self._test_swiglu_backward(size, device, dtype, partial(swiglu_triton, in_place=in_place))
 
     def _test_swiglu_backward(self, size: int, device: torch.device, dtype: torch.dtype, function: Callable) -> None:
         x_kernel = torch.randn(size, device=device, dtype=dtype, requires_grad=True)
