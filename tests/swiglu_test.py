@@ -49,7 +49,7 @@ class SwigluTest(TestCommons):
             [partial(swiglu_triton, in_place=True)],
         )
     )
-    def test_vector_addition_in_place_raises_error_with_leaf_tensors(
+    def test_swiglu_in_place_raises_error_with_leaf_tensors(
         self, size: tuple[int], device: torch.device, dtype: torch.dtype, function: Callable
     ) -> None:
         x, y = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
