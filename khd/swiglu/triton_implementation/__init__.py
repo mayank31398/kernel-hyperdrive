@@ -13,6 +13,12 @@ class _Swiglu_Triton(torch.autograd.Function):
         assert gate.size() == up.size(), "tensors gate and up should have same shape"
         assert gate.type() == up.type(), "tensors gate and up should have same dtype"
 
+        if in_place:
+            if gate.is_leaf or up.is_leaf:
+                # forward pass if fine but backward pass will be incorrect due to in-place ops
+                # we raise error in forward pass though
+                raise RuntimeError("leaf variables can't be used in an in-place operation")
+
         ctx.save_for_backward(gate, up)
         ctx.in_place = in_place
 
@@ -22,13 +28,17 @@ class _Swiglu_Triton(torch.autograd.Function):
         grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE"]),)
 
         swiglu_forward_triton_kernel[grid](
-            gate_ptr=gate.view(-1), up_ptr=up.view(-1), output_ptr=output, num_elements=num_elements, BLOCK_SIZE=1024
+            gate_ptr=gate.view(-1),
+            up_ptr=up.view(-1),
+            output_ptr=output.view(-1),
+            num_elements=num_elements,
+            BLOCK_SIZE=1024,
         )
 
         return output
 
     @staticmethod
-    def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, None]:
+    def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor | None]:
         gate, up = ctx.saved_tensors
         in_place = ctx.in_place
 
