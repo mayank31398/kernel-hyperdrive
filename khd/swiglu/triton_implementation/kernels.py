@@ -14,10 +14,7 @@ def swiglu_forward_triton_kernel(gate_ptr, up_ptr, output_ptr, num_elements, BLO
     gate = tl.load(gate_ptr + block_indices, mask=mask).to(tl.float32)
     up = tl.load(up_ptr + block_indices, mask=mask)
 
-    gate_sigmoid = tl.sigmoid(gate)
-    gate_silu = gate * gate_sigmoid
-
-    output = up * gate_silu
+    output = up * gate * tl.sigmoid(gate)
 
     tl.store(output_ptr + block_indices, output, mask=mask)
 
