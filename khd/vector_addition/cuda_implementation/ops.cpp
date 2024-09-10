@@ -15,7 +15,7 @@ torch::Tensor vector_addition_forward_cuda(torch::Tensor x,
 
     torch::Tensor output;
     if (in_place) {
-        TORCH_CHECK(!x.is_leaf, "leaf variables can't be used in an in-place operation");
+        TORCH_CHECK(!x.is_leaf(), "leaf variables can't be used in an in-place operation");
         output = x;
     } else {
         output = torch::empty_like(x);
