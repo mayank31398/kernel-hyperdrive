@@ -13,8 +13,11 @@ torch::Tensor vector_addition_forward_cuda(torch::Tensor x,
     TORCH_CHECK(x.sizes() == y.sizes(), "tensors x and y should have same shape");
     TORCH_CHECK(x.scalar_type() == y.scalar_type(), "tensors x and y should have same dtype");
 
-    torch::Tensor output = x;
-    if (!in_place) {
+    torch::Tensor output;
+    if (in_place) {
+        TORCH_CHECK(!x.is_leaf, "leaf variables can't be used in an in-place operation");
+        output = x;
+    } else {
         output = torch::empty_like(x);
     }
 

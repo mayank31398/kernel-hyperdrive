@@ -17,7 +17,11 @@ class _VectorAddition_Triton(torch.autograd.Function):
         assert x.size() == y.size(), "tensors x and y should have same shape"
         assert x.type() == y.type(), "tensors x and y should have same dtype"
 
-        output = x if in_place else torch.empty_like(x)
+        if in_place:
+            assert not x.is_leaf, "leaf variables can't be used in an in-place operation"
+            output = x
+        else:
+            output = torch.empty_like(x)
 
         num_elements = x.numel()
         grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE"]),)
@@ -29,7 +33,7 @@ class _VectorAddition_Triton(torch.autograd.Function):
         return output
 
     @staticmethod
-    def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, None]:
+    def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor | None]:
         return output_grad, output_grad, None
 
 
