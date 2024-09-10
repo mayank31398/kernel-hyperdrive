@@ -60,6 +60,6 @@ class VectorAdditionTest(TestCommons):
         self, size: tuple[int], device: torch.device, dtype: torch.dtype, function: Callable
     ) -> None:
         x, y = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
-        function(x, y)
 
-        self.assertRaises(RuntimeError, msg="leaf variables can't be used in an in-place operation")
+        with self.assertRaises(RuntimeError, msg="leaf variables can't be used in an in-place operation"):
+            function(x, y)
