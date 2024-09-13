@@ -9,7 +9,7 @@ def library_custom_op(
     mutates_args: Union[str, Iterable[str]],
 ) -> Callable:
     @torch.library.custom_op(name, mutates_args=mutates_args)
-    def f():
-        return func
+    def f(*args, **kwargs):
+        return func(*args, **kwargs)
 
     return f
