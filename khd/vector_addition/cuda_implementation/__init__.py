@@ -8,24 +8,16 @@ _KERNEL_NAME = "vector_addition_forward_cuda"
 BLOCK_SIZE = 1024
 
 
-# non compilable kernel
-def _vector_addition_forward_cuda(x: torch.Tensor, y: torch.Tensor, memory_efficient: bool) -> torch.Tensor:
-    if not hasattr(_vector_addition_forward_cuda, "_kernel"):
-        _vector_addition_forward_cuda._kernel = KernelRegistry.get_kernel(_KERNEL_NAME)
-
-    return _vector_addition_forward_cuda._kernel(x, y, memory_efficient, BLOCK_SIZE)
-
-
 # compilable non memory efficient kernel
 @torch.library.custom_op(f"{LIBRARY_NAME}::{_KERNEL_NAME}", mutates_args={})
 def _vector_addition_forward_cuda_compilable(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    return _vector_addition_forward_cuda(x, y, memory_efficient=False)
+    return KernelRegistry.get_kernel(_KERNEL_NAME)(x, y, memory_efficient=False)
 
 
 # compilable memory efficient kernel
 @torch.library.custom_op(f"{LIBRARY_NAME}::{_KERNEL_NAME}_memory_efficient", mutates_args={"x"})
 def _vector_addition_forward_cuda_compilable_memory_efficient(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    return _vector_addition_forward_cuda(x, y, memory_efficient=True)
+    return KernelRegistry.get_kernel(_KERNEL_NAME)(x, y, memory_efficient=True)
 
 
 def _fake(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
@@ -46,7 +38,7 @@ class _VectorAddition_CUDA(torch.autograd.Function):
             else:
                 output = _vector_addition_forward_cuda_compilable(x, y)
         else:
-            output = _vector_addition_forward_cuda(x, y, memory_efficient=memory_efficient)
+            output = KernelRegistry.get_kernel(_KERNEL_NAME)(x, y, memory_efficient=memory_efficient)
 
         return output
 
