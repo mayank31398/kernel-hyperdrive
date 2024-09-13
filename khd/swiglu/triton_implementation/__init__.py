@@ -5,8 +5,8 @@ from ...constants import LIBRARY_NAME
 from .kernels import swiglu_backward_triton_kernel, swiglu_forward_triton_kernel
 
 
-_FORWARD_KERNEL_NAME = "swiglu_forward_triton_kernel"
-_BACKWARD_KERNEL_NAME = "swiglu_backward_triton_kernel"
+_FORWARD_KERNEL_NAME = "swiglu_forward_triton"
+_BACKWARD_KERNEL_NAME = "swiglu_backward_triton"
 FORWARD_BLOCK_SIZE = 1024
 BACKWARD_BLOCK_SIZE = 1024
 
