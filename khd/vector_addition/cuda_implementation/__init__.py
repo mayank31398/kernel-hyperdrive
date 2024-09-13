@@ -28,7 +28,7 @@ def _vector_addition_forward_cuda_compilable_memory_efficient(x: torch.Tensor, y
     return _vector_addition_forward_cuda(x, y, memory_efficient=True)
 
 
-def _fake(x: torch.Tensor, y: torch.Tensor, memory_efficient: bool) -> torch.Tensor:
+def _fake(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     return torch.empty_like(x)
 
 
