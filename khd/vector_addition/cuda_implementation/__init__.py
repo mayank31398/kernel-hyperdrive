@@ -19,13 +19,13 @@ def _vector_addition_forward_cuda(x: torch.Tensor, y: torch.Tensor, memory_effic
 # compilable non memory efficient kernel
 @torch.library.custom_op(f"{LIBRARY_NAME}::{_KERNEL_NAME}", mutates_args={})
 def _vector_addition_forward_cuda_compilable(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    return _vector_addition_forward_cuda(x, y, memory_efficient=False, BLOCK_SIZE=BLOCK_SIZE)
+    return _vector_addition_forward_cuda(x, y, memory_efficient=False)
 
 
 # compilable memory efficient kernel
 @torch.library.custom_op(f"{LIBRARY_NAME}::{_KERNEL_NAME}_memory_efficient", mutates_args={"x"})
 def _vector_addition_forward_cuda_compilable_memory_efficient(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    return _vector_addition_forward_cuda(x, y, memory_efficient=True, BLOCK_SIZE=BLOCK_SIZE)
+    return _vector_addition_forward_cuda(x, y, memory_efficient=True)
 
 
 def _fake(x: torch.Tensor, y: torch.Tensor, memory_efficient: bool) -> torch.Tensor:
