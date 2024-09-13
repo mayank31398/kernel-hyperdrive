@@ -1,7 +1,7 @@
 import torch
 
 from ...kernel_registry import KernelRegistry
-from ...utils import library_custom_op, library_record_function
+from ...utils import LibaryRecordFunction, library_custom_op
 
 
 _KERNEL_NAME = "vector_addition_forward_cuda"
@@ -34,7 +34,7 @@ _vector_addition_forward_cuda_compilable_memory_efficient.register_fake(_fake)
 
 
 class _VectorAddition_CUDA(torch.autograd.Function):
-    @library_record_function(_KERNEL_NAME)
+    @LibaryRecordFunction(_KERNEL_NAME)
     @staticmethod
     def forward(ctx, x: torch.Tensor, y: torch.Tensor, memory_efficient: bool) -> torch.Tensor:
         if torch.compiler.is_compiling():

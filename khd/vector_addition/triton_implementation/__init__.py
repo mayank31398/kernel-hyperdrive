@@ -1,7 +1,7 @@
 import torch
 import triton
 
-from ...utils import library_record_function
+from ...utils import LibaryRecordFunction
 from .kernels import vector_addition_forward_triton_kernel
 
 
@@ -10,7 +10,7 @@ BLOCK_SIZE = 1024
 
 
 class _VectorAddition_Triton(torch.autograd.Function):
-    @library_record_function(_KERNEL_NAME)
+    @LibaryRecordFunction(_KERNEL_NAME)
     @staticmethod
     def forward(ctx, x: torch.Tensor, y: torch.Tensor, memory_efficient: bool) -> torch.Tensor:
         assert x.is_cuda, "tensor x is not on GPU"
