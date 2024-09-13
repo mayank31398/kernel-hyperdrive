@@ -21,6 +21,11 @@ class VectorAdditionTest(TestCommons):
                 partial(vector_addition_cuda, memory_efficient=True),
                 partial(vector_addition_triton, memory_efficient=False),
                 partial(vector_addition_triton, memory_efficient=True),
+                partial(torch.compile(vector_addition_torch, fullgraph=True), memory_efficient=True),
+                partial(torch.compile(vector_addition_cuda, fullgraph=True), memory_efficient=False),
+                partial(torch.compile(vector_addition_cuda, fullgraph=True), memory_efficient=True),
+                partial(torch.compile(vector_addition_triton, fullgraph=True), memory_efficient=False),
+                partial(torch.compile(vector_addition_triton, fullgraph=True), memory_efficient=True),
             ],
         )
     )
@@ -53,6 +58,8 @@ class VectorAdditionTest(TestCommons):
             [
                 partial(vector_addition_cuda, memory_efficient=True),
                 partial(vector_addition_triton, memory_efficient=True),
+                partial(torch.compile(vector_addition_cuda, fullgraph=True), memory_efficient=True),
+                partial(torch.compile(vector_addition_triton, fullgraph=True), memory_efficient=True),
             ],
         )
     )
