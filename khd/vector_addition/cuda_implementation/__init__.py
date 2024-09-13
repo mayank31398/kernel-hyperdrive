@@ -5,27 +5,30 @@ from ...kernel_registry import KernelRegistry
 
 
 _KERNEL_NAME = "vector_addition_forward_cuda"
-BLOCK_SIZE = 1024
 
 
 @torch.library.custom_op(f"{LIBRARY_NAME}::{_KERNEL_NAME}", mutates_args={})
-def _vector_addition_forward_cuda_compilable(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+def _vector_addition_forward_cuda_compilable(x: torch.Tensor, y: torch.Tensor, BLOCK_SIZE: int) -> torch.Tensor:
     return KernelRegistry.get_kernel(_KERNEL_NAME)(x, y, False, BLOCK_SIZE)
 
 
 # compilable memory efficient kernel
 @torch.library.custom_op(f"{LIBRARY_NAME}::{_KERNEL_NAME}_memory_efficient", mutates_args={"x"})
-def _vector_addition_forward_cuda_compilable_memory_efficient(x: torch.Tensor, y: torch.Tensor) -> None:
+def _vector_addition_forward_cuda_compilable_memory_efficient(
+    x: torch.Tensor, y: torch.Tensor, BLOCK_SIZE: int
+) -> None:
     KernelRegistry.get_kernel(_KERNEL_NAME)(x, y, True, BLOCK_SIZE)
 
 
 @_vector_addition_forward_cuda_compilable.register_fake
-def _fake_vector_addition_forward_cuda_compilable(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+def _fake_vector_addition_forward_cuda_compilable(x: torch.Tensor, y: torch.Tensor, BLOCK_SIZE: int) -> torch.Tensor:
     return torch.empty_like(x)
 
 
 @_vector_addition_forward_cuda_compilable_memory_efficient.register_fake
-def _fake_vector_addition_forward_cuda_compilable_memory_efficient(x: torch.Tensor, y: torch.Tensor) -> None:
+def _fake_vector_addition_forward_cuda_compilable_memory_efficient(
+    x: torch.Tensor, y: torch.Tensor, BLOCK_SIZE: int
+) -> None:
     return
 
 
@@ -33,12 +36,14 @@ class _VectorAddition_CUDA(torch.autograd.Function):
     @torch.profiler.record_function(f"{LIBRARY_NAME}:{_KERNEL_NAME}")
     @staticmethod
     def forward(ctx, x: torch.Tensor, y: torch.Tensor, memory_efficient: bool) -> torch.Tensor:
+        BLOCK_SIZE = 1024
+
         if torch.compiler.is_compiling():
             if memory_efficient:
-                _vector_addition_forward_cuda_compilable_memory_efficient(x, y)
+                _vector_addition_forward_cuda_compilable_memory_efficient(x, y, BLOCK_SIZE)
                 output = x
             else:
-                output = _vector_addition_forward_cuda_compilable(x, y)
+                output = _vector_addition_forward_cuda_compilable(x, y, BLOCK_SIZE)
         else:
             kernel = KernelRegistry.get_kernel(_KERNEL_NAME)
 
