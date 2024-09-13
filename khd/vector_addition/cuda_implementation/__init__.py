@@ -40,11 +40,13 @@ class _VectorAddition_CUDA(torch.autograd.Function):
             else:
                 output = _vector_addition_forward_cuda_compilable(x, y)
         else:
+            kernel = KernelRegistry.get_kernel(_KERNEL_NAME)
+
             if memory_efficient:
-                KernelRegistry.get_kernel(_KERNEL_NAME)(x, y, memory_efficient, BLOCK_SIZE)
+                kernel(x, y, memory_efficient, BLOCK_SIZE)
                 output = x
             else:
-                output = KernelRegistry.get_kernel(_KERNEL_NAME)(x, y, memory_efficient, BLOCK_SIZE)
+                output = kernel(x, y, memory_efficient, BLOCK_SIZE)
 
         return output
 
