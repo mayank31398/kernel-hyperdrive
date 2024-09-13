@@ -38,7 +38,10 @@ class _VectorAddition_CUDA(torch.autograd.Function):
     @staticmethod
     def forward(ctx, x: torch.Tensor, y: torch.Tensor, memory_efficient: bool) -> torch.Tensor:
         if torch.compiler.is_compiling():
-            output = _vector_addition_forward_cuda_compilable(x, y, memory_efficient=memory_efficient)
+            if memory_efficient:
+                output = _vector_addition_forward_cuda_compilable_memory_efficient(x, y)
+            else:
+                output = _vector_addition_forward_cuda_compilable(x, y)
         else:
             output = _vector_addition_forward_cuda(x, y, memory_efficient=memory_efficient)
 
