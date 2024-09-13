@@ -15,16 +15,18 @@ def _vector_addition_forward_cuda_compilable(x: torch.Tensor, y: torch.Tensor) -
 
 # compilable memory efficient kernel
 @torch.library.custom_op(f"{LIBRARY_NAME}::{_KERNEL_NAME}_memory_efficient", mutates_args={"x"})
-def _vector_addition_forward_cuda_compilable_memory_efficient(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    return KernelRegistry.get_kernel(_KERNEL_NAME)(x, y, True, BLOCK_SIZE)
+def _vector_addition_forward_cuda_compilable_memory_efficient(x: torch.Tensor, y: torch.Tensor) -> None:
+    KernelRegistry.get_kernel(_KERNEL_NAME)(x, y, True, BLOCK_SIZE)
 
 
-def _fake(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+@_vector_addition_forward_cuda_compilable.register_fake
+def _fake_vector_addition_forward_cuda_compilable(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     return torch.empty_like(x)
 
 
-_vector_addition_forward_cuda_compilable.register_fake(_fake)
-_vector_addition_forward_cuda_compilable_memory_efficient.register_fake(_fake)
+@_vector_addition_forward_cuda_compilable_memory_efficient.register_fake
+def _fake_vector_addition_forward_cuda_compilable_memory_efficient(x: torch.Tensor, y: torch.Tensor) -> None:
+    return
 
 
 class _VectorAddition_CUDA(torch.autograd.Function):
@@ -33,11 +35,16 @@ class _VectorAddition_CUDA(torch.autograd.Function):
     def forward(ctx, x: torch.Tensor, y: torch.Tensor, memory_efficient: bool) -> torch.Tensor:
         if torch.compiler.is_compiling():
             if memory_efficient:
-                output = _vector_addition_forward_cuda_compilable_memory_efficient(x, y)
+                _vector_addition_forward_cuda_compilable_memory_efficient(x, y)
+                output = x
             else:
                 output = _vector_addition_forward_cuda_compilable(x, y)
         else:
-            output = KernelRegistry.get_kernel(_KERNEL_NAME)(x, y, memory_efficient, BLOCK_SIZE)
+            if memory_efficient:
+                KernelRegistry.get_kernel(_KERNEL_NAME)(x, y, memory_efficient, BLOCK_SIZE)
+                output = x
+            else:
+                output = KernelRegistry.get_kernel(_KERNEL_NAME)(x, y, memory_efficient, BLOCK_SIZE)
 
         return output
 
