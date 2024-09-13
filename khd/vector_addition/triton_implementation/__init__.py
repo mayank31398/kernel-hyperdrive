@@ -1,14 +1,16 @@
 import torch
 import triton
 
+from ...utils import library_record_function
 from .kernels import vector_addition_forward_triton_kernel
 
 
 _KERNEL_NAME = "vector_addition_forward_triton"
+BLOCK_SIZE = 1024
 
 
 class _VectorAddition_Triton(torch.autograd.Function):
-    @torch.profiler.record_function(f"khd:{_KERNEL_NAME}")
+    @library_record_function(_KERNEL_NAME)
     @staticmethod
     def forward(ctx, x: torch.Tensor, y: torch.Tensor, memory_efficient: bool) -> torch.Tensor:
         assert x.is_cuda, "tensor x is not on GPU"
@@ -29,7 +31,7 @@ class _VectorAddition_Triton(torch.autograd.Function):
         grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE"]),)
 
         vector_addition_forward_triton_kernel[grid](
-            x.view(-1), y.view(-1), output.view(-1), num_elements, BLOCK_SIZE=1024
+            x.view(-1), y.view(-1), output.view(-1), num_elements, BLOCK_SIZE=BLOCK_SIZE
         )
 
         return output

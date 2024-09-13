@@ -1,19 +1,49 @@
 import torch
 
+from ...constants import LIBRARY_NAME
 from ...kernel_registry import KernelRegistry
+from ...utils import library_custom_op, library_record_function
 
 
 _KERNEL_NAME = "vector_addition_forward_cuda"
+BLOCK_SIZE = 1024
+
+
+def _vector_addition_forward_cuda(x: torch.Tensor, y: torch.Tensor, memory_efficient: bool) -> torch.Tensor:
+    if not hasattr(_vector_addition_forward_cuda, "_kernel"):
+        _vector_addition_forward_cuda._kernel = KernelRegistry.get_kernel(_KERNEL_NAME)
+
+    return _vector_addition_forward_cuda._kernel(x, y, memory_efficient, BLOCK_SIZE)
+
+
+@torch.library.custom_op(_KERNEL_NAME, mutates_args=())
+def _vector_addition_forward_cuda_compilable(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    return _vector_addition_forward_cuda(x, y, memory_efficient=False, BLOCK_SIZE=BLOCK_SIZE)
+
+
+@library_custom_op(LIBRARY_NAME, mutates_args=("x"))
+def _vector_addition_forward_cuda_compilable_memory_efficient(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    return _vector_addition_forward_cuda(x, y, memory_efficient=True, BLOCK_SIZE=BLOCK_SIZE)
+
+
+def _fake(x: torch.Tensor, y: torch.Tensor, memory_efficient: bool) -> torch.Tensor:
+    return torch.empty_like(x)
+
+
+_vector_addition_forward_cuda_compilable.register_fake(_fake)
+_vector_addition_forward_cuda_compilable_memory_efficient.register_fake(_fake)
 
 
 class _VectorAddition_CUDA(torch.autograd.Function):
-    @torch.profiler.record_function(_KERNEL_NAME)
+    @library_record_function(_KERNEL_NAME)
     @staticmethod
     def forward(ctx, x: torch.Tensor, y: torch.Tensor, memory_efficient: bool) -> torch.Tensor:
-        if not hasattr(_VectorAddition_CUDA.forward, "_kernel"):
-            _VectorAddition_CUDA.forward._kernel = KernelRegistry.get_kernel(_KERNEL_NAME)
+        if torch.compiler.is_compiling():
+            output = _vector_addition_forward_cuda_compilable(x, y, memory_efficient=memory_efficient)
+        else:
+            output = _vector_addition_forward_cuda(x, y, memory_efficient=memory_efficient)
 
-        return _VectorAddition_CUDA.forward._kernel(x, y, memory_efficient, 1024)
+        return output
 
     @staticmethod
     def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor | None]:
