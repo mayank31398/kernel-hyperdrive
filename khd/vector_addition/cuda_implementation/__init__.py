@@ -1,7 +1,7 @@
 import torch
 
+from ...constants import LIBRARY_NAME
 from ...kernel_registry import KernelRegistry
-from ...utils import LibaryRecordFunction, library_custom_op
 
 
 _KERNEL_NAME = "vector_addition_forward_cuda"
@@ -17,13 +17,13 @@ def _vector_addition_forward_cuda(x: torch.Tensor, y: torch.Tensor, memory_effic
 
 
 # compilable non memory efficient kernel
-@library_custom_op(_KERNEL_NAME, mutates_args=())
+@torch.library.custom_op(f"{LIBRARY_NAME}:{_KERNEL_NAME}", mutates_args=())
 def _vector_addition_forward_cuda_compilable(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     return _vector_addition_forward_cuda(x, y, memory_efficient=False, BLOCK_SIZE=BLOCK_SIZE)
 
 
 # compilable memory efficient kernel
-@library_custom_op(f"{_KERNEL_NAME}-memory-efficient", mutates_args=("x"))
+@torch.library.custom_op(f"{LIBRARY_NAME}:{_KERNEL_NAME}-memory-efficient", mutates_args=("x"))
 def _vector_addition_forward_cuda_compilable_memory_efficient(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     return _vector_addition_forward_cuda(x, y, memory_efficient=True, BLOCK_SIZE=BLOCK_SIZE)
 
@@ -37,7 +37,7 @@ _vector_addition_forward_cuda_compilable_memory_efficient.register_fake(_fake)
 
 
 class _VectorAddition_CUDA(torch.autograd.Function):
-    @LibaryRecordFunction(_KERNEL_NAME)
+    @torch.profiler.record_function(f"{LIBRARY_NAME}:{_KERNEL_NAME}")
     @staticmethod
     def forward(ctx, x: torch.Tensor, y: torch.Tensor, memory_efficient: bool) -> torch.Tensor:
         if torch.compiler.is_compiling():

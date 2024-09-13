@@ -1,7 +1,7 @@
 import torch
 import triton
 
-from ...utils import LibaryRecordFunction
+from ...constants import LIBRARY_NAME
 from .kernels import swiglu_backward_triton_kernel, swiglu_forward_triton_kernel
 
 
@@ -12,7 +12,7 @@ BACKWARD_BLOCK_SIZE = 1024
 
 
 class _Swiglu_Triton(torch.autograd.Function):
-    @LibaryRecordFunction(_FORWARD_KERNEL_NAME)
+    @torch.profiler.record_function(f"{LIBRARY_NAME}:{_FORWARD_KERNEL_NAME}")
     @staticmethod
     def forward(ctx, gate: torch.Tensor, up: torch.Tensor, memory_efficient: bool) -> torch.Tensor:
         assert gate.is_cuda, "tensor gate is not on GPU"
@@ -45,7 +45,7 @@ class _Swiglu_Triton(torch.autograd.Function):
 
         return output
 
-    @LibaryRecordFunction(_BACKWARD_KERNEL_NAME)
+    @torch.profiler.record_function(f"{LIBRARY_NAME}:{_BACKWARD_KERNEL_NAME}")
     @staticmethod
     def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor | None]:
         gate, up = ctx.saved_tensors
