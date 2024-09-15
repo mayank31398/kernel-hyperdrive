@@ -5,17 +5,13 @@
 #include <cuda_runtime.h>
 #include <torch/extension.h>
 
-// for vectorized load store
-std::unordered_map<std::type_index, int> num_elements_per_thread_mapping = {
-    {typeid(fp32), 4}, {typeid(c10::Half), 8}, {typeid(c10::BFloat16), 8}};
-
 template <typename scalar_t>
 __global__ void _vector_addition_forward_cuda_kernel(const scalar_t *x,
                                                      const scalar_t *y,
                                                      scalar_t *output,
-                                                     const int num_elements,
-                                                     const int num_elements_per_thread) {
+                                                     const int num_elements) {
     const int thread_id = get_global_thread_id();
+    const int num_elements_per_thread = get_num_elements_in_vector_dtype<scalar_t, fp32_4>();
 
     const int start = thread_id * num_elements_per_thread;
     const int end = (thread_id + 1) * num_elements_per_thread - 1; // inclusive of last element
@@ -62,15 +58,12 @@ void vector_addition_forward_cuda_kernel(
     torch::Tensor x, torch::Tensor y, torch::Tensor output, const int num_elements, const int BLOCK_SIZE) {
     AT_DISPATCH_FLOATING_TYPES_AND2(
         at::ScalarType::Half, at::ScalarType::BFloat16, x.scalar_type(), "vector_addition_forward_cuda_kernel", ([&] {
-            int num_elements_per_thread = num_elements_per_thread_mapping[std::type_index(typeid(scalar_t))];
+            const int num_elements_per_thread = get_num_elements_in_vector_dtype<scalar_t, fp32_4>();
 
-            int num_elements_per_block = BLOCK_SIZE * num_elements_per_thread;
-            int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
+            const int num_elements_per_block = BLOCK_SIZE * num_elements_per_thread;
+            const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
 
-            _vector_addition_forward_cuda_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(x.data_ptr<scalar_t>(),
-                                                                                       y.data_ptr<scalar_t>(),
-                                                                                       output.data_ptr<scalar_t>(),
-                                                                                       num_elements,
-                                                                                       num_elements_per_thread);
+            _vector_addition_forward_cuda_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(
+                x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
         }));
 }
