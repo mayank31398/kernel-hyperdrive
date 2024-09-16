@@ -35,6 +35,7 @@ template <typename T, typename vecT> __host__ __device__ int get_num_elements_in
 // base struct for converting torch ScalarType to NVIDIA's dtype
 template <typename scalar_t> struct DType {
     using c10_dtype = scalar_t;
+    using nv_dtype = scalar_t;
 
     __device__ scalar_t unpack_from_fp32(scalar_t value) {
         assert(false && "Function not implemented");
