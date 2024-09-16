@@ -14,7 +14,7 @@ torch::Tensor swiglu_forward_cuda(torch::Tensor gate,
     TORCH_CHECK(gate.scalar_type() == up.scalar_type(), "tensors gate and up should have same dtype");
 
     if (memory_efficient && (gate.is_leaf() || up.is_leaf())) {
-        throw runtime_error("leaf variables can't be used in an in-place operation");
+        throw std::runtime_error("leaf variables can't be used in an in-place operation");
     }
 
     torch::Tensor output = torch::empty_like(gate);

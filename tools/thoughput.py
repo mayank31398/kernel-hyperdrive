@@ -6,10 +6,14 @@ from tabulate import tabulate
 from khd import vector_addition_cuda, vector_addition_torch, vector_addition_triton
 
 
+# from khd import swiglu_cuda, swiglu_torch, swiglu_triton
+
+
 n = 100
 
 headers = ["dtype", "torch", "cuda", "triton"]
 kernels = [vector_addition_torch, vector_addition_cuda, vector_addition_triton]
+# kernels = [swiglu_torch, swiglu_cuda, swiglu_triton]
 
 table = []
 
