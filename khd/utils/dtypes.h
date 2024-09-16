@@ -35,16 +35,6 @@ template <typename T, typename vecT> __host__ __device__ int get_num_elements_in
 // base struct for converting torch ScalarType to NVIDIA's dtype
 template <typename scalar_t> struct DType {
     using c10_dtype = scalar_t;
-
-    __device__ scalar_t unpack_from_fp32(scalar_t value) {
-        assert(false && "Function not implemented");
-        return value;
-    }
-
-    __device__ scalar_t pack_to_fp32(scalar_t value) {
-        assert(false && "Function not implemented");
-        return value;
-    }
 };
 
 // struct for c10::Float
@@ -53,9 +43,6 @@ template <> struct DType<fp32> {
     using nv_dtype = fp32;
     using nv_dtype2 = fp32_2;
     using nv_dtype4 = fp32_4;
-
-    __device__ fp32 unpack_from_fp32(fp32 value) { return value; }
-    __device__ fp32 pack_to_fp32(fp32 value) { return value; }
 };
 
 // struct for c10::Half
@@ -64,18 +51,18 @@ template <> struct DType<c10::Half> {
     using nv_dtype = fp16;
     using nv_dtype2 = fp16_2;
 
-    __device__ fp16_2 unpack_from_fp32(fp32 value) {
+    __device__ static nv_dtype2 reinterpret_32_bits_as_2x16(fp32 value) {
         auto [lower_16, upper_16] = get_upper_and_lower_16_bits_from_fp32(value);
 
-        fp16 lower_half = __ushort_as_half(lower_16);
-        fp16 upper_half = __ushort_as_half(upper_16);
+        nv_dtype lower_half = __ushort_as_half(lower_16);
+        nv_dtype upper_half = __ushort_as_half(upper_16);
 
         return __halves2half2(lower_half, upper_half);
     }
 
-    __device__ fp32 pack_to_fp32(fp16_2 value) {
-        fp16 lower_half = __low2half(value);
-        fp16 upper_half = __high2half(value);
+    __device__ static fp32 reinterpret_2x16_as_32_bits(nv_dtype2 value) {
+        nv_dtype lower_half = __low2half(value);
+        nv_dtype upper_half = __high2half(value);
 
         uint16_t lower_16 = __half_as_short(lower_half);
         uint16_t upper_16 = __half_as_short(upper_half);
@@ -93,18 +80,18 @@ template <> struct DType<c10::BFloat16> {
     using nv_dtype = bf16;
     using nv_dtype2 = bf16_2;
 
-    __device__ bf16_2 unpack_from_fp32(fp32 value) {
+    __device__ static nv_dtype2 reinterpret_32_bits_as_2x16(fp32 value) {
         auto [lower_16, upper_16] = get_upper_and_lower_16_bits_from_fp32(value);
 
-        bf16 lower_half = __ushort_as_bfloat16(lower_16);
-        bf16 upper_half = __ushort_as_bfloat16(upper_16);
+        nv_dtype lower_half = __ushort_as_bfloat16(lower_16);
+        nv_dtype upper_half = __ushort_as_bfloat16(upper_16);
 
         return __halves2bfloat162(lower_half, upper_half);
     }
 
-    __device__ fp32 pack_to_fp32(bf16_2 value) {
-        bf16 lower_half = __low2bfloat16(value);
-        bf16 upper_half = __high2bfloat16(value);
+    __device__ static fp32 reinterpret_2x16_as_32_bits(nv_dtype2 value) {
+        nv_dtype lower_half = __low2bfloat16(value);
+        nv_dtype upper_half = __high2bfloat16(value);
 
         uint16_t lower_16 = __bfloat16_as_short(lower_half);
         uint16_t upper_16 = __bfloat16_as_short(upper_half);
