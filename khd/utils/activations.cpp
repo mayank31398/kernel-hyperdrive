@@ -13,7 +13,7 @@ template <typename T> T sigmoid(const T x) {
     return DType<T>::downcast(x_fp32);
 }
 
-template <typename T, typename T2> __device__ T2 sigmoid2(const T2 x) {
+template <> __device__ T2 sigmoid<T2>(const T2 x) {
     using dtype = DType<T>;
     T2 output;
 
