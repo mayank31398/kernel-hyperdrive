@@ -45,6 +45,11 @@ template <typename scalar_t> struct DType {
         assert(false && "Function not implemented");
         return value;
     }
+
+    __device__ static fp32 upcast(scalar_t value) {
+        assert(false && "Function not implemented");
+        return 0;
+    }
 };
 
 // struct for c10::Float
@@ -53,9 +58,6 @@ template <> struct DType<fp32> {
     using nv_dtype = fp32;
     using nv_dtype2 = fp32_2;
     using nv_dtype4 = fp32_4;
-
-    __device__ static nv_dtype reinterpret_32_bits_as_2x16(nv_dtype value) { return value; }
-    __device__ static nv_dtype reinterpret_2x16_as_32_bits(nv_dtype value) { return value; }
 };
 
 // struct for c10::Half
@@ -82,6 +84,10 @@ template <> struct DType<c10::Half> {
 
         return get_fp32_from_upper_and_lower_16_bits(upper_16, lower_16);
     }
+
+    __device__ static fp32 upcast(nv_dtype value) { return __half2float(value); }
+
+    __device__ static nv_dtype downcast(fp32 value) { return __float2half(value); }
 };
 
 // struct for half (basically another alias for the above)
@@ -111,6 +117,10 @@ template <> struct DType<c10::BFloat16> {
 
         return get_fp32_from_upper_and_lower_16_bits(upper_16, lower_16);
     }
+
+    __device__ static fp32 upcast(nv_dtype value) { return __bfloat162float(value); }
+
+    __device__ static nv_dtype downcast(fp32 value) { return __float2bfloat16(value); }
 };
 
 // struct for bf16 (basically another alias for the above)

@@ -3,3 +3,8 @@
   sources:
     - vector_addition/cuda_implementation/ops.cpp
     - vector_addition/cuda_implementation/kernels.cu
+- functions:
+    - swiglu_forward_cuda
+  sources:
+    - swiglu/cuda_implementation/ops.cpp
+    - swiglu/cuda_implementation/kernels.cu
