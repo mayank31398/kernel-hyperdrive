@@ -60,7 +60,7 @@ template <> struct DType<c10::Half> {
         return __halves2half2(lower_half, upper_half);
     }
 
-    __device__ static fp32 reinterpret_as_2x16_as_32_bits(nv_dtype2 value) {
+    __device__ static fp32 reinterpret_2x16_as_32_bits(nv_dtype2 value) {
         nv_dtype lower_half = __low2half(value);
         nv_dtype upper_half = __high2half(value);
 
@@ -89,7 +89,7 @@ template <> struct DType<c10::BFloat16> {
         return __halves2bfloat162(lower_half, upper_half);
     }
 
-    __device__ static fp32 reinterpret_as_2x16_as_32_bits(nv_dtype2 value) {
+    __device__ static fp32 reinterpret_2x16_as_32_bits(nv_dtype2 value) {
         nv_dtype lower_half = __low2bfloat16(value);
         nv_dtype upper_half = __high2bfloat16(value);
 
