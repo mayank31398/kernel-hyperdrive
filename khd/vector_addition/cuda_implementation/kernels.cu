@@ -39,11 +39,11 @@ __global__ void _vector_addition_forward_cuda_kernel(const scalar_t *x,
                 using dtype = DType<scalar_t>;
                 using T2 = typename dtype::nv_dtype2;
 
-                T2 x1 = dtype::unpack_from_fp32(_x[i]);
-                T2 y1 = dtype::unpack_from_fp32(_y[i]);
+                T2 x1 = dtype::reinterpret_32_bits_as_2x16(_x[i]);
+                T2 y1 = dtype::reinterpret_32_bits_as_2x16(_y[i]);
                 x1 = __hadd2(x1, y1);
 
-                tmp[i] = dtype::pack_to_fp32(x1);
+                tmp[i] = dtype::reinterpret_2x16_as_32_bits(x1);
             } else {
                 assert(false && "Function not implemented");
             }
