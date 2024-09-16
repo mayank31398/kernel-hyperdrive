@@ -20,9 +20,7 @@ __global__ void _vector_addition_forward_cuda_kernel(const scalar_t *x,
         const fp32 *x_vec = (fp32 *)&((const fp32_4 *)x)[thread_id];
         const fp32 *y_vec = (fp32 *)&((const fp32_4 *)y)[thread_id];
 
-        // tmp is initialized here to avoid doing multiple writes
-        fp32_4 output_buffer4;
-        fp32 *output_buffer = (fp32 *)(&output_buffer4);
+        fp32 output_buffer[4];
 
         // clang-format off
         #pragma unroll
@@ -44,7 +42,8 @@ __global__ void _vector_addition_forward_cuda_kernel(const scalar_t *x,
             }
         }
 
-        ((fp32_4 *)output)[thread_id] = output_buffer4;
+        ((fp32_4 *)output)[thread_id] =
+            make_float4(output_buffer[0], output_buffer[1], output_buffer[2], output_buffer[3]);
     } else if (start < num_elements) {
         // clang-format off
         #pragma unroll
