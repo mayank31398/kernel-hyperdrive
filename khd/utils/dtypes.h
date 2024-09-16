@@ -66,19 +66,27 @@ template <> struct DType<c10::Half> {
         return __halves2half2(lower_half, upper_half);
     }
 
-    __device__ static fp32 reinterpret_2x16_as_32_bits(nv_dtype2 value) {
-        nv_dtype lower_half = __low2half(value);
-        nv_dtype upper_half = __high2half(value);
-
+    __device__ static fp32 reinterpret_2x16_as_32_bits(nv_dtype lower_half, nv_dtype upper_half) {
         uint16_t lower_16 = __half_as_short(lower_half);
         uint16_t upper_16 = __half_as_short(upper_half);
 
         return get_fp32_from_upper_and_lower_16_bits(upper_16, lower_16);
     }
 
+    __device__ static fp32 reinterpret_2x16_as_32_bits(nv_dtype2 value) {
+        nv_dtype lower_half = __low2half(value);
+        nv_dtype upper_half = __high2half(value);
+
+        return reinterpret_2x16_as_32_bits(lower_half, upper_half);
+    }
+
     __device__ static fp32 upcast(nv_dtype value) { return __half2float(value); }
 
     __device__ static nv_dtype downcast(fp32 value) { return __float2half(value); }
+
+    __device__ static fp32_2 upcast2(nv_dtype2 value) { return __half22float2(value); }
+
+    __device__ static nv_dtype2 downcast2(fp32_2 value) { return __float22half2_rn(value); }
 };
 
 // struct for half (basically another alias for the above)
@@ -116,6 +124,10 @@ template <> struct DType<c10::BFloat16> {
     __device__ static fp32 upcast(nv_dtype value) { return __bfloat162float(value); }
 
     __device__ static nv_dtype downcast(fp32 value) { return __float2bfloat16(value); }
+
+    __device__ static fp32_2 upcast2(nv_dtype2 value) { return __bfloat1622float2(value); }
+
+    __device__ static nv_dtype2 downcast2(fp32_2 value) { return __float22bfloat162_rn(value); }
 };
 
 // struct for bf16 (basically another alias for the above)
