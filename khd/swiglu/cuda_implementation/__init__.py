@@ -16,7 +16,6 @@ class _Swiglu_CUDA(torch.autograd.Function):
 
         if not hasattr(_Swiglu_CUDA.forward, "_kernel"):
             _Swiglu_CUDA.forward._kernel = KernelRegistry.get_kernel(_FORWARD_KERNEL_NAME)
-            _Swiglu_CUDA.backward._kernel = KernelRegistry.get_kernel(_BACKWARD_KERNEL_NAME)
 
         return _Swiglu_CUDA.forward._kernel(gate, up)
 

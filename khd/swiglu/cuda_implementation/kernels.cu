@@ -35,7 +35,7 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
         // clang-format on
         for (int i = 0; i < 4; i++) {
             if (std::is_same_v<scalar_t, fp32>) {
-                tmp[i] = up * gate * sigmoid(gate);
+                tmp[i] = _up[i] * _gate[i] * sigmoid(_gate[i]);
             } else if constexpr (std::is_same_v<scalar_t, c10::Half> || std::is_same_v<scalar_t, c10::BFloat16>) {
                 using dtype = DType<scalar_t>;
                 using T = typename dtype::nv_dtype;
@@ -52,8 +52,8 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
                     T *_gate1 = (T *)(&gate1);
                     T *_up1 = (T *)(&up1);
 
-                    fp32 _gate1_fp32 = dtype::upcast(_gate1);
-                    fp32 _up1_fp32 = dtype::upcast(_up1);
+                    fp32 _gate1_fp32 = dtype::upcast(_gate1[j]);
+                    fp32 _up1_fp32 = dtype::upcast(_up1[j]);
 
                     fp32 _tmp_fp32 = _up1_fp32 * _gate1_fp32 * sigmoid(_gate1_fp32);
                     tmp1[j] = dtype::downcast(_tmp_fp32);
