@@ -17,39 +17,34 @@ __global__ void _vector_addition_forward_cuda_kernel(const scalar_t *x,
     const int end = (thread_id + 1) * num_elements_per_thread - 1; // inclusive of last element
 
     if (start < num_elements && end < num_elements) {
-        // fp32_4 is a datatype used for vectorized loads and stores
-        const fp32_4 *x4 = (const fp32_4 *)x;
-        const fp32_4 *y4 = (const fp32_4 *)y;
-        fp32_4 *output4 = (fp32_4 *)output;
-
-        const fp32 *_x = (fp32 *)(&x4[thread_id]);
-        const fp32 *_y = (fp32 *)(&y4[thread_id]);
+        const fp32 *x_vec = (fp32 *)&((const fp32_4 *)x)[thread_id];
+        const fp32 *y_vec = (fp32 *)&((const fp32_4 *)y)[thread_id];
 
         // tmp is initialized here to avoid doing multiple writes
-        fp32_4 tmp4;
-        fp32 *tmp = (fp32 *)(&tmp4);
+        fp32_4 output_buffer4;
+        fp32 *output_buffer = (fp32 *)(&output_buffer4);
 
         // clang-format off
         #pragma unroll
         // clang-format on
         for (int i = 0; i < 4; i++) {
             if (std::is_same_v<scalar_t, fp32>) {
-                tmp[i] = _x[i] + _y[i];
+                output_buffer[i] = x_vec[i] + y_vec[i];
             } else if constexpr (std::is_same_v<scalar_t, c10::Half> || std::is_same_v<scalar_t, c10::BFloat16>) {
                 using dtype = DType<scalar_t>;
                 using T2 = typename dtype::nv_dtype2;
 
-                T2 x1 = dtype::reinterpret_32_bits_as_2x16(_x[i]);
-                T2 y1 = dtype::reinterpret_32_bits_as_2x16(_y[i]);
-                x1 = __hadd2(x1, y1);
+                T2 _x = dtype::reinterpret_32_bits_as_2x16(x_vec[i]);
+                T2 _y = dtype::reinterpret_32_bits_as_2x16(y_vec[i]);
+                _x = __hadd2(_x, _y);
 
-                tmp[i] = dtype::reinterpret_2x16_as_32_bits(x1);
+                output_buffer[i] = dtype::reinterpret_2x16_as_32_bits(_x);
             } else {
                 assert(false && "Function not implemented");
             }
         }
 
-        output4[thread_id] = tmp4;
+        ((fp32_4 *)output)[thread_id] = output_buffer4;
     } else if (start < num_elements) {
         // clang-format off
         #pragma unroll
