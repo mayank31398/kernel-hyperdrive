@@ -28,6 +28,10 @@ __device__ fp32 get_fp32_from_upper_and_lower_16_bits(uint16_t upper_16, uint16_
     return __int_as_float(int_value);
 }
 
+template <typename T, typename vecT> __host__ __device__ int get_num_elements_in_vector_dtype() {
+    return sizeof(vecT) / sizeof(T);
+}
+
 // base struct for converting torch ScalarType to NVIDIA's dtype
 template <typename scalar_t> struct DType {
     using c10_dtype = scalar_t;
