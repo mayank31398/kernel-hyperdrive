@@ -18,54 +18,33 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
     const int end = (thread_id + 1) * num_elements_per_thread - 1; // inclusive of last element
 
     if (start < num_elements && end < num_elements) {
-        // fp32_4 is a datatype used for vectorized loads and stores
-        const fp32_4 *gate4 = (const fp32_4 *)gate;
-        const fp32_4 *up4 = (const fp32_4 *)up;
-        fp32_4 *output4 = (fp32_4 *)output;
+        const fp32 *gate_vec = (fp32 *)&((const fp32_4 *)gate)[thread_id];
+        const fp32 *up_vec = (fp32 *)&((const fp32_4 *)up)[thread_id];
 
-        const fp32 *_gate = (fp32 *)(&gate4[thread_id]);
-        const fp32 *_up = (fp32 *)(&up4[thread_id]);
-
-        // tmp is initialized here to avoid doing multiple writes
-        fp32_4 tmp4;
-        fp32 *tmp = (fp32 *)(&tmp4);
+        fp32 output_buffer[4];
 
         // clang-format off
         #pragma unroll
         // clang-format on
         for (int i = 0; i < 4; i++) {
             if (std::is_same_v<scalar_t, fp32>) {
-                tmp[i] = _up[i] * _gate[i] * sigmoid(_gate[i]);
+                output_buffer[i] = up_vec[i] * gate_vec[i] * sigmoid<scalar_t>(gate_vec[i]);
             } else if constexpr (std::is_same_v<scalar_t, c10::Half> || std::is_same_v<scalar_t, c10::BFloat16>) {
-                using dtype = DType<scalar_t>;
-                using T = typename dtype::nv_dtype;
-                using T2 = typename dtype::nv_dtype2;
-
-                T2 gate1 = dtype::reinterpret_32_bits_as_2x16(_gate[i]);
-                T2 up1 = dtype::reinterpret_32_bits_as_2x16(_up[i]);
-                T2 tmp1;
-
-                // clang-format off
-                #pragma unroll
-                // clang-format on
-                for (int j = 0; j < 2; j++) {
-                    T *_gate1 = (T *)(&gate1);
-                    T *_up1 = (T *)(&up1);
-
-                    fp32 _gate1_fp32 = dtype::upcast(_gate1[j]);
-                    fp32 _up1_fp32 = dtype::upcast(_up1[j]);
-
-                    fp32 _tmp_fp32 = _up1_fp32 * _gate1_fp32 * sigmoid(_gate1_fp32);
-                    tmp1[j] = dtype::downcast(_tmp_fp32);
-                }
-
-                tmp[i] = dtype::reinterpret_2x16_as_32_bits(tmp1);
+                output_buffer[i] = _swiglu_forward_vectorized_16(gate_vec[i], up_vec[i]);
             } else {
                 assert(false && "Function not implemented");
             }
         }
 
-        output4[thread_id] = tmp4;
+        ((fp32_4 *)output)[thread_id] =
+            make_float4(output_buffer[0], output_buffer[1], output_buffer[2], output_buffer[3]);
+    } else if (start < num_elements) {
+        // clang-format off
+        #pragma unroll
+        // clang-format on
+        for (int i = start; i < num_elements; i++) {
+            output[i] = x[i] + y[i];
+        }
     }
 }
 
