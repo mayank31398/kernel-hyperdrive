@@ -18,16 +18,16 @@ __global__ void _vector_addition_forward_cuda_kernel(const scalar_t *x,
 
     if (start < num_elements && end < num_elements) {
         // fp32_4 is a datatype used for vectorized loads and stores
-        const vecT *x4 = (const vecT *)x;
-        const vecT *y4 = (const vecT *)y;
-        vecT *output4 = (vecT *)output;
+        const vecT *x_vec = (const vecT *)x;
+        const vecT *y_vec = (const vecT *)y;
+        vecT *output_vec = (vecT *)output;
 
-        const fp32 *_x = (fp32 *)(&x4[thread_id]);
-        const fp32 *_y = (fp32 *)(&y4[thread_id]);
+        const fp32 *_x = (fp32 *)(&x_vec[thread_id]);
+        const fp32 *_y = (fp32 *)(&y_vec[thread_id]);
 
         // tmp is initialized here to avoid doing multiple writes
-        vecT tmp4;
-        fp32 *tmp = (fp32 *)(&tmp4);
+        vecT tmp_vec;
+        fp32 *tmp = (fp32 *)(&tmp_vec);
 
         // clang-format off
         #pragma unroll
@@ -43,7 +43,7 @@ __global__ void _vector_addition_forward_cuda_kernel(const scalar_t *x,
             }
         }
 
-        output4[thread_id] = tmp4;
+        output_vec[thread_id] = tmp_vec;
     } else if (start < num_elements) {
         // clang-format off
         #pragma unroll
