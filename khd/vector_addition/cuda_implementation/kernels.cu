@@ -11,7 +11,7 @@ __global__ void _vector_addition_forward_cuda_kernel(const scalar_t *x,
                                                      scalar_t *output,
                                                      const int num_elements) {
     const int thread_id = get_global_thread_id();
-    const int num_elements_per_thread = get_num_elements_in_vector_dtype<scalar_t, fp32_4>();
+    const int num_elements_per_thread = get_num_elements_in_vector_dtype<T, vecT>();
 
     const int start = thread_id * num_elements_per_thread;
     const int end = (thread_id + 1) * num_elements_per_thread - 1; // inclusive of last element
@@ -61,7 +61,7 @@ void vector_addition_forward_cuda_kernel(
             using T = DType<scalar_t>::nv_dtype;
             using vecT = fp32_4;
 
-            const int num_elements_per_thread = get_num_elements_in_vector_dtype<scalar_t, fp32_4>();
+            const int num_elements_per_thread = get_num_elements_in_vector_dtype<T, vecT>();
 
             const int num_elements_per_block = BLOCK_SIZE * num_elements_per_thread;
             const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
