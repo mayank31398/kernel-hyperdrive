@@ -34,7 +34,6 @@ def scatter2scatter(
     assert sorted_scattered_idxs.size(0) == sorted_expert_idxs.size(0)
     assert sorted_scattered_idxs.size(0) == X.size(0) * k
     # Pre-kernel setup
-    x_dim = X.size(-1)
     y_dim = W.size(-1)
     L_scattered = sorted_expert_idxs.size(0)
     if out is None:
@@ -125,7 +124,6 @@ def group(A, sorted_expert_idxs, coeff=None, fan_out=1, out=None):
         Y = out
     else:
         Y = torch.empty((N, K), dtype=A.dtype, device=A.device)
-        # print("grp init:", Y.size())
 
     def grid(META):
         grid_num = (triton.cdiv(META["N"], META["BLOCK_N"]),)

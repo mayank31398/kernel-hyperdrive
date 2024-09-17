@@ -6,13 +6,14 @@ from .kernels import vector_addition_forward_triton_kernel
 
 
 _KERNEL_NAME = "vector_addition_forward_triton"
-BLOCK_SIZE = 1024
 
 
 class _VectorAddition_Triton(torch.autograd.Function):
     @torch.profiler.record_function(f"{LIBRARY_NAME}:{_KERNEL_NAME}")
     @staticmethod
     def forward(ctx, x: torch.Tensor, y: torch.Tensor, memory_efficient: bool) -> torch.Tensor:
+        BLOCK_SIZE = 1024
+
         assert x.is_cuda, "tensor x is not on GPU"
         assert y.is_cuda, "tensor y is not on GPU"
 
