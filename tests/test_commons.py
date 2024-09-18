@@ -30,6 +30,19 @@ class TestCommons(TestCase):
             sizes.add(3000 + random.randint(-1000, 1000))
         return sizes
 
+    @staticmethod
+    def get_2d_tensor_sizes() -> list[tuple[int]]:
+        sizes = set()
+        # powers of 2
+        for i in range(15):
+            start = 2**i
+            for j in range(10):
+                sizes.add((start + j, start + j))
+        # not powers of 2
+        for _ in range(50):
+            sizes.add((3000 + random.randint(-1000, 1000), 3000 + random.randint(-1000, 1000)))
+        return sizes
+
     def make_args_matrix(*args_lists) -> list[Any]:
         return [p for p in product(*args_lists)]
 
@@ -62,3 +75,14 @@ class TestCommons(TestCase):
 
     def get_activation_function(self, is_glu: bool) -> nn.Module:
         return nn.GLU() if is_glu else nn.GELU(approximate="tanh")
+
+    def get_random_duplicated_tensors(
+        self, size: tuple[int], device: torch.device, dtype: torch.dtype
+    ) -> tuple[torch.Tensor]:
+        x = torch.randn(size, device=device, dtype=dtype, requires_grad=True)
+        x_clone = x.clone().detach().requires_grad_()
+
+        return x, x_clone
+
+    def get_non_leaf_tensor(self, x: torch.Tensor) -> torch.Tensor:
+        return x + 0

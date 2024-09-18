@@ -1,89 +1,69 @@
+#include "../../utils/dtypes.h"
+#include "../../utils/threads.h"
 #include <cuda.h>
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
 #include <torch/extension.h>
 
-#define BLOCK_SIZE 1024
-
-#define NUM_ELEMENTS_PER_THREAD_FP32 4 // vectorized load store
-#define NUM_ELEMENTS_PER_THREAD_FP16 2 // vectorized load store
-#define NUM_ELEMENTS_PER_THREAD_BF16 2 // vectorized load store
-
 template <typename scalar_t>
-__global__ void vector_addition_forward_kernel(const scalar_t *x,
-                                               const scalar_t *y,
-                                               scalar_t *output,
-                                               const int num_elements,
-                                               const int num_elements_per_thread) {
-    int thread_id = blockIdx.x * blockDim.x + threadIdx.x;
+__global__ void _vector_addition_forward_cuda_kernel(const scalar_t *x,
+                                                     const scalar_t *y,
+                                                     scalar_t *output,
+                                                     const int num_elements) {
+    const int thread_id = get_global_thread_id();
+    const int num_elements_per_thread = get_num_elements_in_vector_dtype<scalar_t, fp32_4>();
 
     const int start = thread_id * num_elements_per_thread;
     const int end = (thread_id + 1) * num_elements_per_thread - 1; // inclusive of last element
 
     if (start < num_elements && end < num_elements) {
-        if (std::is_same_v<scalar_t, float>) {
-            // float4 is a datatype used for vectorized loads and stores
-            const float4 *x4 = (const float4 *)x;
-            const float4 *y4 = (const float4 *)y;
-            float4 *output4 = (float4 *)output;
+        const fp32 *x_vec = (fp32 *)&((const fp32_4 *)x)[thread_id];
+        const fp32 *y_vec = (fp32 *)&((const fp32_4 *)y)[thread_id];
 
-            // tmp is initialized here to avoid doing multiple writes
-            const float4 _x4 = x4[thread_id];
-            const float4 _y4 = y4[thread_id];
-            float4 tmp;
+        fp32 output_buffer[4];
 
-            tmp.x = _x4.x + _y4.x;
-            tmp.y = _x4.y + _y4.y;
-            tmp.z = _x4.z + _y4.z;
-            tmp.w = _x4.w + _y4.w;
+        // clang-format off
+        #pragma unroll
+        // clang-format on
+        for (int i = 0; i < 4; i++) {
+            if (std::is_same_v<scalar_t, fp32>) {
+                output_buffer[i] = x_vec[i] + y_vec[i];
+            } else if constexpr (std::is_same_v<scalar_t, c10::Half> || std::is_same_v<scalar_t, c10::BFloat16>) {
+                using dtype = DType<scalar_t>;
+                using T2 = typename dtype::nv_dtype2;
 
-            output4[thread_id] = tmp;
-        } else if (std::is_same_v<scalar_t, c10::Half>) {
-            __half2 *x2 = (__half2 *)x;
-            __half2 *y2 = (__half2 *)y;
-            __half2 *output2 = (__half2 *)output;
+                T2 _x = dtype::reinterpret_32_bits_as_2x16(x_vec[i]);
+                T2 _y = dtype::reinterpret_32_bits_as_2x16(y_vec[i]);
+                _x = __hadd2(_x, _y);
 
-            output2[thread_id] = __hadd2(x2[thread_id], y2[thread_id]);
-        } else if (std::is_same_v<scalar_t, c10::BFloat16>) {
-            __nv_bfloat162 *x2 = (__nv_bfloat162 *)x;
-            __nv_bfloat162 *y2 = (__nv_bfloat162 *)y;
-            __nv_bfloat162 *output2 = (__nv_bfloat162 *)output;
-
-            output2[thread_id] = __hadd2(x2[thread_id], y2[thread_id]);
+                output_buffer[i] = dtype::reinterpret_2x16_as_32_bits(_x);
+            } else {
+                assert(false && "Function not implemented");
+            }
         }
+
+        ((fp32_4 *)output)[thread_id] =
+            make_float4(output_buffer[0], output_buffer[1], output_buffer[2], output_buffer[3]);
     } else if (start < num_elements) {
-#pragma unroll
+        // clang-format off
+        #pragma unroll
+        // clang-format on
         for (int i = start; i < num_elements; i++) {
             output[i] = x[i] + y[i];
         }
     }
 }
 
-torch::Tensor vector_addition_forward_kernel_dispatcher(torch::Tensor x, torch::Tensor y) {
-    int num_elements = x.numel();
-
-    torch::Tensor output = torch::empty_like(x);
-
+void vector_addition_forward_cuda_kernel(
+    torch::Tensor x, torch::Tensor y, torch::Tensor output, const int num_elements, const int BLOCK_SIZE) {
     AT_DISPATCH_FLOATING_TYPES_AND2(
-        at::ScalarType::Half, at::ScalarType::BFloat16, x.scalar_type(), "vector_addition_forward_kernel", ([&] {
-            int num_elements_per_thread;
-            if (std::is_same_v<scalar_t, float>) {
-                num_elements_per_thread = NUM_ELEMENTS_PER_THREAD_FP32;
-            } else if (std::is_same_v<scalar_t, c10::Half>) {
-                num_elements_per_thread = NUM_ELEMENTS_PER_THREAD_FP16;
-            } else if (std::is_same_v<scalar_t, c10::BFloat16>) {
-                num_elements_per_thread = NUM_ELEMENTS_PER_THREAD_BF16;
-            }
+        at::ScalarType::Half, at::ScalarType::BFloat16, x.scalar_type(), "vector_addition_forward_cuda_kernel", ([&] {
+            const int num_elements_per_thread = get_num_elements_in_vector_dtype<scalar_t, fp32_4>();
 
-            int num_elements_per_block = BLOCK_SIZE * num_elements_per_thread;
-            int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
+            const int num_elements_per_block = BLOCK_SIZE * num_elements_per_thread;
+            const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
 
-            vector_addition_forward_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(x.data<scalar_t>(),
-                                                                                 y.data<scalar_t>(),
-                                                                                 output.data<scalar_t>(),
-                                                                                 num_elements,
-                                                                                 num_elements_per_thread);
+            _vector_addition_forward_cuda_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(
+                x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
         }));
-
-    return output;
 }
