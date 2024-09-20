@@ -9,7 +9,7 @@ _KERNEL_NAME = "vector_addition_forward_cuda"
 
 @torch.library.custom_op(f"{LIBRARY_NAME}::{_KERNEL_NAME}", mutates_args={})
 def _vector_addition_forward_cuda_compilable(x: torch.Tensor, y: torch.Tensor, BLOCK_SIZE: int) -> torch.Tensor:
-    return KernelRegistry.get_kernel(_KERNEL_NAME)(x, y, False, BLOCK_SIZE)
+    return KernelRegistry.get_kernel(_KERNEL_NAME)(x, y, BLOCK_SIZE)
 
 
 @_vector_addition_forward_cuda_compilable.register_fake
