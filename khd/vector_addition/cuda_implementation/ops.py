@@ -7,16 +7,16 @@ from ...kernel_registry import KernelRegistry
 _KERNEL_NAME = "vector_addition_forward_cuda"
 
 
-@torch.library.custom_op(f"{LIBRARY_NAME}::{_KERNEL_NAME}", mutates_args={})
+@torch.library.custom_op(f"{LIBRARY_NAME}::{_KERNEL_NAME}", mutates_args={"output"})
 def _vector_addition_forward_cuda_compilable(
     x: torch.Tensor, y: torch.Tensor, output: torch.Tensor, num_elements: int, BLOCK_SIZE: int
-) -> torch.Tensor:
+) -> None:
     return KernelRegistry.get_kernel(_KERNEL_NAME)(x, y, output, num_elements, BLOCK_SIZE)
 
 
 @_vector_addition_forward_cuda_compilable.register_fake
-def _(x: torch.Tensor, y: torch.Tensor, output: torch.Tensor, num_elements: int, BLOCK_SIZE: int) -> torch.Tensor:
-    return torch.empty_like(x)
+def _(x: torch.Tensor, y: torch.Tensor, output: torch.Tensor, num_elements: int, BLOCK_SIZE: int) -> None:
+    return
 
 
 class _VectorAddition_CUDA(torch.autograd.Function):
