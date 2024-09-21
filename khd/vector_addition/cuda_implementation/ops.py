@@ -18,7 +18,6 @@ def _(x: torch.Tensor, y: torch.Tensor, BLOCK_SIZE: int) -> torch.Tensor:
 
 
 class _VectorAddition_CUDA(torch.autograd.Function):
-    @torch.profiler.record_function(f"{LIBRARY_NAME}:{_KERNEL_NAME}")
     @staticmethod
     def forward(ctx, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         BLOCK_SIZE = 1024
