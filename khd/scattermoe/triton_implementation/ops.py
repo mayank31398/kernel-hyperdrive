@@ -132,40 +132,42 @@ def _group_bwd_W(DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor
     return DW
 
 
-def group(A, sorted_expert_idxs, coeff=None, fan_out=1, out=None):
+def _group(
+    A: torch.Tensor,
+    sorted_expert_idxs: torch.Tensor,
+    coeff: torch.Tensor | None = None,
+    fan_out: int = 1,
+    out: torch.Tensor | None = None,
+) -> torch.Tensor:
     N = sorted_expert_idxs.size(0)
     K = A.size(1)
     assert A.size(0) * fan_out == N
-    if out is not None:
-        Y = out
-    else:
-        Y = torch.empty((N, K), dtype=A.dtype, device=A.device)
-        # print("grp init:", Y.size())
 
-    def grid(META):
-        grid_num = (triton.cdiv(META["N"], META["BLOCK_N"]),)
-        return grid_num
+    if out is None:
+        out = torch.empty((N, K), dtype=A.dtype, device=A.device)
 
-    with torch.cuda.device(A.device):
-        group_triton_kernel[grid](
-            # A_ptr, stride_an, stride_ai,
-            A,
-            A.stride(0),
-            A.stride(1),
-            coeff is not None,
-            coeff,
-            fan_out,
-            # Y_ptr, stride_yn, stride_yk,
-            Y,
-            Y.stride(0),
-            Y.stride(1),
-            # grouped_idx_ptr,
-            sorted_expert_idxs,
-            # N: tl.constexpr, K: tl.constexpr,
-            N,
-            K,
-        )
-        return Y
+    grid = lambda meta: (triton.cdiv(meta["N"], meta["BLOCK_N"]),)
+
+    group_triton_kernel[grid](
+        # A_ptr, stride_an, stride_ai,
+        A,
+        A.stride(0),
+        A.stride(1),
+        coeff is not None,
+        coeff,
+        fan_out,
+        # Y_ptr, stride_yn, stride_yk,
+        out,
+        out.stride(0),
+        out.stride(1),
+        # grouped_idx_ptr,
+        sorted_expert_idxs,
+        # N: tl.constexpr, K: tl.constexpr,
+        N,
+        K,
+    )
+
+    return out
 
 
 class _ScatteredExperts(torch.autograd.Function):
@@ -249,7 +251,7 @@ class _ScatteredExperts(torch.autograd.Function):
         if grouped_out:
             grouped_grad_out = grad_out
         else:
-            grouped_grad_out = group(
+            grouped_grad_out = _group(
                 grad_out, sorted_scattered_idxs, fan_out=gate_fan, coeff=gates_flat, out=grouped_grad_out
             )
 
@@ -257,7 +259,7 @@ class _ScatteredExperts(torch.autograd.Function):
             grouped_x = x
             d_expanded_input = None
         else:
-            grouped_x = group(x, sorted_scattered_idxs, fan_out=k)
+            grouped_x = _group(x, sorted_scattered_idxs, fan_out=k)
             d_expanded_input = grouped_x
 
         d_weights = _group_bwd_W(
@@ -273,7 +275,7 @@ class _ScatteredExperts(torch.autograd.Function):
             sorted_scattered_idxs=sorted_scattered_idxs,
             FAN_OUT=1,
             y_grouped=grouped_in,
-            out=d_expanded_input,  # Reuse grouped_x buffer
+            out=d_expanded_input,
         )
 
         if k == 1:
