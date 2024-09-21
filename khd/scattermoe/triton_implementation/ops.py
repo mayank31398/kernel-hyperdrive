@@ -182,7 +182,20 @@ def _group_bwd_W(DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor
         allow_tf32=torch.backends.cudnn.allow_tf32,
     )
 
-    return DW
+
+# custom op is needed because of https://github.com/pytorch/pytorch/issues/136394
+@torch.library.custom_op("khd::group_bwd_W", mutates_args={"dW"})
+def _group_bwd_W_compileable(
+    DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor, DW: torch.Tensor, E: int
+) -> None:
+    _group_bwd_W(DY=DY, X=X, expert_offsets=expert_offsets, DW=DW, E=E)
+
+
+def group_bwd_W(DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor, DW: torch.Tensor, E: int) -> None:
+    if torch.compiler.is_compiling():
+        _group_bwd_W_compileable(DY=DY, X=X, expert_offsets=expert_offsets, DW=DW, E=E)
+    else:
+        _group_bwd_W(DY=DY, X=X, expert_offsets=expert_offsets, DW=DW, E=E)
 
 
 def _group(
@@ -334,7 +347,7 @@ class _ScatteredExperts(torch.autograd.Function):
             dtype=grouped_grad_out.dtype,
         ).permute(0, 2, 1)
 
-        _group_bwd_W(
+        group_bwd_W(
             DY=grouped_grad_out,
             X=grouped_x,
             expert_offsets=expert_offsets,
