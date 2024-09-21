@@ -92,6 +92,69 @@ def _scatter2scatter(
     )
 
 
+# custom op is needed because of https://github.com/pytorch/pytorch/issues/136394
+@torch.library.custom_op("khd::scatter2scatter", mutates_args={"out"})
+def _scatter2scatter_compileable(
+    X: torch.Tensor,
+    W: torch.Tensor,
+    sorted_expert_idxs: torch.Tensor,
+    sorted_scattered_idxs: torch.Tensor,
+    padded_block_idxs: torch.Tensor,
+    out: torch.Tensor,
+    FAN_OUT: int,
+    x_grouped: bool = False,
+    y_grouped: bool = False,
+) -> None:
+    _scatter2scatter(
+        X=X,
+        W=W,
+        sorted_expert_idxs=sorted_expert_idxs,
+        sorted_scattered_idxs=sorted_scattered_idxs,
+        padded_block_idxs=padded_block_idxs,
+        out=out,
+        FAN_OUT=FAN_OUT,
+        x_grouped=x_grouped,
+        y_grouped=y_grouped,
+    )
+
+
+def scatter2scatter(
+    X: torch.Tensor,
+    W: torch.Tensor,
+    sorted_expert_idxs: torch.Tensor,
+    sorted_scattered_idxs: torch.Tensor,
+    padded_block_idxs: torch.Tensor,
+    out: torch.Tensor,
+    FAN_OUT: int,
+    x_grouped: bool = False,
+    y_grouped: bool = False,
+) -> None:
+    if torch.compiler.is_compiling():
+        _scatter2scatter_compileable(
+            X=X,
+            W=W,
+            sorted_expert_idxs=sorted_expert_idxs,
+            sorted_scattered_idxs=sorted_scattered_idxs,
+            padded_block_idxs=padded_block_idxs,
+            out=out,
+            FAN_OUT=FAN_OUT,
+            x_grouped=x_grouped,
+            y_grouped=y_grouped,
+        )
+    else:
+        _scatter2scatter(
+            X=X,
+            W=W,
+            sorted_expert_idxs=sorted_expert_idxs,
+            sorted_scattered_idxs=sorted_scattered_idxs,
+            padded_block_idxs=padded_block_idxs,
+            out=out,
+            FAN_OUT=FAN_OUT,
+            x_grouped=x_grouped,
+            y_grouped=y_grouped,
+        )
+
+
 def _group_bwd_W(DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor, DW: torch.Tensor, E: int) -> None:
     grid = lambda meta: (E * triton.cdiv(meta["K"], meta["BLOCK_K"]), triton.cdiv(meta["N"], meta["BLOCK_N"]))
 
@@ -174,7 +237,7 @@ class _ScatteredExperts(torch.autograd.Function):
     ):
         output = torch.empty(sorted_expert_idxs.size(0), expert_weights.size(-1), device=x.device, dtype=x.dtype)
 
-        _scatter2scatter(
+        scatter2scatter(
             X=x,
             W=expert_weights,
             sorted_expert_idxs=sorted_expert_idxs,
@@ -281,7 +344,7 @@ class _ScatteredExperts(torch.autograd.Function):
             E=expert_weights.size(0),
         )
 
-        _scatter2scatter(
+        scatter2scatter(
             X=grouped_grad_out,
             W=expert_weights.permute(0, 2, 1),
             sorted_expert_idxs=sorted_expert_idxs,
