@@ -56,7 +56,7 @@ def scatter2scatter(
     out: torch.Tensor | None = None,
 ) -> torch.Tensor:
     assert sorted_scattered_idxs.size(0) == sorted_expert_idxs.size(0)
-    assert sorted_scattered_idxs.size(0) == X.size(0) * k
+    assert sorted_scattered_idxs.size(0) == X.size(0) * FAN_OUT
 
     y_dim = W.size(-1)
     L_scattered = sorted_expert_idxs.size(0)
