@@ -12,21 +12,14 @@ _BACKWARD_KERNEL_NAME = "swiglu_backward_triton_kernel"
 class _Swiglu_Triton(torch.autograd.Function):
     @torch.profiler.record_function(f"{LIBRARY_NAME}:{_FORWARD_KERNEL_NAME}")
     @staticmethod
-    def forward(ctx, gate: torch.Tensor, up: torch.Tensor, memory_efficient: bool) -> torch.Tensor:
+    def forward(ctx, gate: torch.Tensor, up: torch.Tensor) -> torch.Tensor:
         assert gate.is_cuda, "tensor gate is not on GPU"
         assert up.is_cuda, "tensor up is not on GPU"
 
         assert gate.size() == up.size(), "tensors gate and up should have same shape"
         assert gate.type() == up.type(), "tensors gate and up should have same dtype"
 
-        if memory_efficient:
-            if gate.is_leaf or up.is_leaf:
-                # forward pass if fine but backward pass will be incorrect due to in-place ops
-                # we raise error in forward pass though
-                raise RuntimeError("leaf variables can't be used in an in-place operation")
-
         ctx.save_for_backward(gate, up)
-        ctx.memory_efficient = memory_efficient
 
         output = torch.empty_like(gate)
 
@@ -49,13 +42,12 @@ class _Swiglu_Triton(torch.autograd.Function):
     @staticmethod
     def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor | None]:
         gate, up = ctx.saved_tensors
-        memory_efficient = ctx.memory_efficient
 
         num_elements = output_grad.numel()
         grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE"]),)
 
-        gate_grad = gate if memory_efficient else torch.empty_like(gate)
-        up_grad = up if memory_efficient else torch.empty_like(up)
+        gate_grad = torch.empty_like(gate)
+        up_grad = torch.empty_like(up)
 
         BLOCK_SIZE = 1024
 
@@ -73,17 +65,15 @@ class _Swiglu_Triton(torch.autograd.Function):
         return gate_grad, up_grad, None
 
 
-def swiglu_triton(gate: torch.Tensor, up: torch.Tensor, memory_efficient: bool = False) -> torch.Tensor:
+def swiglu_triton(gate: torch.Tensor, up: torch.Tensor) -> torch.Tensor:
     """swiglu
 
     Args:
         x (torch.Tensor): input tensor
         y (torch.Tensor): input tensor
-        memory_efficient (bool, optional): whether to do an in-place op, uses `gate` and `up` to store gradients in the
-            backward pass if set to True. Defaults to False.
 
     Returns:
         torch.Tensor: output tensor
     """
 
-    return _Swiglu_Triton.apply(gate, up, memory_efficient)
+    return _Swiglu_Triton.apply(gate, up)
