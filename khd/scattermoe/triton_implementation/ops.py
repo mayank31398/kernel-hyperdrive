@@ -1,3 +1,5 @@
+from typing import Optional
+
 import torch
 import triton
 import triton.language as tl
@@ -10,6 +12,7 @@ BLOCK_M = 128
 torch._dynamo.config.capture_scalar_outputs = True
 
 
+# bincount is not compilable
 @torch.library.custom_op("khd::bincount", mutates_args={})
 def compileable_bincount(x: torch.Tensor, minlength: int) -> torch.Tensor:
     return x.bincount(minlength=minlength)
@@ -44,19 +47,22 @@ def padded_block_indices(sorted_experts_idxs: torch.Tensor, k: int, N_BLOCK_SIZE
     return expanded_block_idxs, expert_boundaries_end
 
 
+# custom op is needed because of https://github.com/pytorch/pytorch/issues/136394
+@torch.library.custom_op("khd::scatter2scatter", mutates_args={})
 def scatter2scatter(
-    X, W, sorted_expert_idxs, sorted_scattered_idxs, k, padded_block_idxs, x_grouped=False, y_grouped=False, out=None
-):
-    assert sorted_scattered_idxs.size(0) == sorted_expert_idxs.size(0)
-    assert sorted_scattered_idxs.size(0) == X.size(0) * k
-
+    X: torch.Tensor,
+    W: torch.Tensor,
+    sorted_scattered_idxs: torch.Tensor,
+    sorted_expert_idxs: torch.Tensor,
+    padded_block_idxs: torch.Tensor,
+    FAN_OUT: int,
+    x_grouped: bool,
+    y_grouped: bool,
+) -> torch.Tensor:
     y_dim = W.size(-1)
     L_scattered = sorted_expert_idxs.size(0)
 
-    if out is None:
-        out = torch.empty((L_scattered, y_dim), device=X.device, dtype=X.dtype)
-    else:
-        assert out.size(0) == L_scattered and out.size(1) == y_dim
+    out = torch.empty((L_scattered, y_dim), device=X.device, dtype=X.dtype)
 
     grid = lambda meta: (padded_block_idxs.size(0) * triton.cdiv(meta["N"], meta["BLOCK_N"]),)
 
@@ -77,7 +83,7 @@ def scatter2scatter(
         grouped_idx_ptr=sorted_scattered_idxs,
         expert_idxs_ptr=sorted_expert_idxs,
         block_start_idx_ptr=padded_block_idxs,
-        FAN_OUT=k,
+        FAN_OUT=FAN_OUT,
         M=X.size(0),
         K=X.size(1),
         N=out.size(1),
@@ -92,7 +98,25 @@ def scatter2scatter(
     return out
 
 
-def group_bwd_W(DY, X, expert_offsets, E):
+@scatter2scatter.register_fake
+def _(
+    X: torch.Tensor,
+    W: torch.Tensor,
+    sorted_scattered_idxs: torch.Tensor,
+    sorted_expert_idxs: torch.Tensor,
+    padded_block_idxs: torch.Tensor,
+    FAN_OUT: int,
+    x_grouped: bool,
+    y_grouped: bool,
+) -> torch.Tensor:
+    y_dim = W.size(-1)
+    L_scattered = sorted_expert_idxs.size(0)
+    return torch.empty((L_scattered, y_dim), device=X.device, dtype=X.dtype)
+
+
+# custom op is needed because of https://github.com/pytorch/pytorch/issues/136394
+@torch.library.custom_op("khd::group_bwd_W", mutates_args={})
+def group_bwd_W(DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor, E: int) -> torch.Tensor:
     DWt = torch.zeros((E, DY.size(-1), X.size(-1)), device=DY.device, dtype=DY.dtype)
     DW = DWt.permute(0, 2, 1)
 
@@ -125,13 +149,26 @@ def group_bwd_W(DY, X, expert_offsets, E):
     return DW
 
 
-def group(A, sorted_expert_idxs, coeff=None, fan_out=1, out=None):
+@group_bwd_W.register_fake
+def _(DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor, E: int) -> torch.Tensor:
+    DWt = torch.empty((E, DY.size(-1), X.size(-1)), device=DY.device, dtype=DY.dtype)
+    DW = DWt.permute(0, 2, 1)
+    return DW
+
+
+# custom op is needed because of https://github.com/pytorch/pytorch/issues/136394
+@torch.library.custom_op("khd::group", mutates_args={})
+def group(
+    A: torch.Tensor,
+    sorted_expert_idxs: torch.Tensor,
+    coeff: Optional[torch.Tensor] = None,
+    fan_out: int = 1,
+) -> torch.Tensor:
     N = sorted_expert_idxs.size(0)
     K = A.size(1)
     assert A.size(0) * fan_out == N
 
-    if out is None:
-        out = torch.empty((N, K), dtype=A.dtype, device=A.device)
+    out = torch.empty((N, K), dtype=A.dtype, device=A.device)
 
     grid = lambda meta: (triton.cdiv(meta["N"], meta["BLOCK_N"]),)
 
@@ -157,6 +194,18 @@ def group(A, sorted_expert_idxs, coeff=None, fan_out=1, out=None):
     return out
 
 
+@group.register_fake
+def _(
+    A: torch.Tensor,
+    sorted_expert_idxs: torch.Tensor,
+    coeff: Optional[torch.Tensor] = None,
+    fan_out: int = 1,
+) -> torch.Tensor:
+    N = sorted_expert_idxs.size(0)
+    K = A.size(1)
+    return torch.empty((N, K), dtype=A.dtype, device=A.device)
+
+
 class _ScatteredExperts(torch.autograd.Function):
     @staticmethod
     def forward(
@@ -172,13 +221,16 @@ class _ScatteredExperts(torch.autograd.Function):
         grouped_in=False,
         grouped_out=False,
     ):
+        assert sorted_scattered_idxs.size(0) == sorted_expert_idxs.size(0)
+        assert sorted_scattered_idxs.size(0) == x.size(0) * k
+
         output = scatter2scatter(
             X=x,
             W=expert_weights,
             sorted_expert_idxs=sorted_expert_idxs,
             sorted_scattered_idxs=sorted_scattered_idxs,
             padded_block_idxs=padded_block_idxs,
-            k=k,
+            FAN_OUT=k,
             x_grouped=grouped_in,
             y_grouped=grouped_out,
         )
@@ -238,9 +290,7 @@ class _ScatteredExperts(torch.autograd.Function):
         if grouped_out:
             grouped_grad_out = grad_out
         else:
-            grouped_grad_out = group(
-                grad_out, sorted_scattered_idxs, fan_out=gate_fan, coeff=gates_flat, out=grouped_grad_out
-            )
+            grouped_grad_out = group(grad_out, sorted_scattered_idxs, fan_out=gate_fan, coeff=gates_flat)
 
         if grouped_in:
             grouped_x = x
@@ -255,14 +305,13 @@ class _ScatteredExperts(torch.autograd.Function):
 
         d_expanded_input = scatter2scatter(
             X=grouped_grad_out,
-            x_grouped=True,
             W=expert_weights.permute(0, 2, 1),
-            padded_block_idxs=padded_block_idxs,
-            sorted_expert_idxs=sorted_expert_idxs,
             sorted_scattered_idxs=sorted_scattered_idxs,
-            k=1,
+            sorted_expert_idxs=sorted_expert_idxs,
+            padded_block_idxs=padded_block_idxs,
+            FAN_OUT=1,
+            x_grouped=True,
             y_grouped=grouped_in,
-            out=d_expanded_input,  # Reuse grouped_x buffer
         )
 
         if k == 1:
