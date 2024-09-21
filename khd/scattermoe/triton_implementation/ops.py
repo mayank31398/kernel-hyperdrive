@@ -48,7 +48,7 @@ def padded_block_indices(sorted_experts_idxs: torch.Tensor, k: int, N_BLOCK_SIZE
 
 
 # custom op is needed because of https://github.com/pytorch/pytorch/issues/136394
-@torch.library.custom_op("khd::scatter2scatter", mutates_args={})
+@torch.library.custom_op("khd::scatter2scatter", mutates_args={"out"})
 def scatter2scatter(
     X: torch.Tensor,
     W: torch.Tensor,
@@ -58,12 +58,8 @@ def scatter2scatter(
     FAN_OUT: int,
     x_grouped: bool,
     y_grouped: bool,
-) -> torch.Tensor:
-    y_dim = W.size(-1)
-    L_scattered = sorted_expert_idxs.size(0)
-
-    out = torch.empty((L_scattered, y_dim), device=X.device, dtype=X.dtype)
-
+    out: torch.Tensor,
+) -> None:
     grid = lambda meta: (padded_block_idxs.size(0) * triton.cdiv(meta["N"], meta["BLOCK_N"]),)
 
     scatter2scatter_triton_kernel[grid](
@@ -94,24 +90,6 @@ def scatter2scatter(
         x_grouped=x_grouped,
         y_grouped=y_grouped,
     )
-
-    return out
-
-
-@scatter2scatter.register_fake
-def _(
-    X: torch.Tensor,
-    W: torch.Tensor,
-    sorted_scattered_idxs: torch.Tensor,
-    sorted_expert_idxs: torch.Tensor,
-    padded_block_idxs: torch.Tensor,
-    FAN_OUT: int,
-    x_grouped: bool,
-    y_grouped: bool,
-) -> torch.Tensor:
-    y_dim = W.size(-1)
-    L_scattered = sorted_expert_idxs.size(0)
-    return torch.empty((L_scattered, y_dim), device=X.device, dtype=X.dtype)
 
 
 # custom op is needed because of https://github.com/pytorch/pytorch/issues/136394
@@ -224,7 +202,9 @@ class _ScatteredExperts(torch.autograd.Function):
         assert sorted_scattered_idxs.size(0) == sorted_expert_idxs.size(0)
         assert sorted_scattered_idxs.size(0) == x.size(0) * k
 
-        output = scatter2scatter(
+        output = torch.empty(sorted_expert_idxs.size(0), expert_weights.size(-1), device=x.device, dtype=x.dtype)
+
+        scatter2scatter(
             X=x,
             W=expert_weights,
             sorted_expert_idxs=sorted_expert_idxs,
@@ -233,6 +213,7 @@ class _ScatteredExperts(torch.autograd.Function):
             FAN_OUT=k,
             x_grouped=grouped_in,
             y_grouped=grouped_out,
+            out=output,
         )
 
         if gates is None:
@@ -294,7 +275,9 @@ class _ScatteredExperts(torch.autograd.Function):
 
         if grouped_in:
             grouped_x = x
-            d_expanded_input = None
+            d_expanded_input = torch.empty(
+                sorted_expert_idxs.size(0), expert_weights.size(1), device=x.device, dtype=x.dtype
+            )
         else:
             grouped_x = group(x, sorted_scattered_idxs, fan_out=k)
             d_expanded_input = grouped_x
@@ -303,7 +286,7 @@ class _ScatteredExperts(torch.autograd.Function):
             DY=grouped_grad_out, X=grouped_x, expert_offsets=expert_offsets, E=expert_weights.size(0)
         )
 
-        d_expanded_input = scatter2scatter(
+        scatter2scatter(
             X=grouped_grad_out,
             W=expert_weights.permute(0, 2, 1),
             sorted_scattered_idxs=sorted_scattered_idxs,
@@ -312,6 +295,7 @@ class _ScatteredExperts(torch.autograd.Function):
             FAN_OUT=1,
             x_grouped=True,
             y_grouped=grouped_in,
+            out=d_expanded_input,
         )
 
         if k == 1:
