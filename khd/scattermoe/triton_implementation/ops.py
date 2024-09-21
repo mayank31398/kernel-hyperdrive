@@ -231,6 +231,29 @@ def _group(
     )
 
 
+def _group_compileable(
+    A: torch.Tensor,
+    sorted_expert_idxs: torch.Tensor,
+    out: torch.Tensor,
+    coeff: torch.Tensor | None = None,
+    fan_out: int = 1,
+) -> None:
+    _group(A=A, sorted_expert_idxs=sorted_expert_idxs, out=out, coeff=coeff, fan_out=fan_out)
+
+
+def group(
+    A: torch.Tensor,
+    sorted_expert_idxs: torch.Tensor,
+    out: torch.Tensor,
+    coeff: torch.Tensor | None = None,
+    fan_out: int = 1,
+) -> None:
+    if torch.compiler.is_compiling():
+        _group_compileable(A=A, sorted_expert_idxs=sorted_expert_idxs, out=out, coeff=coeff, fan_out=fan_out)
+    else:
+        _group(A=A, sorted_expert_idxs=sorted_expert_idxs, out=out, coeff=coeff, fan_out=fan_out)
+
+
 class _ScatteredExperts(torch.autograd.Function):
     @staticmethod
     def forward(
@@ -315,7 +338,7 @@ class _ScatteredExperts(torch.autograd.Function):
         if grouped_out:
             grouped_grad_out = grad_out
         else:
-            _group(
+            group(
                 A=grad_out,
                 sorted_expert_idxs=sorted_scattered_idxs,
                 out=grouped_grad_out,
@@ -330,7 +353,7 @@ class _ScatteredExperts(torch.autograd.Function):
             )
         else:
             grouped_x = torch.empty(sorted_scattered_idxs.size(0), x.size(1), dtype=x.dtype, device=x.device)
-            _group(
+            group(
                 A=x,
                 sorted_expert_idxs=sorted_scattered_idxs,
                 out=grouped_x,
