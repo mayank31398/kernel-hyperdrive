@@ -252,14 +252,18 @@ class _ScatteredExperts(torch.autograd.Function):
             grouped_grad_out = grad_out
         else:
             grouped_grad_out = _group(
-                grad_out, sorted_scattered_idxs, fan_out=gate_fan, coeff=gates_flat, out=grouped_grad_out
+                A=grad_out,
+                sorted_expert_idxs=sorted_scattered_idxs,
+                fan_out=gate_fan,
+                coeff=gates_flat,
+                out=grouped_grad_out,
             )
 
         if grouped_in:
             grouped_x = x
             d_expanded_input = None
         else:
-            grouped_x = _group(x, sorted_scattered_idxs, fan_out=k)
+            grouped_x = _group(A=x, sorted_expert_idxs=sorted_scattered_idxs, fan_out=k)
             d_expanded_input = grouped_x
 
         d_weights = _group_bwd_W(
