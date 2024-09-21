@@ -35,11 +35,18 @@ class _VectorAddition_CUDA(torch.autograd.Function):
 
         BLOCK_SIZE = 1024
 
+        original_shape = x.size()
+        x = x.view(-1)
+        y = y.view(-1)
+        output = output.view(-1)
+
         if torch.compiler.is_compiling():
             _vector_addition_forward_cuda_compilable(x, y, output, num_elements, BLOCK_SIZE)
         else:
             kernel = KernelRegistry.get_kernel(_KERNEL_NAME)
             kernel(x, y, output, num_elements, BLOCK_SIZE)
+
+        output = output.view(original_shape)
 
         return output
 
