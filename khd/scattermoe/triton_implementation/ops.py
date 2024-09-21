@@ -93,11 +93,8 @@ def scatter2scatter(
 
 
 # custom op is needed because of https://github.com/pytorch/pytorch/issues/136394
-@torch.library.custom_op("khd::group_bwd_W", mutates_args={})
-def group_bwd_W(DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor, E: int) -> torch.Tensor:
-    DWt = torch.zeros((E, DY.size(-1), X.size(-1)), device=DY.device, dtype=DY.dtype)
-    DW = DWt.permute(0, 2, 1)
-
+@torch.library.custom_op("khd::group_bwd_W", mutates_args={"dW"})
+def group_bwd_W(DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor, E: int, dW: torch.Tensor) -> None:
     grid = lambda meta: (E * triton.cdiv(meta["K"], meta["BLOCK_K"]), triton.cdiv(meta["N"], meta["BLOCK_N"]))
 
     groupXtY_triton_kernel[grid](
@@ -110,10 +107,10 @@ def group_bwd_W(DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor,
         X.stride(0),
         X.stride(1),
         # DW_ptr, stride_dwe, stride_dwk, stride_dwn,
-        DW,
-        DW.stride(0),
-        DW.stride(1),
-        DW.stride(2),
+        dW,
+        dW.stride(0),
+        dW.stride(1),
+        dW.stride(2),
         # expert_offsets_ptr,
         expert_offsets,
         # K: tl.constexpr, N: tl.constexpr,
@@ -123,15 +120,6 @@ def group_bwd_W(DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor,
         ACC_TYPE=tl.float32,
         allow_tf32=torch.backends.cudnn.allow_tf32,
     )
-
-    return DW
-
-
-@group_bwd_W.register_fake
-def _(DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor, E: int) -> torch.Tensor:
-    DWt = torch.empty((E, DY.size(-1), X.size(-1)), device=DY.device, dtype=DY.dtype)
-    DW = DWt.permute(0, 2, 1)
-    return DW
 
 
 # custom op is needed because of https://github.com/pytorch/pytorch/issues/136394
@@ -282,8 +270,20 @@ class _ScatteredExperts(torch.autograd.Function):
             grouped_x = group(x, sorted_scattered_idxs, fan_out=k)
             d_expanded_input = grouped_x
 
-        d_weights = group_bwd_W(
-            DY=grouped_grad_out, X=grouped_x, expert_offsets=expert_offsets, E=expert_weights.size(0)
+        d_weights = torch.empty(
+            expert_weights.size(0),
+            grouped_grad_out.size(-1),
+            grouped_x.size(-1),
+            device=grouped_grad_out.device,
+            dtype=grouped_grad_out.dtype,
+        ).permute(0, 2, 1)
+
+        group_bwd_W(
+            DY=grouped_grad_out,
+            X=grouped_x,
+            expert_offsets=expert_offsets,
+            E=expert_weights.size(0),
+            dW=d_weights,
         )
 
         scatter2scatter(
