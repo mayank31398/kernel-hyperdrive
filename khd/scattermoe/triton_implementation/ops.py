@@ -191,7 +191,7 @@ def _group(
     out: torch.Tensor,
     coeff: torch.Tensor | None = None,
     fan_out: int = 1,
-) -> torch.Tensor:
+) -> None:
     N = sorted_expert_idxs.size(0)
     K = A.size(1)
     assert A.size(0) * fan_out == N
@@ -216,8 +216,6 @@ def _group(
         N,
         K,
     )
-
-    return out
 
 
 class _ScatteredExperts(torch.autograd.Function):
@@ -304,7 +302,7 @@ class _ScatteredExperts(torch.autograd.Function):
         if grouped_out:
             grouped_grad_out = grad_out
         else:
-            grouped_grad_out = _group(
+            _group(
                 A=grad_out,
                 sorted_expert_idxs=sorted_scattered_idxs,
                 out=grouped_grad_out,
