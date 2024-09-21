@@ -6,10 +6,10 @@
 #include <torch/extension.h>
 
 template <typename scalar_t>
-__global__ void _vector_addition_forward_cuda_kernel(const scalar_t *x,
-                                                     const scalar_t *y,
-                                                     scalar_t *output,
-                                                     const int num_elements) {
+__global__ void vector_addition_forward_cuda_kernel(const scalar_t *x,
+                                                    const scalar_t *y,
+                                                    scalar_t *output,
+                                                    const int num_elements) {
     const int thread_id = get_global_thread_id();
     const int num_elements_per_thread = get_num_elements_in_vector_dtype<scalar_t, fp32_4>();
 
@@ -63,7 +63,7 @@ void vector_addition_forward_cuda(
             const int num_elements_per_block = BLOCK_SIZE * num_elements_per_thread;
             const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
 
-            _vector_addition_forward_cuda_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(
+            vector_addition_forward_cuda_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(
                 x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
         }));
 }
