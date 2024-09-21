@@ -9,12 +9,6 @@ BLOCK_M = 128
     configs=[triton.Config({"BLOCK_N": 128, "BLOCK_K": 32}, num_stages=4, num_warps=4)],
     key=["M", "N", "K"],
 )
-@triton.heuristics(
-    {
-        "NO_K_MASK": lambda args: (args["K"] % args["BLOCK_K"]) == 0,
-        "NO_N_MASK": lambda args: (args["N"] % args["BLOCK_N"]) == 0,
-    }
-)
 @triton.jit
 def scatter2scatter_triton_kernel(
     X_ptr,
@@ -30,20 +24,18 @@ def scatter2scatter_triton_kernel(
     grouped_idx_ptr,
     expert_idxs_ptr,
     block_start_idx_ptr,
-    FAN_OUT: tl.constexpr,
+    FAN_OUT,
     M,
-    K: tl.constexpr,
-    N: tl.constexpr,
-    E: tl.constexpr,
+    K,
+    N,
+    E,
     BLOCK_M: tl.constexpr,
     BLOCK_N: tl.constexpr,
     BLOCK_K: tl.constexpr,
     ACC_TYPE: tl.constexpr,
     allow_tf32: tl.constexpr,
-    x_grouped: tl.constexpr,
-    y_grouped: tl.constexpr,
-    NO_K_MASK: tl.constexpr,
-    NO_N_MASK: tl.constexpr,
+    x_grouped,
+    y_grouped,
 ):
     pid = tl.program_id(axis=0)
 
@@ -80,11 +72,14 @@ def scatter2scatter_triton_kernel(
     acc = tl.zeros((BLOCK_M, BLOCK_N), dtype=ACC_TYPE)
     iters = tl.cdiv(K, BLOCK_K)
 
+    no_k_mask = K % BLOCK_K == 0
+    no_n_mask = N % BLOCK_N == 0
+
     for K_block_id in range(0, iters):
-        if NO_K_MASK:
+        if no_k_mask:
             x = tl.load(X_blk_ptrs, mask=E_mask[:, None])
 
-            if NO_N_MASK or K_block_id < (iters - 1):
+            if no_n_mask or K_block_id < (iters - 1):
                 w = tl.load(W_blk_ptrs)
             else:
                 w = tl.load(W_blk_ptrs, mask=N_mask[None, :])
@@ -105,12 +100,6 @@ def scatter2scatter_triton_kernel(
     configs=[triton.Config({"BLOCK_N": 128, "BLOCK_K": 128, "BLOCK_M": 32}, num_stages=4, num_warps=4)],
     key=["N", "K"],
 )
-@triton.heuristics(
-    {
-        "NO_K_MASK": lambda args: (args["K"] % args["BLOCK_K"]) == 0,
-        "NO_N_MASK": lambda args: (args["N"] % args["BLOCK_N"]) == 0,
-    }
-)
 @triton.jit
 def groupXtY_triton_kernel(
     DY_ptr,
@@ -124,15 +113,13 @@ def groupXtY_triton_kernel(
     stride_dwk,
     stride_dwn,
     expert_offsets_ptr,
-    K: tl.constexpr,
-    N: tl.constexpr,
+    K,
+    N,
     BLOCK_M: tl.constexpr,
     BLOCK_N: tl.constexpr,
     BLOCK_K: tl.constexpr,
     ACC_TYPE: tl.constexpr,
     allow_tf32: tl.constexpr,
-    NO_K_MASK: tl.constexpr,
-    NO_N_MASK: tl.constexpr,
 ):
     pid0 = tl.program_id(axis=0)
     pid1 = tl.program_id(axis=1)
@@ -169,15 +156,19 @@ def groupXtY_triton_kernel(
 
         acc = tl.zeros((BLOCK_K, BLOCK_N), dtype=ACC_TYPE)
         iters = tl.cdiv(end_idx - start_idx, BLOCK_M)
+
+        no_k_mask = K % BLOCK_K == 0
+        no_n_mask = N % BLOCK_N == 0
+
         for i in range(0, iters):
             M_mask = (i * BLOCK_M + M_block) < end_idx
 
-            if NO_K_MASK:
+            if no_k_mask:
                 xt = tl.load(xt_blk_ptrs, mask=M_mask[None, :])
             else:
                 xt = tl.load(xt_blk_ptrs, mask=K_mask[:, None] & M_mask[None, :])
 
-            if NO_N_MASK:
+            if no_n_mask:
                 dy = tl.load(dy_blk_ptrs, mask=M_mask[:, None])
             else:
                 dy = tl.load(dy_blk_ptrs, mask=M_mask[:, None] & N_mask[None, :])
@@ -192,7 +183,6 @@ def groupXtY_triton_kernel(
 
 
 @triton.autotune(configs=[triton.Config({"BLOCK_N": 256, "BLOCK_K": 128}, num_stages=4, num_warps=4)], key=["K"])
-@triton.heuristics({"NO_K_MASK": lambda args: (args["K"] % args["BLOCK_K"]) == 0})
 @triton.jit
 def group_triton_kernel(
     src_ptr,
@@ -200,16 +190,15 @@ def group_triton_kernel(
     stride_sk,
     has_coeff: tl.constexpr,
     coeff_ptr,
-    FAN_OUT: tl.constexpr,
+    FAN_OUT,
     tgt_ptr,
     stride_tn,
     stride_ti,
     grouped_idx_ptr,
     N,
-    K: tl.constexpr,
+    K,
     BLOCK_N: tl.constexpr,
     BLOCK_K: tl.constexpr,
-    NO_K_MASK: tl.constexpr,
 ):
     pid = tl.program_id(axis=0)
 
@@ -227,8 +216,10 @@ def group_triton_kernel(
         c = tl.load(coeff_ptr + N_idx, mask=N_mask)[:, None]
 
     iters = tl.cdiv(K, BLOCK_K)
+    no_k_mask = K % BLOCK_K == 0
+
     for i in range(0, iters):
-        if NO_K_MASK or i < iters - 1:
+        if no_k_mask or i < iters - 1:
             block = tl.load(src_blk_ptrs, mask=N_mask[:, None])
 
             if has_coeff:
