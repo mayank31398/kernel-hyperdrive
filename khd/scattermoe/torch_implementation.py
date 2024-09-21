@@ -3,7 +3,6 @@ from typing import Callable
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.profiler import record_function
 
 
 class Experts_Torch(nn.Module):
@@ -116,7 +115,6 @@ class MoE_Torch(nn.Module):
 
         return hidden_states, router_logits
 
-    @record_function("MoE_Torch:_compute_routing_weights")
     def _compute_routing_weights(self, hidden_states: torch.Tensor) -> tuple[torch.Tensor]:
         # hidden_states -> (total_q, hidden_size)
         router_logits = self.gate(hidden_states)
@@ -132,7 +130,6 @@ class MoE_Torch(nn.Module):
 
         return router_logits, router_weights, selected_experts
 
-    @record_function("MoE_Torch:_compute_experts")
     def _compute_experts(
         self, hidden_states: torch.Tensor, router_weights: torch.Tensor, selected_experts: torch.Tensor
     ) -> torch.Tensor:
@@ -167,7 +164,6 @@ class MoE_Torch(nn.Module):
 
         return hidden_states
 
-    @record_function("MoE_Torch:_compute_expert_assignment")
     def _compute_expert_assignment(
         self, router_weights: torch.Tensor, selected_experts: torch.Tensor
     ) -> tuple[torch.Tensor]:
