@@ -127,9 +127,9 @@ def _group_bwd_W(DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor
 def _group(
     A: torch.Tensor,
     sorted_expert_idxs: torch.Tensor,
+    out: torch.Tensor,
     coeff: torch.Tensor | None = None,
     fan_out: int = 1,
-    out: torch.Tensor | None = None,
 ) -> torch.Tensor:
     N = sorted_expert_idxs.size(0)
     K = A.size(1)
@@ -249,9 +249,9 @@ class _ScatteredExperts(torch.autograd.Function):
             grouped_grad_out = _group(
                 A=grad_out,
                 sorted_expert_idxs=sorted_scattered_idxs,
-                fan_out=gate_fan,
-                coeff=gates_flat,
                 out=grouped_grad_out,
+                coeff=gates_flat,
+                fan_out=gate_fan,
             )
 
         if grouped_in:
@@ -260,7 +260,14 @@ class _ScatteredExperts(torch.autograd.Function):
                 sorted_expert_idxs.size(0), expert_weights.size(1), device=x.device, dtype=x.dtype
             )
         else:
-            grouped_x = _group(A=x, sorted_expert_idxs=sorted_scattered_idxs, fan_out=k)
+            grouped_x = torch.empty(sorted_scattered_idxs.size(0), x.size(1), dtype=x.dtype, device=x.device)
+            _group(
+                A=x,
+                sorted_expert_idxs=sorted_scattered_idxs,
+                out=grouped_x,
+                fan_out=k,
+            )
+
             d_expanded_input = grouped_x
 
         d_weights = _group_bwd_W(
