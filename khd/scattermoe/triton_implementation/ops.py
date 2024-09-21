@@ -184,7 +184,7 @@ def _group_bwd_W(DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor
 
 
 # custom op is needed because of https://github.com/pytorch/pytorch/issues/136394
-@torch.library.custom_op("khd::group_bwd_W", mutates_args={"dW"})
+@torch.library.custom_op("khd::group_bwd_W", mutates_args={"DW"})
 def _group_bwd_W_compileable(
     DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor, DW: torch.Tensor, E: int
 ) -> None:
@@ -231,6 +231,8 @@ def _group(
     )
 
 
+# custom op is needed because of https://github.com/pytorch/pytorch/issues/136394
+@torch.library.custom_op("khd::group", mutates_args={"out"})
 def _group_compileable(
     A: torch.Tensor,
     sorted_expert_idxs: torch.Tensor,
