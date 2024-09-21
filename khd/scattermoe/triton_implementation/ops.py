@@ -123,18 +123,17 @@ def group_bwd_W(DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor,
 
 
 # custom op is needed because of https://github.com/pytorch/pytorch/issues/136394
-@torch.library.custom_op("khd::group", mutates_args={})
+@torch.library.custom_op("khd::group", mutates_args={"out"})
 def group(
     A: torch.Tensor,
     sorted_expert_idxs: torch.Tensor,
+    out: torch.Tensor,
     coeff: Optional[torch.Tensor] = None,
     fan_out: int = 1,
-) -> torch.Tensor:
+) -> None:
     N = sorted_expert_idxs.size(0)
     K = A.size(1)
     assert A.size(0) * fan_out == N
-
-    out = torch.empty((N, K), dtype=A.dtype, device=A.device)
 
     grid = lambda meta: (triton.cdiv(meta["N"], meta["BLOCK_N"]),)
 
@@ -156,20 +155,6 @@ def group(
         N,
         K,
     )
-
-    return out
-
-
-@group.register_fake
-def _(
-    A: torch.Tensor,
-    sorted_expert_idxs: torch.Tensor,
-    coeff: Optional[torch.Tensor] = None,
-    fan_out: int = 1,
-) -> torch.Tensor:
-    N = sorted_expert_idxs.size(0)
-    K = A.size(1)
-    return torch.empty((N, K), dtype=A.dtype, device=A.device)
 
 
 class _ScatteredExperts(torch.autograd.Function):
@@ -259,7 +244,17 @@ class _ScatteredExperts(torch.autograd.Function):
         if grouped_out:
             grouped_grad_out = grad_out
         else:
-            grouped_grad_out = group(grad_out, sorted_scattered_idxs, fan_out=gate_fan, coeff=gates_flat)
+            grouped_grad_out = torch.empty(
+                sorted_scattered_idxs.size(0), grad_out.size(1), device=grad_out.device, dtype=grad_out.dtype
+            )
+
+            group(
+                A=grad_out,
+                sorted_expert_idxs=sorted_scattered_idxs,
+                out=grouped_grad_out,
+                coeff=gates_flat,
+                fan_out=gate_fan,
+            )
 
         if grouped_in:
             grouped_x = x
@@ -267,7 +262,10 @@ class _ScatteredExperts(torch.autograd.Function):
                 sorted_expert_idxs.size(0), expert_weights.size(1), device=x.device, dtype=x.dtype
             )
         else:
-            grouped_x = group(x, sorted_scattered_idxs, fan_out=k)
+            grouped_x = torch.empty(
+                sorted_scattered_idxs.size(0), x.size(1), device=grad_out.device, dtype=grad_out.dtype
+            )
+            group(A=x, sorted_expert_idxs=sorted_scattered_idxs, out=grouped_x, fan_out=k)
             d_expanded_input = grouped_x
 
         d_weights = torch.empty(
