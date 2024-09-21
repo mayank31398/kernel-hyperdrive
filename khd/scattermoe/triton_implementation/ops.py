@@ -92,9 +92,7 @@ def _scatter2scatter(
     )
 
 
-def _group_bwd_W(DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor, E: int) -> None:
-    DW = torch.zeros(E, DY.size(-1), X.size(-1), device=DY.device, dtype=DY.dtype).permute(0, 2, 1)
-
+def _group_bwd_W(DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor, DW: torch.Tensor, E: int) -> None:
     grid = lambda meta: (E * triton.cdiv(meta["K"], meta["BLOCK_K"]), triton.cdiv(meta["N"], meta["BLOCK_N"]))
 
     groupXtY_triton_kernel[grid](
@@ -267,8 +265,20 @@ class _ScatteredExperts(torch.autograd.Function):
 
             d_expanded_input = grouped_x
 
-        d_weights = _group_bwd_W(
-            DY=grouped_grad_out, X=grouped_x, expert_offsets=expert_offsets, E=expert_weights.size(0)
+        d_weights = torch.zeros(
+            expert_weights.size(0),
+            grouped_grad_out.size(-1),
+            grouped_x.size(-1),
+            device=grouped_grad_out.device,
+            dtype=grouped_grad_out.dtype,
+        ).permute(0, 2, 1)
+
+        _group_bwd_W(
+            DY=grouped_grad_out,
+            X=grouped_x,
+            expert_offsets=expert_offsets,
+            DW=d_weights,
+            E=expert_weights.size(0),
         )
 
         _scatter2scatter(
