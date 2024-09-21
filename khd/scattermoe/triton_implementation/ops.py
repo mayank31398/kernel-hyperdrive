@@ -96,12 +96,7 @@ def group_bwd_W(DY, X, expert_offsets, E):
     DWt = torch.zeros((E, DY.size(-1), X.size(-1)), device=DY.device, dtype=DY.dtype)
     DW = DWt.permute(0, 2, 1)
 
-    def grid(META):
-        grid = (
-            E * triton.cdiv(META["K"], META["BLOCK_K"]),
-            triton.cdiv(META["N"], META["BLOCK_N"]),
-        )
-        return grid
+    grid = lambda meta: (E * triton.cdiv(meta["K"], meta["BLOCK_K"]), triton.cdiv(meta["N"], meta["BLOCK_N"]))
 
     groupXtY_triton_kernel[grid](
         # DY_ptr, stride_dym, stride_dyk,
