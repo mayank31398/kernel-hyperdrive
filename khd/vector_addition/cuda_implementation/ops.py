@@ -11,7 +11,7 @@ _KERNEL_NAME = "vector_addition_forward_cuda"
 def _vector_addition_forward_cuda_compilable(
     x: torch.Tensor, y: torch.Tensor, output: torch.Tensor, num_elements: int, BLOCK_SIZE: int
 ) -> None:
-    return KernelRegistry.get_kernel(_KERNEL_NAME)(x, y, output, num_elements, BLOCK_SIZE)
+    KernelRegistry.get_kernel(_KERNEL_NAME)(x, y, output, num_elements, BLOCK_SIZE)
 
 
 @_vector_addition_forward_cuda_compilable.register_fake
