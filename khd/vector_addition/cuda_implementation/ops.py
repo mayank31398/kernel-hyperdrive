@@ -8,12 +8,14 @@ _KERNEL_NAME = "vector_addition_forward_cuda"
 
 
 @torch.library.custom_op(f"{LIBRARY_NAME}::{_KERNEL_NAME}", mutates_args={})
-def _vector_addition_forward_cuda_compilable(x: torch.Tensor, y: torch.Tensor, BLOCK_SIZE: int) -> torch.Tensor:
-    return KernelRegistry.get_kernel(_KERNEL_NAME)(x, y, BLOCK_SIZE)
+def _vector_addition_forward_cuda_compilable(
+    x: torch.Tensor, y: torch.Tensor, output: torch.Tensor, num_elements: int, BLOCK_SIZE: int
+) -> torch.Tensor:
+    return KernelRegistry.get_kernel(_KERNEL_NAME)(x, y, output, num_elements, BLOCK_SIZE)
 
 
 @_vector_addition_forward_cuda_compilable.register_fake
-def _(x: torch.Tensor, y: torch.Tensor, BLOCK_SIZE: int) -> torch.Tensor:
+def _(x: torch.Tensor, y: torch.Tensor, output: torch.Tensor, num_elements: int, BLOCK_SIZE: int) -> torch.Tensor:
     return torch.empty_like(x)
 
 
@@ -21,13 +23,23 @@ class _VectorAddition_CUDA(torch.autograd.Function):
     @torch.profiler.record_function(f"{LIBRARY_NAME}:{_KERNEL_NAME}")
     @staticmethod
     def forward(ctx, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+        assert x.is_cuda, "tensor x is not on GPU"
+        assert y.is_cuda, "tensor y is not on GPU"
+
+        assert x.size() == y.size(), "tensors x and y should have same shape"
+        assert x.type() == y.type(), "tensors x and y should have same dtype"
+
+        output = torch.empty_like(x)
+
+        num_elements = x.numel()
+
         BLOCK_SIZE = 1024
 
         if torch.compiler.is_compiling():
-            output = _vector_addition_forward_cuda_compilable(x, y, BLOCK_SIZE)
+            output = _vector_addition_forward_cuda_compilable(x, y, output, num_elements, BLOCK_SIZE)
         else:
             kernel = KernelRegistry.get_kernel(_KERNEL_NAME)
-            output = kernel(x, y, BLOCK_SIZE)
+            output = kernel(x, y, output, num_elements, BLOCK_SIZE)
 
         return output
 
