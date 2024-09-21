@@ -13,7 +13,7 @@ def _vector_addition_forward_cuda_compilable(x: torch.Tensor, y: torch.Tensor, B
 
 
 @_vector_addition_forward_cuda_compilable.register_fake
-def _fake_vector_addition_forward_cuda_compilable(x: torch.Tensor, y: torch.Tensor, BLOCK_SIZE: int) -> torch.Tensor:
+def _(x: torch.Tensor, y: torch.Tensor, BLOCK_SIZE: int) -> torch.Tensor:
     return torch.empty_like(x)
 
 
