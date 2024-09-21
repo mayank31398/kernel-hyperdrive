@@ -44,7 +44,7 @@ def padded_block_indices(sorted_experts_idxs: torch.Tensor, k: int, N_BLOCK_SIZE
     return expanded_block_idxs, expert_boundaries_end
 
 
-def scatter2scatter(
+def _scatter2scatter(
     X: torch.Tensor,
     W: torch.Tensor,
     sorted_expert_idxs: torch.Tensor,
@@ -99,42 +99,37 @@ def scatter2scatter(
     return out
 
 
-def group_bwd_W(DY, X, expert_offsets, E):
+def _group_bwd_W(DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor, E: int, dW: torch.Tensor) -> None:
     DWt = torch.zeros((E, DY.size(-1), X.size(-1)), device=DY.device, dtype=DY.dtype)
     DW = DWt.permute(0, 2, 1)
 
-    def grid(META):
-        grid = (
-            E * triton.cdiv(META["K"], META["BLOCK_K"]),
-            triton.cdiv(META["N"], META["BLOCK_N"]),
-        )
-        return grid
+    grid = lambda meta: (E * triton.cdiv(meta["K"], meta["BLOCK_K"]), triton.cdiv(meta["N"], meta["BLOCK_N"]))
 
-    with torch.cuda.device(DY.device):
-        groupXtY_triton_kernel[grid](
-            # DY_ptr, stride_dym, stride_dyk,
-            DY,
-            DY.stride(0),
-            DY.stride(1),
-            # X_ptr, stride_xm, stride_xn,
-            X,
-            X.stride(0),
-            X.stride(1),
-            # DW_ptr, stride_dwe, stride_dwk, stride_dwn,
-            DW,
-            DW.stride(0),
-            DW.stride(1),
-            DW.stride(2),
-            # expert_offsets_ptr,
-            expert_offsets,
-            # K: tl.constexpr, N: tl.constexpr,
-            N=DY.size(-1),
-            K=X.size(-1),
-            # ACC_TYPE: tl.constexpr,
-            ACC_TYPE=tl.float32,
-            allow_tf32=torch.backends.cudnn.allow_tf32,
-        )
-        return DW
+    groupXtY_triton_kernel[grid](
+        # DY_ptr, stride_dym, stride_dyk,
+        DY,
+        DY.stride(0),
+        DY.stride(1),
+        # X_ptr, stride_xm, stride_xn,
+        X,
+        X.stride(0),
+        X.stride(1),
+        # DW_ptr, stride_dwe, stride_dwk, stride_dwn,
+        DW,
+        DW.stride(0),
+        DW.stride(1),
+        DW.stride(2),
+        # expert_offsets_ptr,
+        expert_offsets,
+        # K: tl.constexpr, N: tl.constexpr,
+        N=DY.size(-1),
+        K=X.size(-1),
+        # ACC_TYPE: tl.constexpr,
+        ACC_TYPE=tl.float32,
+        allow_tf32=torch.backends.cudnn.allow_tf32,
+    )
+
+    return DW
 
 
 def group(A, sorted_expert_idxs, coeff=None, fan_out=1, out=None):
@@ -188,7 +183,7 @@ class _ScatteredExperts(torch.autograd.Function):
         grouped_in=False,
         grouped_out=False,
     ):
-        output = scatter2scatter(
+        output = _scatter2scatter(
             X=x,
             W=expert_weights,
             sorted_expert_idxs=sorted_expert_idxs,
@@ -265,11 +260,11 @@ class _ScatteredExperts(torch.autograd.Function):
             grouped_x = group(x, sorted_scattered_idxs, fan_out=k)
             d_expanded_input = grouped_x
 
-        d_weights = group_bwd_W(
+        d_weights = _group_bwd_W(
             DY=grouped_grad_out, X=grouped_x, expert_offsets=expert_offsets, E=expert_weights.size(0)
         )
 
-        d_expanded_input = scatter2scatter(
+        d_expanded_input = _scatter2scatter(
             X=grouped_grad_out,
             x_grouped=True,
             W=expert_weights.permute(0, 2, 1),
