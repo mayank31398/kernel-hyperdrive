@@ -45,23 +45,27 @@ def padded_block_indices(sorted_experts_idxs: torch.Tensor, k: int, N_BLOCK_SIZE
 
 
 def scatter2scatter(
-    X, W, sorted_expert_idxs, sorted_scattered_idxs, k, padded_block_idxs, x_grouped=False, y_grouped=False, out=None
-):
+    X: torch.Tensor,
+    W: torch.Tensor,
+    sorted_expert_idxs: torch.Tensor,
+    sorted_scattered_idxs: torch.Tensor,
+    k: int,
+    padded_block_idxs: torch.Tensor,
+    x_grouped: bool = False,
+    y_grouped: bool = False,
+    out: torch.Tensor | None = None,
+) -> torch.Tensor:
     assert sorted_scattered_idxs.size(0) == sorted_expert_idxs.size(0)
     assert sorted_scattered_idxs.size(0) == X.size(0) * k
-    # Pre-kernel setup
-    x_dim = X.size(-1)
+
     y_dim = W.size(-1)
     L_scattered = sorted_expert_idxs.size(0)
     if out is None:
-        O = torch.empty((L_scattered, y_dim), device=X.device, dtype=X.dtype)
+        out = torch.empty((L_scattered, y_dim), device=X.device, dtype=X.dtype)
     else:
         assert out.size(0) == L_scattered and out.size(1) == y_dim
-        O = out
 
-    def grid(META):
-        grid_num = (padded_block_idxs.size(0) * triton.cdiv(META["N"], META["BLOCK_N"]),)
-        return grid_num
+    grid = lambda meta: (padded_block_idxs.size(0) * triton.cdiv(meta["N"], meta["BLOCK_N"]),)
 
     with torch.cuda.device(X.device):
         scatter2scatter_triton_kernel[grid](
@@ -75,16 +79,16 @@ def scatter2scatter(
             W.stride(1),
             W.stride(2),
             # Y_ptr, stride_ym, stride_yn,
-            O,
-            O.stride(0),
-            O.stride(1),
+            out,
+            out.stride(0),
+            out.stride(1),
             grouped_idx_ptr=sorted_scattered_idxs,
             expert_idxs_ptr=sorted_expert_idxs,
             block_start_idx_ptr=padded_block_idxs,
             FAN_OUT=k,
             M=X.size(0),
             K=X.size(1),
-            N=O.size(1),
+            N=out.size(1),
             E=W.size(0),
             BLOCK_M=BLOCK_M,
             ACC_TYPE=tl.float32,
@@ -92,7 +96,8 @@ def scatter2scatter(
             x_grouped=x_grouped,
             y_grouped=y_grouped,
         )
-        return O
+
+        return out
 
 
 def group_bwd_W(DY, X, expert_offsets, E):
