@@ -135,9 +135,6 @@ def _group(
     K = A.size(1)
     assert A.size(0) * fan_out == N
 
-    if out is None:
-        out = torch.empty((N, K), dtype=A.dtype, device=A.device)
-
     grid = lambda meta: (triton.cdiv(meta["N"], meta["BLOCK_N"]),)
 
     group_triton_kernel[grid](
