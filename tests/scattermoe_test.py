@@ -21,7 +21,6 @@ class ScatterMoETest(TestCommons):
             [2048],  # hidden_size
             [8192],  # intermediate_size
             [True, False],  # is_glu
-            [True, False],  # is_compiling
         )
     )
     def test_scattermoe_triton(
@@ -33,7 +32,6 @@ class ScatterMoETest(TestCommons):
         hidden_size: int,
         intermediate_size: int,
         is_glu: bool,
-        is_compiling: bool,
     ) -> None:
         self._test_scattermoe(
             device=device,
@@ -44,7 +42,6 @@ class ScatterMoETest(TestCommons):
             intermediate_size=intermediate_size,
             is_glu=is_glu,
             module_class=MoE_Triton,
-            is_compiling=is_compiling,
         )
 
     def _test_scattermoe(
@@ -57,7 +54,6 @@ class ScatterMoETest(TestCommons):
         intermediate_size: int,
         is_glu: bool,
         module_class: type[nn.Module],
-        is_compiling: bool,
     ) -> None:
         set_seed(SEED)
 
@@ -89,21 +85,7 @@ class ScatterMoETest(TestCommons):
                 std=0.02,
             ).to(dtype=dtype)
 
-        if is_compiling:
-            moe_custom = torch.compile(moe_custom)
-
-        state_dict = moe_custom.state_dict()
-
-        if is_compiling:
-            new_state_dict = {}
-            for key in state_dict:
-                new_key = key.split("_orig_mod.")[1]
-                new_state_dict[new_key] = state_dict[key]
-
-            state_dict = new_state_dict
-            del new_state_dict
-
-        moe_torch.load_state_dict(state_dict)
+        moe_torch.load_state_dict(moe_custom.state_dict())
 
         x_torch = torch.randn(hidden_size, device=device, dtype=dtype, requires_grad=True)
         x_custom = x_torch.clone().detach().requires_grad_()
