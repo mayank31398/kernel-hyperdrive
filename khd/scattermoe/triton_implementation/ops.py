@@ -6,11 +6,27 @@ from .kernels import group_triton_kernel, groupXtY_triton_kernel, scatter2scatte
 
 
 BLOCK_M = 128
+torch._dynamo.config.capture_scalar_outputs = True
 
 
-@torch.compile
+# bincount is not compilable
+@torch.library.custom_op("khd::bincount", mutates_args={})
+def compileable_bincount(x: torch.Tensor, minlength: int) -> torch.Tensor:
+    return x.bincount(minlength=minlength)
+
+
+@compileable_bincount.register_fake
+def _(x: torch.Tensor, minlength: int) -> torch.Tensor:
+    return torch.empty(minlength, dtype=torch.long, device=x.device)
+
+
 def padded_block_indices(sorted_experts_idxs: torch.Tensor, k: int, N_BLOCK_SIZE: int = BLOCK_M):
-    expert_counts = torch.bincount(sorted_experts_idxs, minlength=k)
+    # there is an overhead of launching a custom op so we only use the custom op when compiling
+    if torch.compiler.is_compiling():
+        expert_counts = compileable_bincount(sorted_experts_idxs, k)
+    else:
+        expert_counts = sorted_experts_idxs.bincount(minlength=k)
+
     padded_block_counts = ((expert_counts - 1) // N_BLOCK_SIZE) + 1
     padded_expert_block_end = padded_block_counts.cumsum(-1)
     expert_boundaries_end = expert_counts.cumsum(-1)
