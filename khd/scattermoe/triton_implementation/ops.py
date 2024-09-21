@@ -99,7 +99,7 @@ def _scatter2scatter(
     return out
 
 
-def _group_bwd_W(DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor, E: int, dW: torch.Tensor) -> None:
+def _group_bwd_W(DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor, E: int) -> None:
     DWt = torch.zeros((E, DY.size(-1), X.size(-1)), device=DY.device, dtype=DY.dtype)
     DW = DWt.permute(0, 2, 1)
 
