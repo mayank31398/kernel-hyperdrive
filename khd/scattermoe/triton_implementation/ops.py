@@ -200,7 +200,7 @@ class _ScatteredExperts(torch.autograd.Function):
             output_expanded = None
         else:
             output_expanded = output.view(gates.size(0), gates.size(1), output.size(-1))
-            output = torch.bmm(gates[:, None, :], output_expanded).squeeze(1)
+            output = torch.bmm(gates.unsqueeze(1), output_expanded).squeeze(1)
 
         ctx.save_for_backward(
             x,
@@ -242,7 +242,7 @@ class _ScatteredExperts(torch.autograd.Function):
             grouped_grad_out = None
         else:
             # calculate gates gradient
-            d_gates = torch.bmm(output_expanded, grad_out[:, :, None]).squeeze(-1)
+            d_gates = torch.bmm(output_expanded, grad_out.unsqueeze(2)).squeeze(-1)
             gates_flat = gates.flatten()
             gate_fan = gates.size(1)
             # print("expanded and grouping")
