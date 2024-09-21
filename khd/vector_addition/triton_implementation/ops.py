@@ -1,15 +1,10 @@
 import torch
 import triton
 
-from ...constants import LIBRARY_NAME
 from .kernels import vector_addition_forward_triton_kernel
 
 
-_KERNEL_NAME = "vector_addition_forward_triton"
-
-
 class _VectorAddition_Triton(torch.autograd.Function):
-    @torch.profiler.record_function(f"{LIBRARY_NAME}:{_KERNEL_NAME}")
     @staticmethod
     def forward(ctx, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         assert x.is_cuda, "tensor x is not on GPU"
