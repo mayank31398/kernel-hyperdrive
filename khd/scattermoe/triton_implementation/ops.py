@@ -49,8 +49,8 @@ def _scatter2scatter(
     W: torch.Tensor,
     sorted_expert_idxs: torch.Tensor,
     sorted_scattered_idxs: torch.Tensor,
-    FAN_OUT: int,
     padded_block_idxs: torch.Tensor,
+    FAN_OUT: int,
     x_grouped: bool = False,
     y_grouped: bool = False,
     out: torch.Tensor | None = None,
@@ -268,12 +268,12 @@ class _ScatteredExperts(torch.autograd.Function):
 
         d_expanded_input = _scatter2scatter(
             X=grouped_grad_out,
-            x_grouped=True,
             W=expert_weights.permute(0, 2, 1),
-            padded_block_idxs=padded_block_idxs,
             sorted_expert_idxs=sorted_expert_idxs,
             sorted_scattered_idxs=sorted_scattered_idxs,
+            padded_block_idxs=padded_block_idxs,
             FAN_OUT=1,
+            x_grouped=True,
             y_grouped=grouped_in,
             out=d_expanded_input,
         )
