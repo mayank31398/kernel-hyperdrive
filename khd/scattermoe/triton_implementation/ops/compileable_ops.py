@@ -2,7 +2,7 @@ import torch
 import triton
 import triton.language as tl
 
-from .kernels import group_triton_kernel, groupXtY_triton_kernel, scatter2scatter_triton_kernel
+from ..kernels import group_triton_kernel, groupXtY_triton_kernel, scatter2scatter_triton_kernel
 
 
 BLOCK_M = 128
