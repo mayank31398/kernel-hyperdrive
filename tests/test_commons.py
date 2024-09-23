@@ -83,6 +83,3 @@ class TestCommons(TestCase):
         x_clone = x.clone().detach().requires_grad_()
 
         return x, x_clone
-
-    def get_non_leaf_tensor(self, x: torch.Tensor) -> torch.Tensor:
-        return x + 0

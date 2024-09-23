@@ -1,4 +1,3 @@
-from functools import partial
 from typing import Callable
 
 import torch
@@ -16,16 +15,10 @@ class VectorAdditionTest(TestCommons):
             [torch.device("cuda")],
             TestCommons.get_dtypes(),
             [
-                partial(vector_addition_torch, memory_efficient=True),
-                partial(vector_addition_cuda, memory_efficient=False),
-                partial(vector_addition_cuda, memory_efficient=True),
-                partial(vector_addition_triton, memory_efficient=False),
-                partial(vector_addition_triton, memory_efficient=True),
-                partial(torch.compile(vector_addition_torch), memory_efficient=True),
-                partial(torch.compile(vector_addition_cuda), memory_efficient=False),
-                partial(torch.compile(vector_addition_cuda), memory_efficient=True),
-                partial(torch.compile(vector_addition_triton), memory_efficient=False),
-                partial(torch.compile(vector_addition_triton), memory_efficient=True),
+                vector_addition_cuda,
+                vector_addition_triton,
+                torch.compile(vector_addition_cuda),
+                torch.compile(vector_addition_triton),
             ],
         )
     )
@@ -35,13 +28,8 @@ class VectorAdditionTest(TestCommons):
         x_kernel, x_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
         y_kernel, y_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
 
-        x_kernel_non_leaf = self.get_non_leaf_tensor(x_kernel)
-        x_expected_non_leaf = self.get_non_leaf_tensor(x_expected)
-        y_kernel_non_leaf = self.get_non_leaf_tensor(y_kernel)
-        y_expected_non_leaf = self.get_non_leaf_tensor(y_expected)
-
-        z_kernel = function(x_kernel_non_leaf, y_kernel_non_leaf)
-        z_expected = vector_addition_torch(x_expected_non_leaf, y_expected_non_leaf, memory_efficient=False)
+        z_kernel = function(x_kernel, y_kernel)
+        z_expected = vector_addition_torch(x_expected, y_expected)
 
         z_kernel.mean().backward()
         z_expected.mean().backward()
@@ -49,24 +37,3 @@ class VectorAdditionTest(TestCommons):
         self.assert_equal_tensors(z_kernel, z_expected, True)
         self.assert_equal_tensors(x_kernel.grad, x_expected.grad, True)
         self.assert_equal_tensors(y_kernel.grad, y_expected.grad, True)
-
-    @parameterized.expand(
-        TestCommons.make_args_matrix(
-            [4],
-            [torch.device("cuda")],
-            TestCommons.get_dtypes(),
-            [
-                partial(vector_addition_cuda, memory_efficient=True),
-                partial(vector_addition_triton, memory_efficient=True),
-                partial(torch.compile(vector_addition_cuda), memory_efficient=True),
-                partial(torch.compile(vector_addition_triton), memory_efficient=True),
-            ],
-        )
-    )
-    def test_vector_addition_memory_efficient_raises_error_with_leaf_tensors(
-        self, size: tuple[int], device: torch.device, dtype: torch.dtype, function: Callable
-    ) -> None:
-        x, y = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
-
-        with self.assertRaises(RuntimeError, msg="leaf variables can't be used in an in-place operation"):
-            function(x, y)
