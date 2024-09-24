@@ -24,14 +24,13 @@ class AddTensorTest(TestCommons):
     )
     def test_add_tensor(self, size: tuple[int], device: torch.device, dtype: torch.dtype, function: Callable) -> None:
         x_kernel, x_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
-        y_kernel, y_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
+        y = 0.42
 
-        z_kernel = function(x_kernel, y_kernel)
-        z_expected = add_scalar_torch(x_expected, y_expected)
+        z_kernel = function(x_kernel, y)
+        z_expected = add_scalar_torch(x_expected, y)
 
         z_kernel.mean().backward()
         z_expected.mean().backward()
 
         self.assert_equal_tensors(z_kernel, z_expected, True)
         self.assert_equal_tensors(x_kernel.grad, x_expected.grad, True)
-        self.assert_equal_tensors(y_kernel.grad, y_expected.grad, True)
