@@ -1,1 +1,1 @@
-from .ops import vector_addition_triton
+from .ops import add_tensor_triton

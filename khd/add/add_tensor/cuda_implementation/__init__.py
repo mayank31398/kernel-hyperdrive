@@ -1,1 +1,1 @@
-from .ops import vector_addition_cuda
+from .ops import add_tensor_cuda

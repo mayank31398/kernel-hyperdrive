@@ -3,7 +3,7 @@ import triton.language as tl
 
 
 @triton.jit
-def vector_addition_forward_triton_kernel(x_ptr, y_ptr, output_ptr, num_elements, BLOCK_SIZE: tl.constexpr):
+def add_tensor_forward_triton_kernel(x_ptr, y_ptr, output_ptr, num_elements, BLOCK_SIZE: tl.constexpr):
     pid = tl.program_id(axis=0)
 
     block_start = pid * BLOCK_SIZE
