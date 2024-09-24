@@ -1,7 +1,7 @@
 import torch
 
-from ....constants import LIBRARY_NAME
-from ....kernel_registry import KernelRegistry
+from .....constants import LIBRARY_NAME
+from .....kernel_registry import KernelRegistry
 
 
 _KERNEL_NAME = "add_tensor_forward_cuda"
