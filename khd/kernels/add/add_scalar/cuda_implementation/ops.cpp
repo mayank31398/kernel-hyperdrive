@@ -20,5 +20,5 @@ torch::Tensor add_scalar_forward_cuda(torch::Tensor x, const float y, const int 
 }
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-    m.def("add_tensor_forward_cuda", &add_tensor_forward_cuda, "Tensor addition forward (CUDA)");
+    m.def("add_scalar_forward_cuda", &add_scalar_forward_cuda, "Tensor addition forward (CUDA)");
 }
