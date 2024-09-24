@@ -14,7 +14,7 @@ torch::Tensor add_scalar_forward_cuda(torch::Tensor x, const float y, const int 
 
     int num_elements = x.numel();
 
-    add_scalar_forward_cuda_kernel(x.view(-1), y.view(-1), output.view(-1), num_elements, BLOCK_SIZE);
+    add_scalar_forward_cuda_kernel(x.view(-1), y, output.view(-1), num_elements, BLOCK_SIZE);
 
     return output;
 }
