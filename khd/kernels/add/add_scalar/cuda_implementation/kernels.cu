@@ -62,7 +62,7 @@ void add_scalar_forward_cuda_kernel(
             const int num_elements_per_block = BLOCK_SIZE * num_elements_per_thread;
             const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
 
-            _add_scalar_forward_cuda_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(
-                x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
+            _add_scalar_forward_cuda_kernel<scalar_t>
+                <<<NUM_BLOCKS, BLOCK_SIZE>>>(x.data_ptr<scalar_t>(), y, output.data_ptr<scalar_t>(), num_elements);
         }));
 }
