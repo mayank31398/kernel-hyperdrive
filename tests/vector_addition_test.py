@@ -3,7 +3,7 @@ from typing import Callable
 import torch
 from parameterized import parameterized
 
-from khd import vector_addition_cuda, vector_addition_torch, vector_addition_triton
+from khd import add_tensor_cuda, add_tensor_torch, add_tensor_triton
 
 from .test_commons import TestCommons
 
@@ -15,10 +15,10 @@ class VectorAdditionTest(TestCommons):
             [torch.device("cuda")],
             TestCommons.get_dtypes(),
             [
-                vector_addition_cuda,
-                vector_addition_triton,
-                torch.compile(vector_addition_cuda),
-                torch.compile(vector_addition_triton),
+                add_tensor_cuda,
+                add_tensor_triton,
+                torch.compile(add_tensor_cuda),
+                torch.compile(add_tensor_triton),
             ],
         )
     )
@@ -29,7 +29,7 @@ class VectorAdditionTest(TestCommons):
         y_kernel, y_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
 
         z_kernel = function(x_kernel, y_kernel)
-        z_expected = vector_addition_torch(x_expected, y_expected)
+        z_expected = add_tensor_torch(x_expected, y_expected)
 
         z_kernel.mean().backward()
         z_expected.mean().backward()
