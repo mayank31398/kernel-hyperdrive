@@ -1,10 +1,10 @@
 import torch
 import triton
 
-from .kernels import vector_addition_forward_triton_kernel
+from .kernels import add_tensor_forward_triton_kernel
 
 
-class _VectorAddition_Triton(torch.autograd.Function):
+class _AddTensor_Triton(torch.autograd.Function):
     @staticmethod
     def forward(ctx, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         assert x.is_cuda, "tensor x is not on GPU"
@@ -20,7 +20,7 @@ class _VectorAddition_Triton(torch.autograd.Function):
 
         BLOCK_SIZE = 1024
 
-        vector_addition_forward_triton_kernel[grid](
+        add_tensor_forward_triton_kernel[grid](
             x.view(-1), y.view(-1), output.view(-1), num_elements, BLOCK_SIZE=BLOCK_SIZE
         )
 
@@ -31,7 +31,7 @@ class _VectorAddition_Triton(torch.autograd.Function):
         return output_grad, output_grad, None
 
 
-def vector_addition_triton(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+def add_tensor_triton(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     """vector addition
 
     Args:
@@ -42,4 +42,4 @@ def vector_addition_triton(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         torch.Tensor: output tensor
     """
 
-    return _VectorAddition_Triton.apply(x, y)
+    return _AddTensor_Triton.apply(x, y)

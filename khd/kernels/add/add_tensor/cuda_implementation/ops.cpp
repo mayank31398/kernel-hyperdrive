@@ -1,9 +1,9 @@
 #include <torch/extension.h>
 
-void vector_addition_forward_cuda_kernel(
+void add_tensor_forward_cuda_kernel(
     torch::Tensor x, torch::Tensor y, torch::Tensor output, const int num_elements, const int BLOCK_SIZE);
 
-torch::Tensor vector_addition_forward_cuda(torch::Tensor x, torch::Tensor y, const int BLOCK_SIZE) {
+torch::Tensor add_tensor_forward_cuda(torch::Tensor x, torch::Tensor y, const int BLOCK_SIZE) {
     TORCH_CHECK(x.device().is_cuda(), "tensor x is not on GPU");
     TORCH_CHECK(y.device().is_cuda(), "tensor y is not on GPU");
 
@@ -14,11 +14,11 @@ torch::Tensor vector_addition_forward_cuda(torch::Tensor x, torch::Tensor y, con
 
     int num_elements = x.numel();
 
-    vector_addition_forward_cuda_kernel(x.view(-1), y.view(-1), output.view(-1), num_elements, BLOCK_SIZE);
+    add_tensor_forward_cuda_kernel(x.view(-1), y.view(-1), output.view(-1), num_elements, BLOCK_SIZE);
 
     return output;
 }
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-    m.def("vector_addition_forward_cuda", &vector_addition_forward_cuda, "Vector addition forward (CUDA)");
+    m.def("add_tensor_forward_cuda", &add_tensor_forward_cuda, "Tensor addition forward (CUDA)");
 }

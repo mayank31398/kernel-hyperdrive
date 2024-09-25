@@ -1,4 +1,14 @@
 from .kernel_registry import KernelRegistry
-from .scattermoe import MoE_Torch, MoE_Triton
-from .swiglu import swiglu_cuda, swiglu_torch, swiglu_triton
-from .vector_addition import vector_addition_cuda, vector_addition_torch, vector_addition_triton
+from .kernels import (
+    MoE_Torch,
+    MoE_Triton,
+    add_scalar_cuda,
+    add_scalar_torch,
+    add_scalar_triton,
+    add_tensor_cuda,
+    add_tensor_torch,
+    add_tensor_triton,
+    swiglu_cuda,
+    swiglu_torch,
+    swiglu_triton,
+)

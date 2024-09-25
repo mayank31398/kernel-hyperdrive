@@ -1,7 +1,7 @@
 import torch
 
 
-def vector_addition_torch(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+def add_tensor_torch(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     """vector addition
 
     Args:
