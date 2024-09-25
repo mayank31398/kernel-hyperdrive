@@ -73,10 +73,6 @@ template <> struct DType<c10::Half> {
     __device__ static nv_dtype downcast(const fp32 value) { return __float2half(value); }
 
     __device__ static nv_dtype2 make2(const nv_dtype value) { return __half2half2(value); }
-
-    __device__ static nv_dtype2 make2(const c10_dtype value) {
-        return __half2half2(reinterpret_cast<nv_dtype>(value));
-    }
 };
 
 // struct for half (basically another alias for the above)
@@ -110,10 +106,6 @@ template <> struct DType<c10::BFloat16> {
     __device__ static nv_dtype downcast(const fp32 value) { return __float2bfloat16(value); }
 
     __device__ static nv_dtype2 make2(const nv_dtype value) { return __bfloat162bfloat162(value); }
-
-    __device__ static nv_dtype2 make2(const c10_dtype value) {
-        return __bfloat162bfloat162(reinterpret_cast<nv_dtype>(value));
-    }
 };
 
 // struct for bf16 (basically another alias for the above)
