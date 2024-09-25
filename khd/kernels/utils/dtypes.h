@@ -69,6 +69,14 @@ template <> struct DType<c10::Half> {
 
         return get_fp32_from_upper_and_lower_16_bits(upper_16, lower_16);
     }
+
+    __device__ static fp32 upcast(const nv_dtype value) { return __half2float(value); }
+    __device__ static fp32_2 upcast(const nv_dtype2 value) { return __half22float2(value); }
+
+    __device__ static nv_dtype downcast(const fp32 value) { return __float2half(value); }
+    __device__ static nv_dtype2 downcast(const fp32_2 value) { return __float22half2_rn(value); }
+
+    __device__ static nv_dtype2 make2(const nv_dtype value) { return __half2half2(value); }
 };
 
 // struct for half (basically another alias for the above)
@@ -98,6 +106,14 @@ template <> struct DType<c10::BFloat16> {
 
         return get_fp32_from_upper_and_lower_16_bits(upper_16, lower_16);
     }
+
+    __device__ static fp32 upcast(const nv_dtype value) { return __bfloat162float(value); }
+    __device__ static fp32_2 upcast(const nv_dtype2 value) { return __bfloat1622float2(value); }
+
+    __device__ static nv_dtype downcast(const fp32 value) { return __float2bfloat16(value); }
+    __device__ static nv_dtype2 downcast(const fp32_2 value) { return __float22bfloat162_rn(value); }
+
+    __device__ static nv_dtype2 make2(const nv_dtype value) { return __bfloat162bfloat162(value); }
 };
 
 // struct for bf16 (basically another alias for the above)

@@ -8,7 +8,7 @@ from khd import add_tensor_cuda, add_tensor_torch, add_tensor_triton
 from .test_commons import TestCommons
 
 
-class VectorAdditionTest(TestCommons):
+class AddTensorTest(TestCommons):
     @parameterized.expand(
         TestCommons.make_args_matrix(
             TestCommons.get_2d_tensor_sizes(),
@@ -22,9 +22,7 @@ class VectorAdditionTest(TestCommons):
             ],
         )
     )
-    def test_vector_addition(
-        self, size: tuple[int], device: torch.device, dtype: torch.dtype, function: Callable
-    ) -> None:
+    def test_add_tensor(self, size: tuple[int], device: torch.device, dtype: torch.dtype, function: Callable) -> None:
         x_kernel, x_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
         y_kernel, y_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
 

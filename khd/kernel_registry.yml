@@ -3,3 +3,8 @@
   sources:
     - kernels/add/add_tensor/cuda_implementation/ops.cpp
     - kernels/add/add_tensor/cuda_implementation/kernels.cu
+- functions:
+    - add_scalar_forward_cuda
+  sources:
+    - kernels/add/add_scalar/cuda_implementation/ops.cpp
+    - kernels/add/add_scalar/cuda_implementation/kernels.cu
