@@ -20,6 +20,9 @@ def _(x: torch.Tensor, y: float, BLOCK_SIZE: int) -> torch.Tensor:
 class _AddScalar_CUDA(torch.autograd.Function):
     @staticmethod
     def forward(ctx, x: torch.Tensor, y: float) -> torch.Tensor:
+        if y == 0:
+            return x
+
         BLOCK_SIZE = 1024
 
         if torch.compiler.is_compiling():

@@ -6,10 +6,6 @@ void add_scalar_forward_cuda_kernel(
 torch::Tensor add_scalar_forward_cuda(torch::Tensor x, torch::Scalar y, const int BLOCK_SIZE) {
     TORCH_CHECK(x.device().is_cuda(), "tensor x is not on GPU");
 
-    if (y == 0) {
-        return x;
-    }
-
     torch::Tensor output = torch::empty_like(x);
 
     int num_elements = x.numel();
