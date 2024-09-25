@@ -33,7 +33,7 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
                 using T2 = typename dtype::nv_dtype2;
 
                 T2 _x = dtype::reinterpret_32_bits_as_2x16(x_vec[i]);
-                _x = __hadd2(_x, dtype::downcast2(y));
+                _x = __hadd2(_x, dtype::make2(y));
 
                 output_buffer[i] = dtype::reinterpret_2x16_as_32_bits(_x);
             } else {
