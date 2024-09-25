@@ -5,9 +5,9 @@
 #include <cuda_runtime.h>
 #include <torch/extension.h>
 
-template <typename scalar_t, typename T>
+template <typename scalar_t>
 __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
-                                                const T y,
+                                                const fp32 y,
                                                 scalar_t *output,
                                                 const int num_elements) {
     const int thread_id = get_global_thread_id();
@@ -56,14 +56,12 @@ void add_scalar_forward_cuda_kernel(
     torch::Tensor x, const float y, torch::Tensor output, const int num_elements, const int BLOCK_SIZE) {
     AT_DISPATCH_FLOATING_TYPES_AND2(
         at::ScalarType::Half, at::ScalarType::BFloat16, x.scalar_type(), "add_tensor_forward_cuda_kernel", ([&] {
-            using T = typename dtype::nv_dtype;
-
             const int num_elements_per_thread = get_num_elements_in_vector_dtype<scalar_t, fp32_4>();
 
             const int num_elements_per_block = BLOCK_SIZE * num_elements_per_thread;
             const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
 
-            _add_scalar_forward_cuda_kernel<scalar_t, T>
+            _add_scalar_forward_cuda_kernel<scalar_t>
                 <<<NUM_BLOCKS, BLOCK_SIZE>>>(x.data_ptr<scalar_t>(), y, output.data_ptr<scalar_t>(), num_elements);
         }));
 }
