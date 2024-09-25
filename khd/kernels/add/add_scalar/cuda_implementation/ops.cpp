@@ -1,9 +1,9 @@
 #include <torch/extension.h>
 
 void add_scalar_forward_cuda_kernel(
-    torch::Tensor x, const float y, torch::Tensor output, const int num_elements, const int BLOCK_SIZE);
+    torch::Tensor x, torch::Scalar y, torch::Tensor output, const int num_elements, const int BLOCK_SIZE);
 
-torch::Tensor add_scalar_forward_cuda(torch::Tensor x, const float y, const int BLOCK_SIZE) {
+torch::Tensor add_scalar_forward_cuda(torch::Tensor x, torch::Scalar y, const int BLOCK_SIZE) {
     TORCH_CHECK(x.device().is_cuda(), "tensor x is not on GPU");
 
     if (y == 0) {
