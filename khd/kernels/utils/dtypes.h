@@ -46,8 +46,13 @@ template <> struct DType<fp32> {
     using nv_dtype2 = fp32_2;
     using nv_dtype4 = fp32_4;
 
-    __device__ static fp32 upcast(fp32 value) { return value; }
-    __device__ static fp32 downcast(fp32 value) { return value; }
+    __device__ static nv_dtype upcast(nv_dtype value) { return value; }
+    __device__ static nv_dtype2 upcast(nv_dtype2 value) { return value; }
+    __device__ static nv_dtype4 upcast(nv_dtype4 value) { return value; }
+
+    __device__ static nv_dtype downcast(nv_dtype value) { return value; }
+    __device__ static nv_dtype2 downcast(nv_dtype2 value) { return value; }
+    __device__ static nv_dtype4 downcast(nv_dtype4 value) { return value; }
 };
 
 // struct for c10::Half
