@@ -1,6 +1,6 @@
-#include "../../utils/activations.cpp"
-#include "../../utils/dtypes.h"
-#include "../../utils/threads.h"
+#include "../../../utils/activations.cpp"
+#include "../../../utils/dtypes.h"
+#include "../../../utils/threads.h"
 #include <cuda.h>
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
@@ -48,10 +48,10 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
     }
 }
 
-torch::Tensor swiglu_forward_cuda_kernel(
+void swiglu_forward_cuda_kernel(
     torch::Tensor gate, torch::Tensor up, torch::Tensor output, const int num_elements, const int BLOCK_SIZE) {
     AT_DISPATCH_FLOATING_TYPES_AND2(
-        at::ScalarType::Half, at::ScalarType::BFloat16, gate.scalar_type(), "vector_addition_forward_kernel", ([&] {
+        at::ScalarType::Half, at::ScalarType::BFloat16, gate.scalar_type(), "swiglu_forward_cuda_kernel", ([&] {
             const int num_elements_per_thread = get_num_elements_in_vector_dtype<scalar_t, fp32_4>();
 
             const int num_elements_per_block = BLOCK_SIZE * num_elements_per_thread;
@@ -60,6 +60,4 @@ torch::Tensor swiglu_forward_cuda_kernel(
             _swiglu_forward_cuda_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(
                 gate.data_ptr<scalar_t>(), up.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
         }));
-
-    return output;
 }
