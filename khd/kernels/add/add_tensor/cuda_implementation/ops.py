@@ -1,20 +1,22 @@
 import torch
 
-from .....constants import LIBRARY_NAME
+from .....constants import LIBRARY_NAME, TORCH_VER_SUPPORTS_COMPILE
 from .....kernel_registry import KernelRegistry
+from .....utils import requires_package
 
 
 _KERNEL_NAME = "add_tensor_forward_cuda"
 
 
-@torch.library.custom_op(f"{LIBRARY_NAME}::{_KERNEL_NAME}", mutates_args={})
-def _add_tensor_forward_cuda_compilable(x: torch.Tensor, y: torch.Tensor, BLOCK_SIZE: int) -> torch.Tensor:
-    return KernelRegistry.get_kernel(_KERNEL_NAME)(x, y, BLOCK_SIZE)
+if requires_package("torch", TORCH_VER_SUPPORTS_COMPILE):
+    @torch.library.custom_op(f"{LIBRARY_NAME}::{_KERNEL_NAME}", mutates_args={})
+    def _add_tensor_forward_cuda_compilable(x: torch.Tensor, y: torch.Tensor, BLOCK_SIZE: int) -> torch.Tensor:
+        return KernelRegistry.get_kernel(_KERNEL_NAME)(x, y, BLOCK_SIZE)
 
 
-@_add_tensor_forward_cuda_compilable.register_fake
-def _(x: torch.Tensor, y: torch.Tensor, BLOCK_SIZE: int) -> torch.Tensor:
-    return torch.empty_like(x)
+    @_add_tensor_forward_cuda_compilable.register_fake
+    def _(x: torch.Tensor, y: torch.Tensor, BLOCK_SIZE: int) -> torch.Tensor:
+        return torch.empty_like(x)
 
 
 class _AddTensor_CUDA(torch.autograd.Function):
