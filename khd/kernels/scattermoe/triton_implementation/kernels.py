@@ -7,7 +7,7 @@ BLOCK_M = 128
 
 @triton.autotune(
     configs=[triton.Config({"BLOCK_N": 128, "BLOCK_K": 32}, num_stages=4, num_warps=4)],
-    key=["M", "N", "K"],
+    key=["N", "K"],
 )
 @triton.jit
 def scatter2scatter_triton_kernel(
@@ -26,9 +26,9 @@ def scatter2scatter_triton_kernel(
     block_start_idx_ptr,
     FAN_OUT,
     M,
-    K,
-    N,
-    E,
+    K: tl.constexpr,
+    N: tl.constexpr,
+    E: tl.constexpr,
     BLOCK_M: tl.constexpr,
     BLOCK_N: tl.constexpr,
     BLOCK_K: tl.constexpr,
@@ -97,7 +97,17 @@ def scatter2scatter_triton_kernel(
 
 
 @triton.autotune(
-    configs=[triton.Config({"BLOCK_N": 128, "BLOCK_K": 128, "BLOCK_M": 32}, num_stages=4, num_warps=4)],
+    configs=[
+        # different block M and reducing stages
+        triton.Config({"BLOCK_N": 128, "BLOCK_K": 128, "BLOCK_M": 32}, num_stages=4, num_warps=4),
+        triton.Config({"BLOCK_N": 128, "BLOCK_K": 128, "BLOCK_M": 128}, num_stages=1, num_warps=4),
+        triton.Config({"BLOCK_N": 128, "BLOCK_K": 128, "BLOCK_M": 64}, num_stages=2, num_warps=4),
+        # keep 4 stages and keep two 64 block sizes
+        # - NOTE: these can get good performances for low M, but for large M the variation
+        # triton.Config({'BLOCK_N': 128, 'BLOCK_K': 64, 'BLOCK_M': 64}, num_stages=4, num_warps=4),
+        # triton.Config({'BLOCK_N': 64, 'BLOCK_K': 128, 'BLOCK_M': 64}, num_stages=4, num_warps=4),
+        # triton.Config({'BLOCK_N': 64, 'BLOCK_K': 128, 'BLOCK_M': 64}, num_stages=4, num_warps=4),
+    ],
     key=["N", "K"],
 )
 @triton.jit
@@ -113,8 +123,8 @@ def groupXtY_triton_kernel(
     stride_dwk,
     stride_dwn,
     expert_offsets_ptr,
-    K,
-    N,
+    K: tl.constexpr,
+    N: tl.constexpr,
     BLOCK_M: tl.constexpr,
     BLOCK_N: tl.constexpr,
     BLOCK_K: tl.constexpr,
@@ -125,7 +135,7 @@ def groupXtY_triton_kernel(
     pid1 = tl.program_id(axis=1)
     num0 = tl.num_programs(0)
     num1 = tl.num_programs(1)
-    pid1, pid0 = tl.swizzle2d(pid1, pid0, num1, num0, 128)
+    pid0, pid1 = tl.swizzle2d(pid0, pid1, num0, num1, 4)
 
     K_BLOCK_COUNT = tl.cdiv(K, BLOCK_K)
     E_idx = pid0 // K_BLOCK_COUNT
@@ -196,7 +206,7 @@ def group_triton_kernel(
     stride_ti,
     grouped_idx_ptr,
     N,
-    K,
+    K: tl.constexpr,
     BLOCK_N: tl.constexpr,
     BLOCK_K: tl.constexpr,
 ):
