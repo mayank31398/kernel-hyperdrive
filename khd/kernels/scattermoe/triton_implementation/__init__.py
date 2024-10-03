@@ -22,7 +22,7 @@ class Experts_Triton(Experts_Torch):
     ):
         return scattered_experts(
             inputs,
-            self.weight.permute(0, 2, 1),
+            self.weight.permute(1, 2, 0),
             k,
             sorted_expert_idxs,
             sorted_scattered_idxs,

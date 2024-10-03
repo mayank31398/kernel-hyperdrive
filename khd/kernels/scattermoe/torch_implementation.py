@@ -11,11 +11,11 @@ class Experts_Torch(nn.Module):
     ) -> None:
         super().__init__()
 
-        self.weight = nn.Parameter(torch.empty(num_experts, out_features, in_features))
+        self.weight = nn.Parameter(torch.empty(out_features, num_experts, in_features))
 
         self.bias = None
         if add_bias:
-            self.bias = nn.Parameter(torch.empty(num_experts, out_features))
+            self.bias = nn.Parameter(torch.empty(out_features, num_experts))
 
         self.std = std
 
@@ -35,7 +35,7 @@ class Experts_Torch(nn.Module):
             input = input.split(expert_frequency.tolist(), dim=0)
 
         input = [
-            F.linear(input[i], self.weight[i], None if self.bias is None else self.bias[i])
+            F.linear(input[i], self.weight[:, i, :], None if self.bias is None else self.bias[:, i])
             for i in range(self.num_experts)
         ]
 
