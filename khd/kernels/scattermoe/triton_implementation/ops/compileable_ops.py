@@ -152,7 +152,7 @@ def _group_bwd_W(DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor
         DW.stride(2),
         # expert_offsets_ptr,
         expert_offsets,
-        # K: tl.constexpr, N: tl.constexpr, E: tl.constexpr
+        # K: tl.constexpr, N: tl.constexpr,
         N=DY.size(-1),
         K=X.size(-1),
         # ACC_TYPE: tl.constexpr,
