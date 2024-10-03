@@ -2,25 +2,24 @@ import torch
 import triton
 import triton.language as tl
 
-from .....constants import LIBRARY_NAME, TORCH_VER_SUPPORTS_COMPILE
+from .....constants import LIBRARY_NAME
+from ....utils import torch_custom_op
 from ..kernels import group_triton_kernel, groupXtY_triton_kernel, scatter2scatter_triton_kernel
-from .....utils import requires_package
 
 
 BLOCK_M = 128
 torch._dynamo.config.capture_scalar_outputs = True
 
 
-if requires_package("torch", TORCH_VER_SUPPORTS_COMPILE):
-    # bincount is not compilable
-    @torch.library.custom_op(f"{LIBRARY_NAME}::bincount", mutates_args={})
-    def compileable_bincount(x: torch.Tensor, minlength: int) -> torch.Tensor:
-        return x.bincount(minlength=minlength)
+# bincount is not compilable
+@torch_custom_op(f"{LIBRARY_NAME}::bincount", mutates_args={})
+def compileable_bincount(x: torch.Tensor, minlength: int) -> torch.Tensor:
+    return x.bincount(minlength=minlength)
 
 
-    @compileable_bincount.register_fake
-    def _(x: torch.Tensor, minlength: int) -> torch.Tensor:
-        return torch.empty(minlength, dtype=torch.long, device=x.device)
+@compileable_bincount.register_fake
+def _(x: torch.Tensor, minlength: int) -> torch.Tensor:
+    return torch.empty(minlength, dtype=torch.long, device=x.device)
 
 
 def _scatter2scatter(
@@ -71,31 +70,30 @@ def _scatter2scatter(
     )
 
 
-if requires_package("torch", TORCH_VER_SUPPORTS_COMPILE):
-    # custom op is needed because of https://github.com/pytorch/pytorch/issues/136394
-    @torch.library.custom_op(f"{LIBRARY_NAME}::scatter2scatter", mutates_args={"out"})
-    def _scatter2scatter_compileable(
-        X: torch.Tensor,
-        W: torch.Tensor,
-        sorted_expert_idxs: torch.Tensor,
-        sorted_scattered_idxs: torch.Tensor,
-        padded_block_idxs: torch.Tensor,
-        out: torch.Tensor,
-        FAN_OUT: int,
-        x_grouped: bool = False,
-        y_grouped: bool = False,
-    ) -> None:
-        _scatter2scatter(
-            X=X,
-            W=W,
-            sorted_expert_idxs=sorted_expert_idxs,
-            sorted_scattered_idxs=sorted_scattered_idxs,
-            padded_block_idxs=padded_block_idxs,
-            out=out,
-            FAN_OUT=FAN_OUT,
-            x_grouped=x_grouped,
-            y_grouped=y_grouped,
-        )
+# custom op is needed because of https://github.com/pytorch/pytorch/issues/136394
+@torch_custom_op(f"{LIBRARY_NAME}::scatter2scatter", mutates_args={"out"})
+def _scatter2scatter_compileable(
+    X: torch.Tensor,
+    W: torch.Tensor,
+    sorted_expert_idxs: torch.Tensor,
+    sorted_scattered_idxs: torch.Tensor,
+    padded_block_idxs: torch.Tensor,
+    out: torch.Tensor,
+    FAN_OUT: int,
+    x_grouped: bool = False,
+    y_grouped: bool = False,
+) -> None:
+    _scatter2scatter(
+        X=X,
+        W=W,
+        sorted_expert_idxs=sorted_expert_idxs,
+        sorted_scattered_idxs=sorted_scattered_idxs,
+        padded_block_idxs=padded_block_idxs,
+        out=out,
+        FAN_OUT=FAN_OUT,
+        x_grouped=x_grouped,
+        y_grouped=y_grouped,
+    )
 
 
 def scatter2scatter(
@@ -165,12 +163,11 @@ def _group_bwd_W(DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor
 
 
 # custom op is needed because of https://github.com/pytorch/pytorch/issues/136394
-if requires_package("torch", TORCH_VER_SUPPORTS_COMPILE):
-    @torch.library.custom_op(f"{LIBRARY_NAME}::group_bwd_W", mutates_args={"DW"})
-    def _group_bwd_W_compileable(
-        DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor, DW: torch.Tensor, E: int
-    ) -> None:
-        _group_bwd_W(DY=DY, X=X, expert_offsets=expert_offsets, DW=DW, E=E)
+@torch_custom_op(f"{LIBRARY_NAME}::group_bwd_W", mutates_args={"DW"})
+def _group_bwd_W_compileable(
+    DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor, DW: torch.Tensor, E: int
+) -> None:
+    _group_bwd_W(DY=DY, X=X, expert_offsets=expert_offsets, DW=DW, E=E)
 
 
 def group_bwd_W(DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor, DW: torch.Tensor, E: int) -> None:
@@ -214,16 +211,15 @@ def _group(
 
 
 # custom op is needed because of https://github.com/pytorch/pytorch/issues/136394
-if requires_package("torch", TORCH_VER_SUPPORTS_COMPILE):
-    @torch.library.custom_op(f"{LIBRARY_NAME}::group", mutates_args={"out"})
-    def _group_compileable(
-        A: torch.Tensor,
-        sorted_expert_idxs: torch.Tensor,
-        out: torch.Tensor,
-        coeff: torch.Tensor | None = None,
-        fan_out: int = 1,
-    ) -> None:
-        _group(A=A, sorted_expert_idxs=sorted_expert_idxs, out=out, coeff=coeff, fan_out=fan_out)
+@torch_custom_op(f"{LIBRARY_NAME}::group", mutates_args={"out"})
+def _group_compileable(
+    A: torch.Tensor,
+    sorted_expert_idxs: torch.Tensor,
+    out: torch.Tensor,
+    coeff: torch.Tensor | None = None,
+    fan_out: int = 1,
+) -> None:
+    _group(A=A, sorted_expert_idxs=sorted_expert_idxs, out=out, coeff=coeff, fan_out=fan_out)
 
 
 def group(

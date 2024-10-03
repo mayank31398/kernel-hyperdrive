@@ -2,11 +2,11 @@ import torch
 
 from .compileable_ops import group, group_bwd_W, scatter2scatter
 
+
 try:
     from .compileable_ops import compileable_bincount
 except ImportError:
     pass
-
 
 
 BLOCK_M = 128
