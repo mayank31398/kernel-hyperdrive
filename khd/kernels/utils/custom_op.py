@@ -31,8 +31,9 @@ def torch_custom_op(
     device_types: torch.device = None,
     schema: str | None = None,
 ) -> Callable | _IdentityOp:
-    return (
-        custom_op(name, fn, mutates_args=mutates_args, device_types=device_types, schema=schema)
-        if _IS_CUSTOM_OP_IN_PYTORCH
-        else _IdentityOp
-    )
+    if _IS_CUSTOM_OP_IN_PYTORCH:
+        op = custom_op(name, fn, mutates_args=mutates_args, device_types=device_types, schema=schema)
+    else:
+        op = _IdentityOp if fn is None else _IdentityOp(fn)
+
+    return op
