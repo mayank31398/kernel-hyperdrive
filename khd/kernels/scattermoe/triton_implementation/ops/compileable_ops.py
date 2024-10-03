@@ -155,7 +155,6 @@ def _group_bwd_W(DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor
         # K: tl.constexpr, N: tl.constexpr, E: tl.constexpr
         N=DY.size(-1),
         K=X.size(-1),
-        E=E,
         # ACC_TYPE: tl.constexpr,
         ACC_TYPE=tl.float32,
         allow_tf32=torch.backends.cudnn.allow_tf32,
