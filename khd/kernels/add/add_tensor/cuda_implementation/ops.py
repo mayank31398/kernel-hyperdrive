@@ -1,6 +1,6 @@
 import torch
 
-from .....constants import LIBRARY_NAME, TORCH_VER_SUPPORTS_COMPILE
+from .....constants import LIBRARY_NAME
 from .....kernel_registry import KernelRegistry
 from ....utils import torch_custom_op
 
