@@ -2,12 +2,13 @@ import torch
 
 from .....constants import LIBRARY_NAME
 from .....kernel_registry import KernelRegistry
+from ....utils import torch_custom_op
 
 
 _KERNEL_NAME = "add_scalar_forward_cuda"
 
 
-@torch.library.custom_op(f"{LIBRARY_NAME}::{_KERNEL_NAME}", mutates_args={})
+@torch_custom_op(f"{LIBRARY_NAME}::{_KERNEL_NAME}", mutates_args={})
 def _add_scalar_forward_cuda_compilable(x: torch.Tensor, y: float, BLOCK_SIZE: int) -> torch.Tensor:
     return KernelRegistry.get_kernel(_KERNEL_NAME)(x, y, BLOCK_SIZE)
 
