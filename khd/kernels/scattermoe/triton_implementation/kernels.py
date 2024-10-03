@@ -7,7 +7,7 @@ BLOCK_M = 128
 
 @triton.autotune(
     configs=[triton.Config({"BLOCK_N": 128, "BLOCK_K": 32}, num_stages=4, num_warps=4)],
-    key=["M", "N", "K"],
+    key=["N", "K"],
 )
 @triton.jit
 def scatter2scatter_triton_kernel(
@@ -108,7 +108,7 @@ def scatter2scatter_triton_kernel(
         # triton.Config({'BLOCK_N': 64, 'BLOCK_K': 128, 'BLOCK_M': 64}, num_stages=4, num_warps=4),
         # triton.Config({'BLOCK_N': 64, 'BLOCK_K': 128, 'BLOCK_M': 64}, num_stages=4, num_warps=4),
     ],
-    key=["N", "K", "E"],
+    key=["N", "K"],
 )
 @triton.jit
 def groupXtY_triton_kernel(
@@ -125,7 +125,6 @@ def groupXtY_triton_kernel(
     expert_offsets_ptr,
     K: tl.constexpr,
     N: tl.constexpr,
-    E: tl.constexpr,
     BLOCK_M: tl.constexpr,
     BLOCK_N: tl.constexpr,
     BLOCK_K: tl.constexpr,
