@@ -1,7 +1,7 @@
 import torch
 
-from ...constants import LIBRARY_NAME
-from ...kernel_registry import KernelRegistry
+from ....constants import LIBRARY_NAME
+from ....kernel_registry import KernelRegistry
 
 
 _FORWARD_KERNEL_NAME = "swiglu_forward_cuda"

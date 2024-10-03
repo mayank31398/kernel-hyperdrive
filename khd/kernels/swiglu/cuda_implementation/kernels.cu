@@ -30,6 +30,14 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
             if (std::is_same_v<scalar_t, fp32>) {
                 output_buffer[i] = up_vec[i] * gate_vec[i] * sigmoid<scalar_t>(gate_vec[i]);
             } else if constexpr (std::is_same_v<scalar_t, c10::Half> || std::is_same_v<scalar_t, c10::BFloat16>) {
+                using dtype = DType<scalar_t>;
+                using T2 = typename dtype::nv_dtype2;
+
+                // T2 _x = dtype::reinterpret_32_bits_as_2x16(x_vec[i]);
+                // T2 _y = dtype::reinterpret_32_bits_as_2x16(y_vec[i]);
+                // _x = __hadd2(_x, _y);
+
+                // output_buffer[i] = dtype::reinterpret_2x16_as_32_bits(_x);
                 output_buffer[i] = _swiglu_forward_vectorized_16(gate_vec[i], up_vec[i]);
             } else {
                 assert(false && "Function not implemented");
@@ -43,7 +51,7 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
         #pragma unroll
         // clang-format on
         for (int i = start; i < num_elements; i++) {
-            output[i] = x[i] + y[i];
+            output[i] = up[i] * gate[i] * sigmoid<scalar_t>(gate[i]);
         }
     }
 }
