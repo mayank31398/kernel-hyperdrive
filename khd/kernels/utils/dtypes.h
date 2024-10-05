@@ -4,15 +4,15 @@
 #include <torch/extension.h>
 
 // define dtype aliases
-#define fp32 float
-#define fp32_2 float2
-#define fp32_4 float4
+using fp32 = float;
+using fp32_2 = float2;
+using fp32_4 = float4;
 
-#define fp16 half
-#define fp16_2 half2
+using fp16 = half;
+using fp16_2 = half2;
 
-#define bf16 __nv_bfloat16
-#define bf16_2 __nv_bfloat162
+using bf16 = __nv_bfloat16;
+using bf16_2 = __nv_bfloat162;
 
 #define HALF_MASK 0xFFFF
 
