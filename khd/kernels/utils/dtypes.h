@@ -16,7 +16,7 @@ using bf16_2 = __nv_bfloat162;
 
 #define HALF_MASK 0xFFFF
 
-__device__ std::tuple<uint16_t, uint16_t> get_upper_and_lower_16_bits_from_fp32(fp32 &value) {
+__device__ std::tuple<uint16_t, uint16_t> get_upper_and_lower_16_bits_from_fp32(const fp32 &value) {
     uint32_t int_value = __float_as_int(value);
 
     uint16_t lower_16 = int_value & HALF_MASK;
@@ -25,7 +25,7 @@ __device__ std::tuple<uint16_t, uint16_t> get_upper_and_lower_16_bits_from_fp32(
     return std::make_tuple(lower_16, upper_16);
 }
 
-__device__ fp32 get_fp32_from_upper_and_lower_16_bits(uint16_t &upper_16, uint16_t &lower_16) {
+__device__ fp32 get_fp32_from_upper_and_lower_16_bits(const uint16_t &upper_16, const uint16_t &lower_16) {
     uint32_t int_value = (static_cast<uint32_t>(upper_16) << 16) | lower_16;
     return __int_as_float(int_value);
 }
@@ -53,7 +53,7 @@ template <> struct DType<c10::Half> {
     using nv_dtype = fp16;
     using nv_dtype2 = fp16_2;
 
-    __device__ static nv_dtype2 reinterpret_32_bits_as_2x16(fp32 value) {
+    __device__ static nv_dtype2 reinterpret_32_bits_as_2x16(const fp32 value) {
         auto [lower_16, upper_16] = get_upper_and_lower_16_bits_from_fp32(value);
 
         nv_dtype lower_half = __ushort_as_half(lower_16);
@@ -62,7 +62,7 @@ template <> struct DType<c10::Half> {
         return __halves2half2(lower_half, upper_half);
     }
 
-    __device__ static fp32 reinterpret_2x16_as_32_bits(nv_dtype2 value) {
+    __device__ static fp32 reinterpret_2x16_as_32_bits(const nv_dtype2 value) {
         nv_dtype lower_half = __low2half(value);
         nv_dtype upper_half = __high2half(value);
 
@@ -90,7 +90,7 @@ template <> struct DType<c10::BFloat16> {
     using nv_dtype = bf16;
     using nv_dtype2 = bf16_2;
 
-    __device__ static nv_dtype2 reinterpret_32_bits_as_2x16(fp32 value) {
+    __device__ static nv_dtype2 reinterpret_32_bits_as_2x16(const fp32 value) {
         auto [lower_16, upper_16] = get_upper_and_lower_16_bits_from_fp32(value);
 
         nv_dtype lower_half = __ushort_as_bfloat16(lower_16);
@@ -99,7 +99,7 @@ template <> struct DType<c10::BFloat16> {
         return __halves2bfloat162(lower_half, upper_half);
     }
 
-    __device__ static fp32 reinterpret_2x16_as_32_bits(nv_dtype2 value) {
+    __device__ static fp32 reinterpret_2x16_as_32_bits(const nv_dtype2 value) {
         nv_dtype lower_half = __low2bfloat16(value);
         nv_dtype upper_half = __high2bfloat16(value);
 
