@@ -14,16 +14,18 @@
 #define bf16 __nv_bfloat16
 #define bf16_2 __nv_bfloat162
 
-__device__ std::tuple<uint16_t, uint16_t> get_upper_and_lower_16_bits_from_fp32(fp32 value) {
+#define HALF_MASK 0xFFFF
+
+__device__ std::tuple<uint16_t, uint16_t> get_upper_and_lower_16_bits_from_fp32(fp32 &value) {
     uint32_t int_value = __float_as_int(value);
 
-    uint16_t lower_16 = int_value & 0xFFFF;
-    uint16_t upper_16 = (int_value >> 16) & 0xFFFF;
+    uint16_t lower_16 = int_value & HALF_MASK;
+    uint16_t upper_16 = (int_value >> 16) & HALF_MASK;
 
     return std::make_tuple(lower_16, upper_16);
 }
 
-__device__ fp32 get_fp32_from_upper_and_lower_16_bits(uint16_t upper_16, uint16_t lower_16) {
+__device__ fp32 get_fp32_from_upper_and_lower_16_bits(uint16_t &upper_16, uint16_t &lower_16) {
     uint32_t int_value = (static_cast<uint32_t>(upper_16) << 16) | lower_16;
     return __int_as_float(int_value);
 }
