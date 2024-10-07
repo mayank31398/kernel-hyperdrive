@@ -1,9 +1,12 @@
 #include <torch/extension.h>
 
-void add_tensor_forward_cuda_kernel(
-    torch::Tensor x, torch::Tensor y, torch::Tensor output, const int num_elements, const int BLOCK_SIZE);
+void add_tensor_forward_cuda_kernel(const torch::Tensor x,
+                                    const torch::Tensor y,
+                                    torch::Tensor output,
+                                    const int &num_elements,
+                                    const int &BLOCK_SIZE);
 
-torch::Tensor add_tensor_forward_cuda(torch::Tensor x, torch::Tensor y, const int BLOCK_SIZE) {
+torch::Tensor add_tensor_forward_cuda(const torch::Tensor x, const torch::Tensor y, const int &BLOCK_SIZE) {
     TORCH_CHECK(x.device().is_cuda(), "tensor x is not on GPU");
     TORCH_CHECK(y.device().is_cuda(), "tensor y is not on GPU");
 
