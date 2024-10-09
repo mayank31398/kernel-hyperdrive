@@ -59,8 +59,8 @@ void add_tensor_forward_cuda_kernel(const torch::Tensor x,
                                     torch::Tensor output,
                                     const int &num_elements,
                                     const int &BLOCK_SIZE) {
-    AT_DISPATCH_FLOATING_TYPES_AND2(
-        at::ScalarType::Half, at::ScalarType::BFloat16, x.scalar_type(), "add_tensor_forward_cuda_kernel", ([&] {
+    AT_DISPATCH_CUSTOM_FLOAT_TYPES(
+        x.scalar_type(), "add_tensor_forward_cuda_kernel", ([&] {
             const int num_elements_per_thread = get_num_elements_in_vector_dtype<scalar_t, fp32_4>();
 
             const int num_elements_per_block = BLOCK_SIZE * num_elements_per_thread;
