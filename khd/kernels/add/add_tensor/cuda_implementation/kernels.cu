@@ -16,6 +16,9 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
     const int start = thread_id * num_elements_per_thread;
     const int end = (thread_id + 1) * num_elements_per_thread - 1; // inclusive of last element
 
+    using dtype = DType<scalar_t>;
+    using T2 = typename dtype::nv_dtype2;
+
     if (start < num_elements && end < num_elements) {
         const fp32 *x_vec = (fp32 *)&((const fp32_4 *)x)[thread_id];
         const fp32 *y_vec = (fp32 *)&((const fp32_4 *)y)[thread_id];
@@ -29,9 +32,6 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
             if (std::is_same_v<scalar_t, fp32>) {
                 output_buffer[i] = x_vec[i] + y_vec[i];
             } else if constexpr (std::is_same_v<scalar_t, c10::Half> || std::is_same_v<scalar_t, c10::BFloat16>) {
-                using dtype = DType<scalar_t>;
-                using T2 = typename dtype::nv_dtype2;
-
                 T2 _x = dtype::reinterpret_32_bits_as_2x16(x_vec[i]);
                 T2 _y = dtype::reinterpret_32_bits_as_2x16(y_vec[i]);
                 _x = __hadd2(_x, _y);
