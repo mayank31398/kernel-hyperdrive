@@ -11,5 +11,5 @@
 - functions:
     - swiglu_forward_cuda
   sources:
-    - swiglu/cuda_implementation/ops.cpp
-    - swiglu/cuda_implementation/kernels.cu
+    - kernels/swiglu/cuda_implementation/ops.cpp
+    - kernels/swiglu/cuda_implementation/kernels.cu
