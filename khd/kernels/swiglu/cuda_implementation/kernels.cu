@@ -1,4 +1,4 @@
-#include "../../../utils/activations.cpp"
+#include "../../../utils/activations.h"
 #include "../../../utils/dtypes.h"
 #include "../../../utils/threads.h"
 #include <cuda.h>
