@@ -7,9 +7,6 @@ from tabulate import tabulate
 from khd import add_tensor_cuda, add_tensor_torch, add_tensor_triton
 
 
-# from khd import swiglu_cuda, swiglu_torch, swiglu_triton
-
-
 n = 100
 
 headers = ["dtype", "torch", "cuda", "triton"]
