@@ -94,24 +94,22 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
                 up_grad_buffer[i] = output_grad_vec[i] * gate_silu;
                 gate_grad_buffer[i] = output_grad_vec[i] * up_vec[i] * (gate_sigmoid + gate_silu * (1 - gate_sigmoid));
             } else if constexpr (std::is_same_v<scalar_t, c10::Half> || std::is_same_v<scalar_t, c10::BFloat16>) {
-                fp32 *_up = (fp32 *)dtype::upcast(dtype::reinterpret_32_bits_as_2x16(up_vec[i]));
-                fp32 *_gate = (fp32 *)dtype::upcast(dtype::reinterpret_32_bits_as_2x16(gate_vec[i]));
-                fp32 *_output_grad = (fp32 *)dtype::upcast(dtype::reinterpret_32_bits_as_2x16(output_grad_vec[i]));
+                fp32_2 _up = dtype::upcast(dtype::reinterpret_32_bits_as_2x16(up_vec[i]));
+                fp32_2 _gate = dtype::upcast(dtype::reinterpret_32_bits_as_2x16(gate_vec[i]));
+                fp32_2 _output_grad = dtype::upcast(dtype::reinterpret_32_bits_as_2x16(output_grad_vec[i]));
 
                 fp32_2 _gate_grad;
                 fp32_2 _up_grad;
 
-                // clang-format off
-                #pragma unroll
-                // clang-format on
-                for (int j = 0; j < 2; j++) {
-                    fp32 gate_sigmoid = sigmoid<fp32, fp32>(_gate[j]);
-                    fp32 gate_silu = _gate[j] * gate_sigmoid;
+                fp32 gate_sigmoid = sigmoid<fp32, fp32>(_gate.x);
+                fp32 gate_silu = _gate.x * gate_sigmoid;
+                _up_grad.x = _output_grad.x * gate_silu;
+                _gate_grad.x = _output_grad.x * _up.x * (gate_sigmoid + gate_silu * (1 - gate_sigmoid));
 
-                    ((fp32 *)_up_grad)[j] = _output_grad[j] * gate_silu;
-                    ((fp32 *)_gate_grad)[j] =
-                        _output_grad[j] * _up[j] * (gate_sigmoid + gate_silu * (1 - gate_sigmoid));
-                }
+                gate_sigmoid = sigmoid<fp32, fp32>(_gate.y);
+                gate_silu = _gate.y * gate_sigmoid;
+                _up_grad.y = _output_grad.y * gate_silu;
+                _gate_grad.y = _output_grad.y * _up.y * (gate_sigmoid + gate_silu * (1 - gate_sigmoid));
 
                 up_grad_buffer[i] = dtype::reinterpret_2x16_as_32_bits(dtype::downcast(_up_grad));
                 gate_grad_buffer[i] = dtype::reinterpret_2x16_as_32_bits(dtype::downcast(_gate_grad));
