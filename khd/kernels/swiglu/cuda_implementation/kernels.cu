@@ -18,6 +18,7 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
     const int end = (thread_id + 1) * num_elements_per_thread - 1; // inclusive of last element
 
     using dtype = DType<scalar_t>;
+    using T = typename dtype::nv_dtype;
     using T2 = typename dtype::nv_dtype2;
 
     if (start < num_elements && end < num_elements) {
@@ -51,8 +52,8 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
         #pragma unroll
         // clang-format on
         for (int i = start; i < num_elements; i++) {
-            fp32 _gate = dtype::upcast(gate[i]);
-            output[i] = dtype::downcast(dtype::upcast(up[i]) * _gate * sigmoid<fp32, fp32>(_gate));
+            fp32 _gate = dtype::upcast(static_cast<T>(gate[i]));
+            output[i] = dtype::downcast(dtype::upcast(static_cast<T>(up[i])) * _gate * sigmoid<fp32, fp32>(_gate));
         }
     }
 }
