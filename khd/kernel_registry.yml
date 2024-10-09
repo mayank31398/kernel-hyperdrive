@@ -8,3 +8,8 @@
   sources:
     - kernels/add/add_scalar/cuda_implementation/ops.cpp
     - kernels/add/add_scalar/cuda_implementation/kernels.cu
+- functions:
+    - swiglu_forward_cuda
+  sources:
+    - kernels/swiglu/cuda_implementation/ops.cpp
+    - kernels/swiglu/cuda_implementation/kernels.cu

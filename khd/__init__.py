@@ -8,6 +8,7 @@ from .kernels import (
     add_tensor_cuda,
     add_tensor_torch,
     add_tensor_triton,
+    swiglu_cuda,
     swiglu_torch,
     swiglu_triton,
 )
