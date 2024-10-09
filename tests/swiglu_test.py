@@ -14,7 +14,6 @@ class SwigluTest(TestCommons):
             TestCommons.get_2d_tensor_sizes(),
             [torch.device("cuda")],
             TestCommons.get_dtypes(),
-            [swiglu_triton],
             [
                 swiglu_cuda,
                 swiglu_triton,
