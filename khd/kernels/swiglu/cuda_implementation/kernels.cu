@@ -33,12 +33,12 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
             if (std::is_same_v<scalar_t, fp32>) {
                 output_buffer[i] = up_vec[i] * gate_vec[i] * sigmoid<fp32, fp32>(gate_vec[i]);
             } else if constexpr (std::is_same_v<scalar_t, c10::Half> || std::is_same_v<scalar_t, c10::BFloat16>) {
-                T2 _up = dtype::upcast(dtype::reinterpret_32_bits_as_2x16(up_vec[i]));
-                T2 _gate = dtype::upcast(dtype::reinterpret_32_bits_as_2x16(gate_vec[i]));
+                fp32_2 _up = dtype::upcast(dtype::reinterpret_32_bits_as_2x16(up_vec[i]));
+                fp32_2 _gate = dtype::upcast(dtype::reinterpret_32_bits_as_2x16(gate_vec[i]));
 
-                fp32_2 _out = DType<fp32>::make2(_up.x * _gate.x * sigmoid<fp32, fp32>(_gate.x),
-                                                 _up.y * _gate.y * sigmoid<fp32, fp32>(_gate.y));
-                output_buffer[i] = dtype::downcast(_out);
+                _gate = DType<fp32>::make2(_up.x * _gate.x * sigmoid<fp32, fp32>(_gate.x),
+                                           _up.y * _gate.y * sigmoid<fp32, fp32>(_gate.y));
+                output_buffer[i] = dtype::reinterpret_2x16_as_32_bits(dtype::downcast(_gate));
             } else {
                 assert(false && "Function not implemented");
             }
