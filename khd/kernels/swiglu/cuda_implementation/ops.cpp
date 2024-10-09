@@ -27,10 +27,10 @@ torch::Tensor swiglu_forward_cuda(torch::Tensor gate, torch::Tensor up, const in
     return output;
 }
 
-torch::Tensor swiglu_backward_cuda(torch::Tensor gate,
-                                   torch::Tensor up,
-                                   torch::Tensor output_grad,
-                                   const int BLOCK_SIZE) {
+std::vector<torch::Tensor> swiglu_backward_cuda(torch::Tensor gate,
+                                                torch::Tensor up,
+                                                torch::Tensor output_grad,
+                                                const int BLOCK_SIZE) {
     TORCH_CHECK(gate.device().is_cuda(), "tensor gate is not on GPU");
     TORCH_CHECK(up.device().is_cuda(), "tensor up is not on GPU");
 
@@ -50,7 +50,7 @@ torch::Tensor swiglu_backward_cuda(torch::Tensor gate,
                                 num_elements,
                                 BLOCK_SIZE);
 
-    return output;
+    return {gate_grad, up_grad};
 }
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
