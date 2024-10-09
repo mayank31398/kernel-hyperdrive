@@ -127,8 +127,15 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
         #pragma unroll
         // clang-format on
         for (int i = start; i < num_elements; i++) {
-            fp32 _gate = dtype::upcast(static_cast<T>(gate[i]));
-            output[i] = dtype::downcast(dtype::upcast(static_cast<T>(up[i])) * _gate * sigmoid<fp32, fp32>(_gate));
+            fp32 _up = dtype::upcast(up[i]);
+            fp32 _gate = dtype::upcast(gate[i]);
+            fp32 _output_grad = dtype::upcast(output_grad[i]);
+
+            fp32 gate_sigmoid = sigmoid<fp32, fp32>(_gate);
+            fp32 gate_silu = _gate * gate_sigmoid;
+
+            up_grad[i] = _output_grad * gate_silu;
+            gate_grad[i] = _output_grad * _up * (gate_sigmoid + gate_silu * (1 - gate_sigmoid));
         }
     }
 }
