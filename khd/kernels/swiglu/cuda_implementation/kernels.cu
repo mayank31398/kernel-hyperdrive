@@ -17,6 +17,9 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
     const int start = thread_id * num_elements_per_thread;
     const int end = (thread_id + 1) * num_elements_per_thread - 1; // inclusive of last element
 
+    using dtype = DType<scalar_t>;
+    using T2 = typename dtype::nv_dtype2;
+
     if (start < num_elements && end < num_elements) {
         const fp32 *gate_vec = (fp32 *)&((const fp32_4 *)gate)[thread_id];
         const fp32 *up_vec = (fp32 *)&((const fp32_4 *)up)[thread_id];
@@ -30,9 +33,6 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
             if (std::is_same_v<scalar_t, fp32>) {
                 output_buffer[i] = up_vec[i] * gate_vec[i] * sigmoid<fp32, fp32>(gate_vec[i]);
             } else if constexpr (std::is_same_v<scalar_t, c10::Half> || std::is_same_v<scalar_t, c10::BFloat16>) {
-                using dtype = DType<scalar_t>;
-                using T2 = typename dtype::nv_dtype2;
-
                 T2 _up = dtype::upcast(dtype::reinterpret_32_bits_as_2x16(up_vec[i]));
                 T2 _gate = dtype::upcast(dtype::reinterpret_32_bits_as_2x16(gate_vec[i]));
 
@@ -52,15 +52,15 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
         // clang-format on
         for (int i = start; i < num_elements; i++) {
             fp32 _gate = dtype::upcast(gate[i]);
-            output[i] = dtype::downcast(dtype::upcast(up[i]) * _gate * sigmoid<fp32, fp32>(_gate);
+            output[i] = dtype::downcast(dtype::upcast(up[i]) * _gate * sigmoid<fp32, fp32>(_gate));
         }
     }
 }
 
 void swiglu_forward_cuda_kernel(
     torch::Tensor gate, torch::Tensor up, torch::Tensor output, const int num_elements, const int BLOCK_SIZE) {
-    AT_DISPATCH_FLOATING_TYPES_AND2(
-        at::ScalarType::Half, at::ScalarType::BFloat16, gate.scalar_type(), "swiglu_forward_cuda_kernel", ([&] {
+    AT_DISPATCH_CUSTOM_FLOAT_TYPES(
+        gate.scalar_type(), "swiglu_forward_cuda_kernel", ([&] {
             const int num_elements_per_thread = get_num_elements_in_vector_dtype<scalar_t, fp32_4>();
 
             const int num_elements_per_block = BLOCK_SIZE * num_elements_per_thread;
