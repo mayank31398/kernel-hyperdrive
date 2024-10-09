@@ -3,7 +3,7 @@ from typing import Callable
 import torch
 from parameterized import parameterized
 
-from khd import swiglu_torch, swiglu_triton
+from khd import swiglu_cuda, swiglu_torch, swiglu_triton
 
 from .test_commons import TestCommons
 
@@ -15,6 +15,12 @@ class SwigluTest(TestCommons):
             [torch.device("cuda")],
             TestCommons.get_dtypes(),
             [swiglu_triton],
+            [
+                swiglu_cuda,
+                swiglu_triton,
+                torch.compile(swiglu_cuda),
+                torch.compile(swiglu_triton),
+            ],
         )
     )
     def test_swiglu(self, size: tuple[int], device: torch.device, dtype: torch.dtype, function: Callable) -> None:
