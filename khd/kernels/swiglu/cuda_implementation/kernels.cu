@@ -120,8 +120,10 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
             }
         }
 
-        ((fp32_4 *)output)[thread_id] =
-            make_float4(output_buffer[0], output_buffer[1], output_buffer[2], output_buffer[3]);
+        ((fp32_4 *)gate_grad)[thread_id] =
+            make_float4(gate_grad_buffer[0], gate_grad_buffer[1], gate_grad_buffer[2], gate_grad_buffer[3]);
+        ((fp32_4 *)up_grad)[thread_id] =
+            make_float4(up_grad_buffer[0], up_grad_buffer[1], up_grad_buffer[2], up_grad_buffer[3]);
     } else if (start < num_elements) {
         // clang-format off
         #pragma unroll
