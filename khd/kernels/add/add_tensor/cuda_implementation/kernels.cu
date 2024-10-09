@@ -5,11 +5,26 @@
 #include <cuda_runtime.h>
 #include <torch/extension.h>
 
+#define NAIVE_KERNEL_NAME "add_tensor_forward_naive_cuda_kernel"
+#define EFFICIENT_KERNEL_NAME "add_tensor_forward_efficient_cuda_kernel"
+
 template <typename scalar_t>
-__global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
-                                                const scalar_t *y,
-                                                scalar_t *output,
-                                                const int num_elements) {
+__global__ void _add_tensor_forward_naive_cuda_kernel(const scalar_t *x,
+                                                      const scalar_t *y,
+                                                      scalar_t *output,
+                                                      const int num_elements) {
+    const int thread_id = get_global_thread_id();
+
+    if (thread_id < num_elements) {
+        output[thread_id] = x[thread_id] + y[thread_id];
+    }
+}
+
+template <typename scalar_t>
+__global__ void _add_tensor_forward_efficient_cuda_kernel(const scalar_t *x,
+                                                          const scalar_t *y,
+                                                          scalar_t *output,
+                                                          const int num_elements) {
     const int thread_id = get_global_thread_id();
     const int num_elements_per_thread = get_num_elements_in_vector_dtype<scalar_t, fp32_4>();
 
@@ -54,19 +69,33 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
     }
 }
 
-void add_tensor_forward_cuda_kernel(const torch::Tensor x,
-                                    const torch::Tensor y,
-                                    torch::Tensor output,
-                                    const int &num_elements,
-                                    const int &BLOCK_SIZE) {
+void add_tensor_forward_cuda_kernel_dispatch(const torch::Tensor x,
+                                             const torch::Tensor y,
+                                             torch::Tensor output,
+                                             const bool &use_efficient_kernel,
+                                             const int &num_elements,
+                                             const int &BLOCK_SIZE) {
+    str kernel_name;
+    if (use_efficient_kernel) {
+        kernel_name = EFFICIENT_KERNEL_NAME;
+    } else {
+        kernel_name = NAIVE_KERNEL_NAME;
+    }
+
     AT_DISPATCH_CUSTOM_FLOAT_TYPES(
-        x.scalar_type(), "add_tensor_forward_cuda_kernel", ([&] {
-            const int num_elements_per_thread = get_num_elements_in_vector_dtype<scalar_t, fp32_4>();
+        x.scalar_type(), kernel_name, ([&] {
+            if (use_efficient_kernel) {
+                const int num_elements_per_thread = get_num_elements_in_vector_dtype<scalar_t, fp32_4>();
+                const int num_elements_per_block = BLOCK_SIZE * num_elements_per_thread;
+                const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
 
-            const int num_elements_per_block = BLOCK_SIZE * num_elements_per_thread;
-            const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
+                _add_tensor_forward_efficient_cuda_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(
+                    x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
+            } else {
+                const int NUM_BLOCKS = (num_elements + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
-            _add_tensor_forward_cuda_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(
-                x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
+                _add_tensor_forward_naive_cuda_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(
+                    x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
+            }
         }));
 }
