@@ -66,7 +66,7 @@ template <> struct DType<fp32> {
 
     __device__ static nv_dtype2 make2(const nv_dtype &x, const nv_dtype &y) { return make_float2(x, y); }
     __device__ static nv_dtype4 make4(const nv_dtype &x, const nv_dtype &y, const nv_dtype &z, const nv_dtype &t) {
-        return make_float2(x, y, z, t);
+        return make_float4(x, y, z, t);
     }
 };
 
