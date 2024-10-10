@@ -1,17 +1,18 @@
 #include "../../../utils/dtypes.h"
 #include "../../../utils/threads.h"
+#include "../../../utils/vector_dtypes.h"
 #include <cuda.h>
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
 #include <torch/extension.h>
 
-template <typename scalar_t, typename vecT>
+template <typename scalar_t, typename vector_t>
 __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
                                                 const scalar_t *y,
                                                 scalar_t *output,
                                                 const int num_elements) {
     const int thread_id = get_global_thread_id();
-    const int vectorized_load_store_size = get_num_elements_in_vector_dtype<scalar_t, vecT>();
+    const int vectorized_load_store_size = get_num_elements_in_vector_dtype<scalar_t, vector_t>();
 
     if (vectorized_load_store_size == 1) {
         if (thread_id < num_elements) {
@@ -31,7 +32,7 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
                 #pragma unroll
                 // clang-format on
                 for (int i = 0; i < vectorized_load_store_size; i++) {
-                    output_buffer[i] = reinterpret_cast<vecT *>(x)[i] + reinterpret_cast<vecT *>(y)[i];
+                    output_buffer[i] = reinterpret_cast<vector_t *>(x)[i] + reinterpret_cast<vector_t *>(y)[i];
                 }
             }
         } else if (start < num_elements) {
@@ -96,20 +97,14 @@ torch::Tensor add_tensor_forward_cuda_kernel_dispatch(const torch::Tensor x,
 
     AT_DISPATCH_CUSTOM_FLOAT_TYPES(
         x.scalar_type(), "add_tensor_forward_cuda_kernel", ([&] {
-            if (vectorized_load_store_size == 1) {
-                using vecT = fp32;
-            } else if (vectorized_load_store_size == 2) {
-                using vecT = fp32_2;
-            } else if (vectorized_load_store_size == 4) {
-                using vecT = fp32_4;
-            } else {
-                assert(false && "invalid vectorized_load_store_size");
-            }
-
             const int num_elements_per_block = BLOCK_SIZE * vectorized_load_store_size;
             const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
 
-            _add_tensor_forward_cuda_kernel<scalar_t, vecT><<<NUM_BLOCKS, BLOCK_SIZE>>>(
+            using vector_t = VectorDTypeSelector<vectorized_load_store_size, scalar_t>::vector_t;
+
+            assert(false && "invalid vectorized_load_store_size");
+
+            _add_tensor_forward_cuda_kernel<scalar_t, vector_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(
                 x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
         }));
 
