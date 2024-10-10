@@ -27,7 +27,6 @@ def _scatter2scatter(
     W: torch.Tensor,
     sorted_expert_idxs: torch.Tensor,
     sorted_scattered_idxs: torch.Tensor,
-    padded_block_idxs: torch.Tensor,
     out: torch.Tensor,
     FAN_OUT: int,
     x_grouped: bool = False,
@@ -38,7 +37,10 @@ def _scatter2scatter(
     assert out.size(0) == sorted_expert_idxs.size(0)
     assert out.size(1) == W.size(-1)
 
-    grid = lambda meta: (padded_block_idxs.size(0) * triton.cdiv(meta["N"], meta["BLOCK_N"]),)
+    grid = lambda meta: (
+        triton.cdiv(sorted_expert_idxs.size(0), meta["BLOCK_M"]) *
+        triton.cdiv(meta["N"], meta["BLOCK_N"]),
+    )
 
     scatter2scatter_triton_kernel[grid](
         # X_ptr, stride_xm, stride_xk,
@@ -56,7 +58,6 @@ def _scatter2scatter(
         out.stride(1),
         grouped_idx_ptr=sorted_scattered_idxs,
         expert_idxs_ptr=sorted_expert_idxs,
-        block_start_idx_ptr=padded_block_idxs,
         FAN_OUT=FAN_OUT,
         M=X.size(0),
         K=X.size(1),
@@ -77,7 +78,6 @@ def _scatter2scatter_compileable(
     W: torch.Tensor,
     sorted_expert_idxs: torch.Tensor,
     sorted_scattered_idxs: torch.Tensor,
-    padded_block_idxs: torch.Tensor,
     out: torch.Tensor,
     FAN_OUT: int,
     x_grouped: bool = False,
@@ -88,7 +88,6 @@ def _scatter2scatter_compileable(
         W=W,
         sorted_expert_idxs=sorted_expert_idxs,
         sorted_scattered_idxs=sorted_scattered_idxs,
-        padded_block_idxs=padded_block_idxs,
         out=out,
         FAN_OUT=FAN_OUT,
         x_grouped=x_grouped,
@@ -101,7 +100,6 @@ def scatter2scatter(
     W: torch.Tensor,
     sorted_expert_idxs: torch.Tensor,
     sorted_scattered_idxs: torch.Tensor,
-    padded_block_idxs: torch.Tensor,
     out: torch.Tensor,
     FAN_OUT: int,
     x_grouped: bool = False,
@@ -113,7 +111,6 @@ def scatter2scatter(
             W=W,
             sorted_expert_idxs=sorted_expert_idxs,
             sorted_scattered_idxs=sorted_scattered_idxs,
-            padded_block_idxs=padded_block_idxs,
             out=out,
             FAN_OUT=FAN_OUT,
             x_grouped=x_grouped,
@@ -125,7 +122,6 @@ def scatter2scatter(
             W=W,
             sorted_expert_idxs=sorted_expert_idxs,
             sorted_scattered_idxs=sorted_scattered_idxs,
-            padded_block_idxs=padded_block_idxs,
             out=out,
             FAN_OUT=FAN_OUT,
             x_grouped=x_grouped,
