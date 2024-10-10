@@ -23,15 +23,13 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
 
         if (start < num_elements && end < num_elements) {
             if (std::is_same_v<scalar_t, fp32>) {
-                assert(vectorized_load_store_size == 2 || vectorized_load_store_size == 4);
-
-                fp32 output_buffer[vectorized_load_store_size];
+                fp32 *output_buffer = new fp32[vectorized_load_store_size];
 
                 // clang-format off
                 #pragma unroll
                 // clang-format on
                 for (int i = 0; i < vectorized_load_store_size; i++) {
-                    output_buffer[i] = reinterpret_cast<vector_t *>(x)[i] + reinterpret_cast<vector_t *>(y)[i];
+                    output_buffer[i] = ((vector_t *)x)[i] + ((vector_t *)y)[i];
                 }
             }
         } else if (start < num_elements) {
