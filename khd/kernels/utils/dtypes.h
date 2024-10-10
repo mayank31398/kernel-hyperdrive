@@ -56,17 +56,22 @@ template <> struct DType<fp32> {
     using nv_dtype2 = fp32_2;
     using nv_dtype4 = fp32_4;
 
-    __device__ static nv_dtype upcast(nv_dtype value) { return value; }
-    __device__ static nv_dtype2 upcast(nv_dtype2 value) { return value; }
-    __device__ static nv_dtype4 upcast(nv_dtype4 value) { return value; }
+    __device__ static fp32 upcast(const nv_dtype &value) { return value; }
+    __device__ static fp32_2 upcast(const nv_dtype2 &value) { return value; }
+    __device__ static fp32_4 upcast(const nv_dtype4 &value) { return value; }
 
-    __device__ static nv_dtype downcast(nv_dtype value) { return value; }
-    __device__ static nv_dtype2 downcast(nv_dtype2 value) { return value; }
-    __device__ static nv_dtype4 downcast(nv_dtype4 value) { return value; }
+    __device__ static nv_dtype downcast(const nv_dtype &value) { return value; }
+    __device__ static nv_dtype2 downcast(const nv_dtype2 &value) { return value; }
+    __device__ static nv_dtype4 downcast(const nv_dtype4 &value) { return value; }
 
     __device__ static nv_dtype2 make2(const nv_dtype &x, const nv_dtype &y) { return make_float2(x, y); }
+    __device__ static nv_dtype2 make2(const nv_dtype *array) { return make_float2(array[0], array[1]); }
+
     __device__ static nv_dtype4 make4(const nv_dtype &x, const nv_dtype &y, const nv_dtype &z, const nv_dtype &t) {
         return make_float4(x, y, z, t);
+    }
+    __device__ static nv_dtype4 make4(const nv_dtype *array) {
+        return make_float4(array[0], array[1], array[2], array[3]);
     }
 };
 
@@ -99,6 +104,7 @@ template <> struct DType<c10::Half> {
         return reinterpret_2x16_as_32_bits(lower_half, upper_half);
     }
 
+    __device__ static fp32 upcast(const c10_dtype &value) { return upcast(static_cast<nv_dtype>(value)); }
     __device__ static fp32 upcast(const nv_dtype &value) { return __half2float(value); }
     __device__ static fp32_2 upcast(const nv_dtype2 &value) { return __half22float2(value); }
 
@@ -107,6 +113,7 @@ template <> struct DType<c10::Half> {
 
     __device__ static nv_dtype2 make2(const nv_dtype &value) { return __half2half2(value); }
     __device__ static nv_dtype2 make2(const nv_dtype &x, const nv_dtype &y) { return make_half2(x, y); }
+    __device__ static nv_dtype2 make2(const nv_dtype *array) { return make_half2(array[0], array[1]); }
 };
 
 // struct for half (basically another alias for the above)
@@ -141,6 +148,7 @@ template <> struct DType<c10::BFloat16> {
         return reinterpret_2x16_as_32_bits(lower_half, upper_half);
     }
 
+    __device__ static fp32 upcast(const c10_dtype &value) { return upcast(static_cast<nv_dtype>(value)); }
     __device__ static fp32 upcast(const nv_dtype &value) { return __bfloat162float(value); }
     __device__ static fp32_2 upcast(const nv_dtype2 &value) { return __bfloat1622float2(value); }
 
@@ -149,6 +157,7 @@ template <> struct DType<c10::BFloat16> {
 
     __device__ static nv_dtype2 make2(const nv_dtype &value) { return __bfloat162bfloat162(value); }
     __device__ static nv_dtype2 make2(const nv_dtype &x, const nv_dtype &y) { return make_bfloat162(x, y); }
+    __device__ static nv_dtype2 make2(const nv_dtype *array) { return make_bfloat162(array[0], array[1]); }
 };
 
 // struct for bf16 (basically another alias for the above)

@@ -1,3 +1,4 @@
+from functools import partial
 from typing import Callable
 
 import torch
@@ -15,10 +16,23 @@ class AddTensorTest(TestCommons):
             [torch.device("cuda")],
             TestCommons.get_dtypes(),
             [
-                add_tensor_cuda,
+                partial(add_tensor_cuda, vectorized_loop_size=1),
+                partial(add_tensor_cuda, vectorized_loop_size=2),
+                partial(add_tensor_cuda, vectorized_loop_size=4),
+                torch.compile(partial(add_tensor_cuda, vectorized_loop_size=1)),
+                torch.compile(partial(add_tensor_cuda, vectorized_loop_size=2)),
+                torch.compile(partial(add_tensor_cuda, vectorized_loop_size=4)),
                 add_tensor_triton,
-                torch.compile(add_tensor_cuda),
                 torch.compile(add_tensor_triton),
+            ],
+        )
+        + TestCommons.make_args_matrix(
+            TestCommons.get_2d_tensor_sizes(),
+            [torch.device("cuda")],
+            [torch.float16, torch.bfloat16],
+            [
+                partial(add_tensor_cuda, vectorized_loop_size=8),
+                torch.compile(partial(add_tensor_cuda, vectorized_loop_size=8)),
             ],
         )
     )
