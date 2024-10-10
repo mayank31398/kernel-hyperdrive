@@ -6,11 +6,14 @@
 #include <cuda_runtime.h>
 #include <torch/extension.h>
 
-template <typename scalar_t, typename vector_t>
+template <typename scalar_t>
 __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
                                                 const scalar_t *y,
                                                 scalar_t *output,
-                                                const int num_elements) {
+                                                const int num_elements,
+                                                const int vectorized_load_store_size) {
+    using vector_t = VectorDTypeSelector<vectorized_load_store_size, scalar_t>::vector_t;
+
     const int thread_id = get_global_thread_id();
     const int vectorized_load_store_size = get_num_elements_in_vector_dtype<scalar_t, vector_t>();
 
@@ -100,12 +103,11 @@ torch::Tensor add_tensor_forward_cuda_kernel_dispatch(const torch::Tensor x,
             const int num_elements_per_block = BLOCK_SIZE * vectorized_load_store_size;
             const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
 
-            using vector_t = VectorDTypeSelector<vectorized_load_store_size, scalar_t>::vector_t;
-
-            assert(false && "invalid vectorized_load_store_size");
-
-            _add_tensor_forward_cuda_kernel<scalar_t, vector_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(
-                x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
+            _add_tensor_forward_cuda_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(x.data_ptr<scalar_t>(),
+                                                                                  y.data_ptr<scalar_t>(),
+                                                                                  output.data_ptr<scalar_t>(),
+                                                                                  num_elements,
+                                                                                  vectorized_load_store_size);
         }));
 
     return output;
