@@ -13,6 +13,8 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
                                                 const int vectorized_load_store_size) {
     const int thread_id = get_global_thread_id();
 
+    using dtype = DType<scalar_t>;
+
     if (vectorized_load_store_size == 1) {
         if (thread_id < num_elements) {
             output[thread_id] = x[thread_id] + y[thread_id];
@@ -31,6 +33,8 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
                 for (int i = 0; i < vectorized_load_store_size; i++) {
                     output_buffer[i] = ((vector_t *)x)[i] + ((vector_t *)y)[i];
                 }
+
+                ((vector_t *)output)[thread_id] = (vector_t *)output_buffer;
             }
         } else if (start < num_elements) {
             // clang-format off
