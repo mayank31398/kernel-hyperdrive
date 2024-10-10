@@ -56,14 +56,13 @@ template <> struct DType<fp32> {
     using nv_dtype2 = fp32_2;
     using nv_dtype4 = fp32_4;
 
-    __device__ static nv_dtype upcast(const c10_dtype &value) { return value; }
-    __device__ static nv_dtype upcast(nv_dtype value) { return value; }
-    __device__ static nv_dtype2 upcast(nv_dtype2 value) { return value; }
-    __device__ static nv_dtype4 upcast(nv_dtype4 value) { return value; }
+    __device__ static fp32 upcast(const nv_dtype &value) { return value; }
+    __device__ static fp32_2 upcast(const nv_dtype2 &value) { return value; }
+    __device__ static fp32_4 upcast(const nv_dtype4 &value) { return value; }
 
-    __device__ static nv_dtype downcast(nv_dtype value) { return value; }
-    __device__ static nv_dtype2 downcast(nv_dtype2 value) { return value; }
-    __device__ static nv_dtype4 downcast(nv_dtype4 value) { return value; }
+    __device__ static nv_dtype downcast(const nv_dtype &value) { return value; }
+    __device__ static nv_dtype2 downcast(const nv_dtype2 &value) { return value; }
+    __device__ static nv_dtype4 downcast(const nv_dtype4 &value) { return value; }
 
     __device__ static nv_dtype2 make2(const nv_dtype &x, const nv_dtype &y) { return make_float2(x, y); }
     __device__ static nv_dtype4 make4(const nv_dtype &x, const nv_dtype &y, const nv_dtype &z, const nv_dtype &t) {
