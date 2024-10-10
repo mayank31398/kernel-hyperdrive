@@ -6,10 +6,10 @@
 #include <torch/extension.h>
 
 template <typename scalar_t, typename vecT>
-__global__ void _add_tensor_forward_cuda_kernel_V(const scalar_t *x,
-                                                  const scalar_t *y,
-                                                  scalar_t *output,
-                                                  const int num_elements) {
+__global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
+                                                const scalar_t *y,
+                                                scalar_t *output,
+                                                const int num_elements) {
     const int thread_id = get_global_thread_id();
     const int vectorized_load_store_size = get_num_elements_in_vector_dtype<scalar_t, vecT>();
 
@@ -59,7 +59,8 @@ __global__ void _add_tensor_forward_cuda_kernel_V(const scalar_t *x,
     //     for (int i = 0; i < vectorized_load_store_size; i++) {
     //         if (std::is_same_v<scalar_t, fp32>) {
     //             output_buffer[i] = x_vec[i] + y_vec[i];
-    //         } else if constexpr (std::is_same_v<scalar_t, c10::Half> || std::is_same_v<scalar_t, c10::BFloat16>) {
+    //         } else if constexpr (std::is_same_v<scalar_t, c10::Half> ||
+    //         std::is_same_v<scalar_t, c10::BFloat16>) {
     //             T2 _x = dtype::reinterpret_32_bits_as_2x16(x_vec[i]);
     //             T2 _y = dtype::reinterpret_32_bits_as_2x16(y_vec[i]);
     //             _x = __hadd2(_x, _y);
@@ -74,7 +75,8 @@ __global__ void _add_tensor_forward_cuda_kernel_V(const scalar_t *x,
     //         output[thread_id] =
     //     }
     //     ((vecT *)output)[thread_id] =
-    //         make_float4(output_buffer[0], output_buffer[1], output_buffer[2], output_buffer[3]);
+    //         make_float4(output_buffer[0], output_buffer[1], output_buffer[2],
+    //         output_buffer[3]);
     // } else if (start < num_elements) {
     //     // clang-format off
     //     #pragma unroll
@@ -107,7 +109,7 @@ torch::Tensor add_tensor_forward_cuda_kernel_dispatch(const torch::Tensor x,
             const int num_elements_per_block = BLOCK_SIZE * vectorized_load_store_size;
             const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
 
-            _add_tensor_forward_efficient_cuda_kernel<scalar_t, vecT><<<NUM_BLOCKS, BLOCK_SIZE>>>(
+            _add_tensor_forward_cuda_kernel<scalar_t, vecT><<<NUM_BLOCKS, BLOCK_SIZE>>>(
                 x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
         }));
 
