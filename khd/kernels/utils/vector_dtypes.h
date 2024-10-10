@@ -45,3 +45,7 @@ template <typename scalar_t> struct VectorDTypeSelector<8, scalar_t> {
                            void // Fallback for invalid cases
                            >>;
 };
+
+static_assert(!std::is_same_v<vecT<1, fp32>, void>, "Invalid vectorized_load_store_size");
+static_assert(!std::is_same_v<vecT<2, fp32>, void>, "Invalid vectorized_load_store_size");
+static_assert(!std::is_same_v<vecT<4, c10::Half>, void>, "Invalid vectorized_load_store_size");
