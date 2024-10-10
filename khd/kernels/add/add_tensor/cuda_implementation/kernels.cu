@@ -12,16 +12,15 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
                                                 scalar_t *output,
                                                 const int num_elements,
                                                 const int vectorized_load_store_size) {
-    using vector_t = VectorDTypeSelector<vectorized_load_store_size, scalar_t>::vector_t;
-
     const int thread_id = get_global_thread_id();
-    const int vectorized_load_store_size = get_num_elements_in_vector_dtype<scalar_t, vector_t>();
 
     if (vectorized_load_store_size == 1) {
         if (thread_id < num_elements) {
             output[thread_id] = x[thread_id] + y[thread_id];
         }
     } else {
+        using vector_t = VectorDTypeSelector<vectorized_load_store_size, scalar_t>::vector_t;
+
         const int start = thread_id * vectorized_load_store_size;
         const int end = (thread_id + 1) * vectorized_load_store_size - 1; // inclusive of last element
 
