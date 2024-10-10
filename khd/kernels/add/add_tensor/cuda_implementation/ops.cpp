@@ -1,9 +1,11 @@
 #include <torch/extension.h>
 
-torch::Tensor add_tensor_forward_cuda_kernel_dispatch(const torch::Tensor x,
-                                                      const torch::Tensor y,
-                                                      const int &vectorized_load_store_size,
-                                                      const int &BLOCK_SIZE);
+void add_tensor_forward_cuda_kernel_dispatch(const torch::Tensor x,
+                                             const torch::Tensor y,
+                                             torch::Tensor output,
+                                             const int &vectorized_load_store_size,
+                                             const int &num_elements,
+                                             const int &BLOCK_SIZE);
 
 torch::Tensor add_tensor_forward_cuda(const torch::Tensor x,
                                       const torch::Tensor y,
@@ -15,7 +17,11 @@ torch::Tensor add_tensor_forward_cuda(const torch::Tensor x,
     TORCH_CHECK(x.sizes() == y.sizes(), "tensors x and y should have same shape");
     TORCH_CHECK(x.scalar_type() == y.scalar_type(), "tensors x and y should have same dtype");
 
-    torch::Tensor output = add_tensor_forward_cuda_kernel_dispatch(x, y, vectorized_load_store_size, BLOCK_SIZE);
+    torch::Tensor output = torch::empty_like(x);
+    const int num_elements = output.numel();
+
+    add_tensor_forward_cuda_kernel_dispatch(
+        x.view(-1), y.view(-1), output.view(-1), vectorized_load_store_size, num_elements, BLOCK_SIZE);
 
     return output;
 }
