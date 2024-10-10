@@ -1,9 +1,9 @@
 #include <torch/extension.h>
 
-void add_tensor_forward_cuda_kernel_dispatch(const torch::Tensor x,
-                                             const torch::Tensor y,
-                                             const int &vectorized_load_store_size,
-                                             const int &BLOCK_SIZE);
+torch::Tensor add_tensor_forward_cuda_kernel_dispatch(const torch::Tensor x,
+                                                      const torch::Tensor y,
+                                                      const int &vectorized_load_store_size,
+                                                      const int &BLOCK_SIZE);
 
 torch::Tensor add_tensor_forward_cuda(const torch::Tensor x,
                                       const torch::Tensor y,
