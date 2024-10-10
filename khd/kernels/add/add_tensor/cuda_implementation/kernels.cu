@@ -24,7 +24,10 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
         const int end = (thread_id + 1) * vectorized_load_store_size - 1; // inclusive of last element
 
         if (start < num_elements && end < num_elements) {
-            if (std::is_same_v<scalar_t, fp32>) {
+            using T = typename dtype::nv_dtype;
+            using T2 = typename dtype::nv_dtype2;
+
+            if constexpr (std::is_same_v<scalar_t, fp32>) {
                 fp32 *output_buffer = new fp32[vectorized_load_store_size];
 
                 // clang-format off
@@ -34,7 +37,37 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
                     output_buffer[i] = ((vector_t *)x)[i] + ((vector_t *)y)[i];
                 }
 
-                ((vector_t *)output)[thread_id] = (vector_t *)output_buffer;
+                if constexpr (std::is_same_v<vector_t, fp32_2>) {
+                    assert(vectorized_load_store_size == 2);
+                    ((vector_t *)output)[thread_id] = dtype::make2(output_buffer);
+                } else if constexpr (std::is_same_v<vector_t, fp32_4>) {
+                    assert(vectorized_load_store_size == 4);
+                    ((vector_t *)output)[thread_id] = dtype::make4(output_buffer);
+                }
+            } else {
+                if constexpr (std::is_same_v<vector_t, fp16_2> || std::is_same_v<vector_t, bf16_2>) {
+                    ((vector_t *)output)[thread_id] = __hadd2(((vector_t *)x)[thread_id], ((vector_t *)y)[thread_id]);
+                } else {
+                    fp32 *output_buffer = new fp32[2 * vectorized_load_store_size];
+
+                    // clang-format off
+                    #pragma unroll
+                    // clang-format on
+                    for (int i = 0; i < 2 * vectorized_load_store_size; i += 2) {
+                        T2 _x = dtype::reinterpret_32_bits_as_2x16(((vector_t *)x)[i]);
+                        T2 _y = dtype::reinterpret_32_bits_as_2x16(((vector_t *)y)[i]);
+
+                        output_buffer[i] = dtype::reinterpret_2x16_as_32_bits(__hadd2(_x, _y));
+                    }
+
+                    if constexpr (std::is_same_v<vector_t, fp32_2>) {
+                        assert(vectorized_load_store_size == 4);
+                        ((vector_t *)output)[thread_id] = dtype::make2(output_buffer);
+                    } else if constexpr (std::is_same_v<vector_t, fp32_4>) {
+                        assert(vectorized_load_store_size == 8);
+                        ((vector_t *)output)[thread_id] = dtype::make4(output_buffer);
+                    }
+                }
             }
         } else if (start < num_elements) {
             // clang-format off
