@@ -27,23 +27,14 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
             using T = typename dtype::nv_dtype;
 
             if constexpr (std::is_same_v<scalar_t, fp32>) {
-                const T *_x = (T *)&((vector_t *)x)[thread_id];
-                const T *_y = (T *)&((vector_t *)y)[thread_id];
-                T *output_buffer = new T[vectorized_load_store_size];
-
-                // clang-format off
-                #pragma unroll
-                // clang-format on
-                for (int i = 0; i < vectorized_load_store_size; i++) {
-                    output_buffer[i] = _x[i] + _y[i];
-                }
+                const fp32 *_x = (fp32 *)&((vector_t *)x)[thread_id];
+                const fp32 *_y = (fp32 *)&((vector_t *)y)[thread_id];
 
                 if constexpr (std::is_same_v<vector_t, fp32_2>) {
-                    assert(vectorized_load_store_size == 2);
-                    ((vector_t *)output)[thread_id] = dtype::make2(output_buffer);
+                    ((vector_t *)output)[thread_id] = dtype::make2(_x[0] + _y[0], _x[1] + _y[1]);
                 } else if constexpr (std::is_same_v<vector_t, fp32_4>) {
-                    assert(vectorized_load_store_size == 4);
-                    ((vector_t *)output)[thread_id] = dtype::make4(output_buffer);
+                    ((vector_t *)output)[thread_id] =
+                        dtype::make4(_x[0] + _y[0], _x[1] + _y[1], _x[2] + _y[2], _x[3] + _y[3]);
                 }
             } else {
                 if constexpr (std::is_same_v<vector_t, fp16_2> || std::is_same_v<vector_t, bf16_2>) {
