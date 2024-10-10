@@ -116,43 +116,5 @@ void add_tensor_forward_cuda_kernel_dispatch(const torch::Tensor x,
                                            throw std::runtime_error("invalid vectorized_load_store_size");
                                            break;
                                        }
-
-                                       // }
-                                       // case 4:
-                                       //     if constexpr (std::is_same_v<scalar_t, fp32>) {
-                                       //         _add_tensor_forward_cuda_kernel<fp32, fp32_4>
-                                       //             <<<NUM_BLOCKS, BLOCK_SIZE>>>(x.data_ptr<scalar_t>(),
-                                       //                                          y.data_ptr<scalar_t>(),
-                                       //                                          output.data_ptr<scalar_t>(),
-                                       //                                          num_elements,
-                                       //                                          vectorized_load_store_size);
-                                       //     } else {
-                                       //         _add_tensor_forward_cuda_kernel<scalar_t, fp32_2>
-                                       //             <<<NUM_BLOCKS, BLOCK_SIZE>>>(x.data_ptr<scalar_t>(),
-                                       //                                          y.data_ptr<scalar_t>(),
-                                       //                                          output.data_ptr<scalar_t>(),
-                                       //                                          num_elements,
-                                       //                                          vectorized_load_store_size);
-                                       //     }
-                                       //     break;
-                                       // default:
-                                       //     _add_tensor_forward_cuda_kernel<scalar_t, fp32_4>
-                                       //         <<<NUM_BLOCKS, BLOCK_SIZE>>>(x.data_ptr<scalar_t>(),
-                                       //                                      y.data_ptr<scalar_t>(),
-                                       //                                      output.data_ptr<scalar_t>(),
-                                       //                                      num_elements,
-                                       //                                      vectorized_load_store_size);
-                                       //     break;
-                                       // }
-
-                                       // if (!kernel_func) {
-                                       //     throw std::runtime_error("Kernel function is not set correctly");
-                                       // }
-
-                                       // cudaError_t err = cudaGetLastError();
-                                       // if (err != cudaSuccess) {
-                                       //     throw std::runtime_error("Kernel launch failed: " +
-                                       //     std::string(cudaGetErrorString(err)));
-                                       // }
                                    }));
 }
