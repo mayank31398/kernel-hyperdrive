@@ -15,8 +15,7 @@ torch::Tensor add_tensor_forward_cuda(const torch::Tensor x,
     TORCH_CHECK(x.sizes() == y.sizes(), "tensors x and y should have same shape");
     TORCH_CHECK(x.scalar_type() == y.scalar_type(), "tensors x and y should have same dtype");
 
-    torch::Tensor output =
-        add_tensor_forward_cuda_kernel_dispatch(x.view(-1), y.view(-1), vectorized_load_store_size, BLOCK_SIZE);
+    torch::Tensor output = add_tensor_forward_cuda_kernel_dispatch(x, y, vectorized_load_store_size, BLOCK_SIZE);
 
     return output;
 }
