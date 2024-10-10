@@ -85,35 +85,31 @@ __global__ void _add_tensor_forward_cuda_kernel_V(const scalar_t *x,
     // }
 }
 
-void add_tensor_forward_cuda_kernel_dispatch(const torch::Tensor x,
-                                             const torch::Tensor y,
-                                             torch::Tensor output,
-                                             const int &num_elements,
-                                             const int &vectorized_load_store_size,
-                                             const int &BLOCK_SIZE) {
+torch::Tensor add_tensor_forward_cuda_kernel_dispatch(const torch::Tensor x,
+                                                      const torch::Tensor y,
+                                                      const int &vectorized_load_store_size,
+                                                      const int &BLOCK_SIZE) {
+    torch::Tensor output = torch::empty_like(x);
+    const int num_elements = output.numel();
+
     AT_DISPATCH_CUSTOM_FLOAT_TYPES(
-        x.scalar_type(), kernel_name, ([&] {
-            if (vectorized_load_store_size == 0) {
-                const int NUM_BLOCKS = (num_elements + BLOCK_SIZE - 1) / BLOCK_SIZE;
-
-                _add_tensor_forward_naive_cuda_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(
-                    x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
+        x.scalar_type(), "add_tensor_forward_cuda_kernel", ([&] {
+            if (vectorized_load_store_size == 1) {
+                using vecT = fp32;
+            } else if (vectorized_load_store_size == 2) {
+                using vecT = fp32_2;
+            } else if (vectorized_load_store_size == 4) {
+                using vecT = fp32_4;
             } else {
-                if (vectorized_load_store_size == 1) {
-                    using vecT = fp32;
-                } else if (vectorized_load_store_size == 2) {
-                    using vecT = fp32_2;
-                } else if (vectorized_load_store_size == 4) {
-                    using vecT = fp32_4;
-                } else {
-                    assert(false && "invalid vectorized_load_store_size");
-                }
-
-                const int num_elements_per_block = BLOCK_SIZE * vectorized_load_store_size;
-                const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
-
-                _add_tensor_forward_efficient_cuda_kernel<scalar_t, vecT><<<NUM_BLOCKS, BLOCK_SIZE>>>(
-                    x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
+                assert(false && "invalid vectorized_load_store_size");
             }
+
+            const int num_elements_per_block = BLOCK_SIZE * vectorized_load_store_size;
+            const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
+
+            _add_tensor_forward_efficient_cuda_kernel<scalar_t, vecT><<<NUM_BLOCKS, BLOCK_SIZE>>>(
+                x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
         }));
+
+    return output;
 }
