@@ -18,8 +18,6 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
             output[thread_id] = x[thread_id] + y[thread_id];
         }
     } else {
-        using vector_t = VectorDTypeSelector<vectorized_load_store_size, scalar_t>::vector_t;
-
         const int start = thread_id * vectorized_load_store_size;
         const int end = (thread_id + 1) * vectorized_load_store_size - 1; // inclusive of last element
 
@@ -54,47 +52,68 @@ torch::Tensor add_tensor_forward_cuda_kernel_dispatch(const torch::Tensor x,
     torch::Tensor output = torch::empty_like(x);
     const int num_elements = output.numel();
 
-    using kernel_t = void (*)(scalar_t *, scalar_t *, scalar_t *, int, int);
-    auto kernel_func = static_cast<kernel_t>(nullptr);
-
     AT_DISPATCH_CUSTOM_FLOAT_TYPES(
         x.scalar_type(), "add_tensor_forward_cuda_kernel", ([&] {
-        const int num_elements_per_block = BLOCK_SIZE * vectorized_load_store_size;
-        const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
+            const int num_elements_per_block = BLOCK_SIZE * vectorized_load_store_size;
+            const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
+            _add_tensor_forward_cuda_kernel<scalar_t, scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(
+                x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements, 1);
 
-        switch (vectorized_load_store_size) {
-        case 1:
-            kernel_func = _add_tensor_forward_cuda_kernel<scalar_t, scalar_t>;
-            break;
-        case 2: {
-            using vector_t = typename DType<scalar_t>::nv_dtype2;
-            kernel_func = _add_tensor_forward_cuda_kernel<scalar_t, vector_t>;
-            break;
-        }
-        case 4:
-            if (std::is_same_v<scalar_t, fp32>) {
-                kernel_func = _add_tensor_forward_cuda_kernel<scalar_t, fp32_4>;
-            } else {
-                kernel_func = _add_tensor_forward_cuda_kernel<scalar_t, fp32_2>;
-            }
-            break;
-        case 8:
-            if (std::is_same_v<scalar_t, fp32>) {
-                assert(false);
-            } else {
-                kernel_func = _add_tensor_forward_cuda_kernel<scalar_t, fp32_4>;
-            }
-            break;
-        default:
-            assert(false);
-        }
+            // switch (vectorized_load_store_size) {
+            // case 1:
+            //     _add_tensor_forward_cuda_kernel<scalar_t, scalar_t>
+            //         <<<NUM_BLOCKS, BLOCK_SIZE>>>(x.data_ptr<scalar_t>(),
+            //                                      y.data_ptr<scalar_t>(),
+            //                                      output.data_ptr<scalar_t>(),
+            //                                      num_elements,
+            //                                      vectorized_load_store_size);
+            //     break;
+            // case 2: {
+            //     using vector_t = typename DType<scalar_t>::nv_dtype2;
+            //     _add_tensor_forward_cuda_kernel<scalar_t, vector_t>
+            //         <<<NUM_BLOCKS, BLOCK_SIZE>>>(x.data_ptr<scalar_t>(),
+            //                                      y.data_ptr<scalar_t>(),
+            //                                      output.data_ptr<scalar_t>(),
+            //                                      num_elements,
+            //                                      vectorized_load_store_size);
+            //     break;
+            // }
+            // case 4:
+            //     if constexpr (std::is_same_v<scalar_t, fp32>) {
+            //         _add_tensor_forward_cuda_kernel<fp32, fp32_4>
+            //             <<<NUM_BLOCKS, BLOCK_SIZE>>>(x.data_ptr<scalar_t>(),
+            //                                          y.data_ptr<scalar_t>(),
+            //                                          output.data_ptr<scalar_t>(),
+            //                                          num_elements,
+            //                                          vectorized_load_store_size);
+            //     } else {
+            //         _add_tensor_forward_cuda_kernel<scalar_t, fp32_2>
+            //             <<<NUM_BLOCKS, BLOCK_SIZE>>>(x.data_ptr<scalar_t>(),
+            //                                          y.data_ptr<scalar_t>(),
+            //                                          output.data_ptr<scalar_t>(),
+            //                                          num_elements,
+            //                                          vectorized_load_store_size);
+            //     }
+            //     break;
+            // default:
+            //     _add_tensor_forward_cuda_kernel<scalar_t, fp32_4>
+            //         <<<NUM_BLOCKS, BLOCK_SIZE>>>(x.data_ptr<scalar_t>(),
+            //                                      y.data_ptr<scalar_t>(),
+            //                                      output.data_ptr<scalar_t>(),
+            //                                      num_elements,
+            //                                      vectorized_load_store_size);
+            //     break;
+            // }
 
-        kernel_func<<<NUM_BLOCKS, BLOCK_SIZE>>>(x.data_ptr<scalar_t>(),
-                                                y.data_ptr<scalar_t>(),
-                                                output.data_ptr<scalar_t>(),
-                                                num_elements,
-                                                vectorized_load_store_size);
-));
+            // if (!kernel_func) {
+            //     throw std::runtime_error("Kernel function is not set correctly");
+            // }
 
-return output;
+            // cudaError_t err = cudaGetLastError();
+            // if (err != cudaSuccess) {
+            //     throw std::runtime_error("Kernel launch failed: " + std::string(cudaGetErrorString(err)));
+            // }
+        }));
+
+    return output;
 }
