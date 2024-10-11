@@ -81,7 +81,7 @@ class AutoTune(ContextDecorator):
         best_time = float("inf")
 
         for config in self.configs:
-            if not config.is_condition_valid(_get_kwargs_from_args_and_kwargs(*args, **kwargs)):
+            if not config.is_condition_valid(**_get_kwargs_from_args_and_kwargs(*args, **kwargs)):
                 continue
 
             elapsed_time = self._run_benchmark(func, *args, **kwargs, **config.get_key_values())
