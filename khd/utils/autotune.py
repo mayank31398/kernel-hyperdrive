@@ -16,7 +16,7 @@ _DEBUG_AUTOTUNE = bool(os.getenv("DEBUG_KHD_AUTOTUNE", 0))
 
 class AutoTune(ContextDecorator):
     def __init__(
-        self, configs: list[dict], trigger_keys: list[str], num_iterations: int = 100, in_place_op: bool = False
+        self, configs: list[dict], trigger_keys: list[str] = {}, num_iterations: int = 100, in_place_op: bool = False
     ) -> None:
         self.configs = configs
         self._check_configs()
