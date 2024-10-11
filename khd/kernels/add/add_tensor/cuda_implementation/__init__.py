@@ -19,14 +19,4 @@ class _AddTensor_CUDA(torch.autograd.Function):
 
 
 def add_tensor_cuda(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    """tensor addition
-
-    Args:
-        x (torch.Tensor): input tensor
-        y (torch.Tensor): input tensor
-
-    Returns:
-        torch.Tensor: output tensor
-    """
-
     return _AddTensor_CUDA.apply(x, y)
