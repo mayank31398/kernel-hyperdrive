@@ -1,12 +1,17 @@
 import inspect
+import os
 from contextlib import ContextDecorator
 from functools import wraps
 from time import perf_counter
 from typing import Any, Callable
 
 import torch
+import torch.distributed
 
 from .synchronization import device_synchronize
+
+
+_DEBUG_AUTOTUNE = bool(os.getenv("DEBUG_KHD_AUTOTUNE", 0))
 
 
 class AutoTune(ContextDecorator):
@@ -43,6 +48,10 @@ class AutoTune(ContextDecorator):
                         if elapsed_time < self.best_time:
                             self.best_config[best_key] = config
                             self.best_time = elapsed_time
+
+                            if _DEBUG_AUTOTUNE:
+                                if not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
+                                    print(f"config {config} achieved the best time ({elapsed_time} sec)")
 
                 return func(*args, **kwds, **self.best_config[best_key])
 
