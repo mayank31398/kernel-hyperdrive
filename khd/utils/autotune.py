@@ -101,22 +101,23 @@ class AutoTune(ContextDecorator):
         return
 
 
-def get_vectorized_autotune_configs() -> list[dict]:
+def get_vectorized_autotune_configs(dtype: torch.dtype) -> list[dict]:
     configs = []
 
-    for vectorized_loop_size in [1, 2, 4, 8]:
-        for block_size in [64, 128, 256, 512, 1024]:
-            configs.append(
-                {"dtype": torch.float16, "vectorized_loop_size": vectorized_loop_size, "BLOCK_SIZE": block_size}
-            )
-            configs.append(
-                {"dtype": torch.bfloat16, "vectorized_loop_size": vectorized_loop_size, "BLOCK_SIZE": block_size}
-            )
-
-    for vectorized_loop_size in [1, 2, 4]:
-        for block_size in [64, 128, 256, 512, 1024]:
-            configs.append(
-                {"dtype": torch.float32, "vectorized_loop_size": vectorized_loop_size, "BLOCK_SIZE": block_size}
-            )
+    if dtype in [torch.float16, torch.bfloat16]:
+        for vectorized_loop_size in [1, 2, 4, 8]:
+            for block_size in [64, 128, 256, 512, 1024]:
+                configs.append(
+                    {"dtype": torch.float16, "vectorized_loop_size": vectorized_loop_size, "BLOCK_SIZE": block_size}
+                )
+                configs.append(
+                    {"dtype": torch.bfloat16, "vectorized_loop_size": vectorized_loop_size, "BLOCK_SIZE": block_size}
+                )
+    elif dtype == torch.float32:
+        for vectorized_loop_size in [1, 2, 4]:
+            for block_size in [64, 128, 256, 512, 1024]:
+                configs.append(
+                    {"dtype": torch.float32, "vectorized_loop_size": vectorized_loop_size, "BLOCK_SIZE": block_size}
+                )
 
     return configs
