@@ -38,8 +38,7 @@ def _scatter2scatter(
     assert out.size(1) == W.size(-1)
 
     grid = lambda meta: (
-        triton.cdiv(sorted_expert_idxs.size(0), meta["BLOCK_M"]) *
-        triton.cdiv(meta["N"], meta["BLOCK_N"]),
+        triton.cdiv(sorted_expert_idxs.size(0), meta["BLOCK_M"]) * triton.cdiv(meta["N"], meta["BLOCK_N"]),
     )
 
     scatter2scatter_triton_kernel[grid](

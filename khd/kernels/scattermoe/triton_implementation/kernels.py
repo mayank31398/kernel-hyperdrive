@@ -11,12 +11,18 @@ BLOCK_M = 128
 )
 @triton.jit
 def scatter2scatter_triton_kernel(
-    X_ptr, stride_xm, stride_xk,
-    W_ptr, stride_we, stride_wk, stride_wn,
-    Y_ptr, stride_ym, stride_yn,
+    X_ptr,
+    stride_xm,
+    stride_xk,
+    W_ptr,
+    stride_we,
+    stride_wk,
+    stride_wn,
+    Y_ptr,
+    stride_ym,
+    stride_yn,
     grouped_idx_ptr,
     expert_idxs_ptr,
-    # block_start_idx_ptr,
     FAN_OUT,
     M,
     K: tl.constexpr,
@@ -67,16 +73,25 @@ def scatter2scatter_triton_kernel(
             M_in_idx = E_M_idx // FAN_OUT
 
         acc = compute_expert_block(
-            E_idx, E_mask,
+            E_idx,
+            E_mask,
             M_in_idx,
-            N_block, N_mask,
-            X_ptr, stride_xm, stride_xk,
-            W_ptr, stride_we, stride_wk, stride_wn,
+            N_block,
+            N_mask,
+            X_ptr,
+            stride_xm,
+            stride_xk,
+            W_ptr,
+            stride_we,
+            stride_wk,
+            stride_wn,
             K,
             acc,
             allow_tf32,
-            no_k_mask, no_n_mask,
-            ACC_TYPE, BLOCK_K
+            no_k_mask,
+            no_n_mask,
+            ACC_TYPE,
+            BLOCK_K,
         )
     if y_grouped:
         M_out_idx = M_block
@@ -86,18 +101,29 @@ def scatter2scatter_triton_kernel(
     Y_blk_ptrs = Y_ptr + (M_out_idx[:, None] * stride_ym + N_block[None, :] * stride_yn)
     tl.store(Y_blk_ptrs, acc, mask=M_boundary_mask[:, None] & N_mask[None, :])
 
+
 @triton.jit
 def compute_expert_block(
-        E_idx, E_mask,
-        M_in_idx,
-        N_block, N_mask,
-        X_ptr, stride_xm, stride_xk,
-        W_ptr, stride_we, stride_wk, stride_wn,
-        K,
-        acc,
-        allow_tf32,
-        no_k_mask, no_n_mask,
-        ACC_TYPE, BLOCK_K):
+    E_idx,
+    E_mask,
+    M_in_idx,
+    N_block,
+    N_mask,
+    X_ptr,
+    stride_xm,
+    stride_xk,
+    W_ptr,
+    stride_we,
+    stride_wk,
+    stride_wn,
+    K,
+    acc,
+    allow_tf32,
+    no_k_mask,
+    no_n_mask,
+    ACC_TYPE,
+    BLOCK_K,
+):
 
     K_block = tl.arange(0, BLOCK_K)
     X_blk_ptrs = X_ptr + M_in_idx[:, None] * stride_xm + K_block[None, :] * stride_xk
