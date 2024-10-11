@@ -33,7 +33,6 @@ class AutoTune(ContextDecorator):
 
         @wraps(func)
         def inner(*args, **kwds):
-            print(self.best_config)
             best_key = self._get_best_key(args, kwds)
 
             with self._recreate_cm():
