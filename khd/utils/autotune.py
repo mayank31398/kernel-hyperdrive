@@ -133,6 +133,7 @@ class AutoTune(ContextDecorator):
         self.signature = inspect.getfullargspec(func)
 
         for config in self.configs:
+            config = config.get_key_values()
             for key in config:
                 assert key in self.signature.args, f"unexpected arg ({key}) found in config"
 
