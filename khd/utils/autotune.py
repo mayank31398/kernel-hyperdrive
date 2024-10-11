@@ -20,9 +20,7 @@ class Config:
         self.condition = condition
 
     def is_condition_valid(self, **kwargs) -> bool:
-        if self.condition is None:
-            return True
-        return self.condition(**kwargs)
+        return True if self.condition is None else self.condition(**kwargs)
 
     def get_key_values(self) -> dict:
         return self.config
@@ -42,71 +40,79 @@ class AutoTune(ContextDecorator):
         self.num_iterations = num_iterations
         self.in_place_op = in_place_op
 
-        self.best_config = {}
-        self.best_time = float("inf")
-
         if self.in_place_op:
             raise NotImplementedError()
 
+        self.best_configs = {}
         self.signature = None
 
     def __call__(self, func):
         self._get_signature(func)
 
         @wraps(func)
-        def inner(*args, **kwds):
-            best_key = self._get_best_key(args, kwds)
+        def inner(*args, **kwargs):
+            input_key = self._get_input_key(args, kwargs)
 
             with self._recreate_cm():
-                if best_key not in self.best_config:
-                    for config in self.configs:
-                        if not config.is_condition_valid(self._get_kwargs_from_args_and_kwargs(*args, **kwds)):
-                            continue
+                if input_key not in self.best_configs:
+                    best_config, best_time = self._autotune(func, *args, **kwargs)
+                    self.best_configs[input_key] = best_config
 
-                        elapsed_time = self._run_benchmark(func, *args, **kwds, **config.get_key_values())
+                    if _DEBUG_AUTOTUNE and (
+                        not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0
+                    ):
+                        print(f"config {best_config} achieved the best time ({best_time} sec) for {input_key}")
 
-                        if elapsed_time < self.best_time:
-                            self.best_config[best_key] = config
-                            self.best_time = elapsed_time
-
-                    if _DEBUG_AUTOTUNE:
-                        if not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
-                            print(f"config {config} achieved the best time ({elapsed_time} sec) for {best_key}")
-
-                return func(*args, **kwds, **self.best_config[best_key].get_key_values())
+                return func(*args, **kwargs, **self.best_configs[input_key].get_key_values())
 
         return inner
 
-    def _get_kwargs_from_args_and_kwargs(self, *args, **kwargs) -> dict:
-        result = {}
-        for i, value in enumerate(args):
-            key = self.signature.args[i]
-            result[key] = value
+    def _autotune(self, func: Callable, *args, **kwargs) -> tuple[Config, float]:
+        def _get_kwargs_from_args_and_kwargs(*args, **kwargs) -> dict:
+            result = {}
+            for i, value in enumerate(args):
+                key = self.signature.args[i]
+                result[key] = value
 
-        result.update(kwargs)
-        return result
+            result.update(kwargs)
+            return result
 
-    def _get_best_key(self, args: list, kwargs: dict) -> Any:
-        best_keys = []
+        best_config = None
+        best_time = float("inf")
+
+        for config in self.configs:
+            if not config.is_condition_valid(_get_kwargs_from_args_and_kwargs(*args, **kwargs)):
+                continue
+
+            elapsed_time = self._run_benchmark(func, *args, **kwargs, **config.get_key_values())
+
+            if elapsed_time < best_time:
+                best_config = config
+                best_time = elapsed_time
+
+        return best_config, best_time
+
+    def _get_input_key(self, args: list, kwargs: dict) -> Any:
+        input_key = []
+
+        def _add_key(value) -> None:
+            if isinstance(value, torch.Tensor):
+                input_key.append(value.size())
+                input_key.append(value.dtype)
+            else:
+                input_key.append(value)
 
         for i, value in enumerate(args):
             key = self.signature.args[i]
 
             if key in self.trigger_keys:
-                if isinstance(value, torch.Tensor):
-                    best_keys.append(value.size())
-                    best_keys.append(value.dtype)
-                else:
-                    best_keys.append(value)
+                _add_key(value)
 
         for key, value in kwargs.items():
-            if isinstance(value, torch.Tensor):
-                best_keys.append(value.size())
-                best_keys.append(value.dtype)
-            else:
-                best_keys.append(value)
+            if key in self.trigger_keys:
+                _add_key(value)
 
-        return tuple(best_keys)
+        return tuple(input_key)
 
     def _run_benchmark(self, func: Callable, *args, **kwargs) -> float:
         start_time = perf_counter()
