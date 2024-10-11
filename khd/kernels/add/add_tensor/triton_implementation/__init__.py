@@ -32,4 +32,14 @@ class _AddTensor_Triton(torch.autograd.Function):
 
 
 def add_tensor_triton(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    """tensor addition
+
+    Args:
+        x (torch.Tensor): input tensor
+        y (torch.Tensor): input tensor
+
+    Returns:
+        torch.Tensor: output tensor
+    """
+
     return _AddTensor_Triton.apply(x, y)
