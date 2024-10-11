@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 
 from ..torch_implementation import Experts_Torch, MoE_Torch
-from .ops import padded_block_indices, scattered_experts
+from .ops import expert_boundaries, scattered_experts
 
 
 class Experts_Triton(Experts_Torch):
@@ -14,7 +14,6 @@ class Experts_Triton(Experts_Torch):
         k,
         sorted_expert_idxs,
         sorted_scattered_idxs,
-        padded_block_idxs,
         expert_offsets,
         gates=None,
         grouped_in=False,
@@ -26,7 +25,6 @@ class Experts_Triton(Experts_Torch):
             k,
             sorted_expert_idxs,
             sorted_scattered_idxs,
-            padded_block_idxs,
             expert_offsets,
             gates,
             grouped_in,
@@ -79,14 +77,13 @@ class MoE_Triton(MoE_Torch):
     ) -> torch.Tensor:
         with torch.no_grad():
             sorted_expert_idxs, sorted_scattered_idxs = torch.sort(selected_experts.flatten())
-            padded_block_idxs, expert_offsets = padded_block_indices(sorted_expert_idxs, self.num_experts)
+            expert_offsets = expert_boundaries(sorted_expert_idxs, self.num_experts)
 
         hidden_states = self.c_fc(
             hidden_states,
             self.top_k,
             sorted_expert_idxs,
             sorted_scattered_idxs,
-            padded_block_idxs,
             expert_offsets,
             grouped_out=True,
         )
@@ -96,7 +93,6 @@ class MoE_Triton(MoE_Torch):
             1,
             sorted_expert_idxs,
             sorted_scattered_idxs,
-            padded_block_idxs,
             expert_offsets,
             grouped_in=True,
             gates=router_weights,
