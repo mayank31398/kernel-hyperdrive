@@ -1,6 +1,6 @@
 import torch
 
-from .ops import _add_tensor_forward_cuda, _add_tensor_forward_cuda_compilable, add_tensor_cuda
+from .ops import _add_tensor_forward_cuda, _add_tensor_forward_cuda_compilable
 
 
 class _AddTensor_CUDA(torch.autograd.Function):
