@@ -51,7 +51,7 @@ class AutoTune(ContextDecorator):
 
                     if _DEBUG_AUTOTUNE:
                         if not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
-                            print(f"config {config} achieved the best time ({elapsed_time} sec)")
+                            print(f"config {config} achieved the best time ({elapsed_time} sec) for {best_key}")
 
                 return func(*args, **kwds, **self.best_config[best_key])
 
