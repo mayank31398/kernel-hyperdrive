@@ -9,14 +9,14 @@ from ....utils import torch_custom_op
 _KERNEL_NAME = "add_tensor_forward_cuda"
 
 
-@AutoTune(configs=get_vectorized_autotune_configs(torch.float32), trigger_keys=["x", "y"])
+@AutoTune(configs=get_vectorized_autotune_configs(torch.float32))
 def _add_tensor_forward_cuda_autotuned_fp32(
     x: torch.Tensor, y: torch.Tensor, vectorized_loop_size: int, BLOCK_SIZE: int
 ) -> torch.Tensor:
     return KernelRegistry.get_kernel(_KERNEL_NAME)(x, y, vectorized_loop_size, BLOCK_SIZE)
 
 
-@AutoTune(configs=get_vectorized_autotune_configs(torch.float16), trigger_keys=["x", "y"])
+@AutoTune(configs=get_vectorized_autotune_configs(torch.float16))
 def _add_tensor_forward_cuda_autotuned_fp16(
     x: torch.Tensor, y: torch.Tensor, vectorized_loop_size: int, BLOCK_SIZE: int
 ) -> torch.Tensor:
