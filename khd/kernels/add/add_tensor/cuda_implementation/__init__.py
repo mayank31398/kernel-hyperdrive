@@ -14,8 +14,8 @@ class _AddTensor_CUDA(torch.autograd.Function):
         return output
 
     @staticmethod
-    def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor | None]:
-        return output_grad, output_grad, None
+    def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor]:
+        return output_grad, output_grad
 
 
 def add_tensor_cuda(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
