@@ -151,15 +151,9 @@ def compute_expert_block(
 
 @triton.autotune(
     configs=[
-        # different block M and reducing stages
         triton.Config({"BLOCK_N": 128, "BLOCK_K": 128, "BLOCK_M": 32}, num_stages=4, num_warps=4),
         triton.Config({"BLOCK_N": 128, "BLOCK_K": 128, "BLOCK_M": 128}, num_stages=1, num_warps=4),
         triton.Config({"BLOCK_N": 128, "BLOCK_K": 128, "BLOCK_M": 64}, num_stages=2, num_warps=4),
-        # keep 4 stages and keep two 64 block sizes
-        # - NOTE: these can get good performances for low M, but for large M the variation
-        # triton.Config({'BLOCK_N': 128, 'BLOCK_K': 64, 'BLOCK_M': 64}, num_stages=4, num_warps=4),
-        # triton.Config({'BLOCK_N': 64, 'BLOCK_K': 128, 'BLOCK_M': 64}, num_stages=4, num_warps=4),
-        # triton.Config({'BLOCK_N': 64, 'BLOCK_K': 128, 'BLOCK_M': 64}, num_stages=4, num_warps=4),
     ],
     key=["N", "K"],
 )
@@ -188,7 +182,6 @@ def groupXtY_triton_kernel(
     pid1 = tl.program_id(axis=1)
     num0 = tl.num_programs(0)
     num1 = tl.num_programs(1)
-    # pid0, pid1 = tl.swizzle2d(pid0, pid1, num0, num1, 4)
     pid1, pid0 = tl.swizzle2d(pid1, pid0, num1, num0, 128)
 
     K_BLOCK_COUNT = tl.cdiv(K, BLOCK_K)
