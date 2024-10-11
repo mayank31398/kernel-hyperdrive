@@ -14,9 +14,26 @@ from .synchronization import device_synchronize
 _DEBUG_AUTOTUNE = bool(os.getenv("DEBUG_KHD_AUTOTUNE", 0))
 
 
+class Config:
+    def __init__(self, config: dict, condition: Callable = None) -> None:
+        self.config = config
+        self.condition = condition
+
+    def is_condition_valid(self, **kwargs) -> bool:
+        if self.condition is None:
+            return True
+        return self.condition(**kwargs)
+
+    def get_key_values(self) -> dict:
+        return self.config
+
+    def __str__(self) -> str:
+        return str(self.config)
+
+
 class AutoTune(ContextDecorator):
     def __init__(
-        self, configs: list[dict], trigger_keys: list[str] = {}, num_iterations: int = 100, in_place_op: bool = False
+        self, configs: list[Config], trigger_keys: list[str] = {}, num_iterations: int = 100, in_place_op: bool = False
     ) -> None:
         self.configs = configs
         self._check_configs()
@@ -43,7 +60,10 @@ class AutoTune(ContextDecorator):
             with self._recreate_cm():
                 if best_key not in self.best_config:
                     for config in self.configs:
-                        elapsed_time = self._run_benchmark(func, *args, **kwds, **config)
+                        if not config.is_condition_valid(self._get_kwargs_from_args_and_kwargs(*args, **kwds)):
+                            continue
+
+                        elapsed_time = self._run_benchmark(func, *args, **kwds, **config.get_key_values())
 
                         if elapsed_time < self.best_time:
                             self.best_config[best_key] = config
@@ -53,9 +73,18 @@ class AutoTune(ContextDecorator):
                         if not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
                             print(f"config {config} achieved the best time ({elapsed_time} sec) for {best_key}")
 
-                return func(*args, **kwds, **self.best_config[best_key])
+                return func(*args, **kwds, **self.best_config[best_key].get_key_values())
 
         return inner
+
+    def _get_kwargs_from_args_and_kwargs(self, *args, **kwargs) -> dict:
+        result = {}
+        for i, value in enumerate(args):
+            key = self.signature.args[i]
+            result[key] = value
+
+        result.update(kwargs)
+        return result
 
     def _get_best_key(self, args: list, kwargs: dict) -> Any:
         best_keys = []
@@ -64,10 +93,18 @@ class AutoTune(ContextDecorator):
             key = self.signature.args[i]
 
             if key in self.trigger_keys:
-                best_keys.append(value.size() if isinstance(value, torch.Tensor) else value)
+                if isinstance(value, torch.Tensor):
+                    best_keys.append(value.size())
+                    best_keys.append(value.dtype)
+                else:
+                    best_keys.append(value)
 
         for key, value in kwargs.items():
-            best_keys.append(value.size() if isinstance(value, torch.Tensor) else value)
+            if isinstance(value, torch.Tensor):
+                best_keys.append(value.size())
+                best_keys.append(value.dtype)
+            else:
+                best_keys.append(value)
 
         return tuple(best_keys)
 
@@ -109,16 +146,15 @@ class AutoTune(ContextDecorator):
         return
 
 
-def get_vectorized_autotune_configs(dtype: torch.dtype) -> list[dict]:
+def get_vectorized_autotune_configs(extra_config_condition: Callable = None) -> list[dict]:
     configs = []
 
-    if dtype in [torch.float16, torch.bfloat16]:
-        for vectorized_loop_size in [1, 2, 4, 8]:
-            for block_size in [64, 128, 256, 512, 1024]:
-                configs.append({"vectorized_loop_size": vectorized_loop_size, "BLOCK_SIZE": block_size})
-    elif dtype == torch.float32:
-        for vectorized_loop_size in [1, 2, 4]:
-            for block_size in [64, 128, 256, 512, 1024]:
-                configs.append({"vectorized_loop_size": vectorized_loop_size, "BLOCK_SIZE": block_size})
+    # common configs for fp32, fp16 and bf16
+    for vectorized_loop_size in [1, 2, 4]:
+        for block_size in [64, 128, 256, 512, 1024]:
+            configs.append(Config({"vectorized_loop_size": vectorized_loop_size, "BLOCK_SIZE": block_size}))
+
+    for block_size in [64, 128, 256, 512, 1024]:
+        configs.append(Config({"vectorized_loop_size": 8, "BLOCK_SIZE": block_size}, condition=extra_config_condition))
 
     return configs
