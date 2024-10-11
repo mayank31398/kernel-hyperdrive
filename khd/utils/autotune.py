@@ -140,10 +140,10 @@ class AutoTune(ContextDecorator):
             assert key in self.signature.args, f"unexpected arg ({key}) found in trigger_keys"
 
     def _check_configs(self) -> None:
-        keys = set(self.configs[0].keys())
+        keys = set(self.configs[0].get_key_values().keys())
 
         for config in self.configs:
-            assert set(config.keys()) == keys
+            assert set(config.get_key_values().keys()) == keys
 
     def __enter__(self) -> Any:
         return
