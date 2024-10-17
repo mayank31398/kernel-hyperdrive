@@ -20,7 +20,7 @@ def _get_word_embeddings(
     x = tl.load(x_ptrs, mask=mask_bs)
 
     wte_ptrs = wte_ptr + x[:, :, None] * wte_stride_v + indices_h[None, None, :] * wte_stride_h
-    word_embeddings = tl.load(wte_ptrs, mask=mask_h)
+    word_embeddings = tl.load(wte_ptrs, mask=mask_h[None, None, :])
 
     return word_embeddings
 
@@ -34,12 +34,15 @@ def lightning_transformer_triton_kernel(
     wte_stride_v,
     wte_stride_h,
     logits_ptr,
+    logits_stride_b,
+    logits_stride_s,
+    logits_stride_h,
     B,
     S,
     H,
-    BLOCK_SIZE_B,
-    BLOCK_SIZE_S,
-    BLOCK_SIZE_H,
+    BLOCK_SIZE_B: tl.constexpr,
+    BLOCK_SIZE_S: tl.constexpr,
+    BLOCK_SIZE_H: tl.constexpr,
 ):
     pid_b = tl.program_id(axis=0)
     pid_s = tl.program_id(axis=1)
@@ -66,9 +69,11 @@ def lightning_transformer_triton_kernel(
         wte_stride_v=wte_stride_v,
         wte_stride_h=wte_stride_h,
         indices_b=indices_b,
+        indices_s=indices_s,
         indices_h=indices_h,
         mask_bs=mask_bs,
         mask_h=mask_h,
     )
 
-    tl.store(logits_ptr, word_embeddings, mask=mask_bs[:, :, None] & mask_h[None, None, :])
+    logit_ptr = logits_ptr + indices_b[:, None, None] * logits_stride_b + indices_s[None, :, None] * logits_stride_s + indices_h[None, None, :] * logits_stride_h
+    tl.store(logit_ptr, word_embeddings, mask=mask_bs[:, :, None] & mask_h[None, None, :])

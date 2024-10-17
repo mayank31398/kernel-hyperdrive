@@ -18,7 +18,7 @@ class _LightningTransformer_Triton(torch.autograd.Function):
         batch_size, sequence_length = input_ids.size()
         hidden_size = wte.size(-1)
 
-        output = torch.empty(batch_size, sequence_length, hidden_size)
+        output = torch.empty(batch_size, sequence_length, hidden_size, device=input_ids.device)
 
         grid = lambda meta: (
             triton.cdiv(batch_size, meta["BLOCK_SIZE_B"]),
@@ -34,12 +34,15 @@ class _LightningTransformer_Triton(torch.autograd.Function):
             wte_stride_v=wte.stride(0),
             wte_stride_h=wte.stride(1),
             logits_ptr=output,
+            logits_stride_b=output.stride(0),
+            logits_stride_s=output.stride(1),
+            logits_stride_h=output.stride(2),
             B=batch_size,
             S=sequence_length,
             H=hidden_size,
-            BLOCK_SIZE_B=8,
-            BLOCK_SIZE_S=16,
-            BLOCK_SIZE_H=128,
+            BLOCK_SIZE_B=64,
+            BLOCK_SIZE_S=64,
+            BLOCK_SIZE_H=64,
         )
 
         return output
