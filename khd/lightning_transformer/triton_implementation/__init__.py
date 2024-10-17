@@ -45,16 +45,5 @@ class _LightningTransformer_Triton(torch.autograd.Function):
         return output
 
 
-def vector_addition_triton(x: torch.Tensor, y: torch.Tensor, memory_efficient: bool = False) -> torch.Tensor:
-    """vector addition
-
-    Args:
-        x (torch.Tensor): input tensor
-        y (torch.Tensor): input tensor
-        memory_efficient (bool, optional): whether to do an in-place op, will modify `x` if set to True. Defaults to False.
-
-    Returns:
-        torch.Tensor: output tensor
-    """
-
-    return _VectorAddition_Triton.apply(x, y, memory_efficient)
+def lightning_transformer_triton(input_ids: torch.Tensor, wte: torch.Tensor) -> torch.Tensor:
+    return _LightningTransformer_Triton.apply(input_ids, wte)
