@@ -8,7 +8,7 @@ from .test_commons import TestCommons
 
 
 class LightningTransformerTest(TestCommons):
-    @parameterized.expand(TestCommons.make_args_matrix(TestCommons.get_2d_tensor_sizes(), [torch.device("cuda")]))
+    @parameterized.expand(TestCommons.make_args_matrix([(100, 100), (700, 700), (27, 7139)], [torch.device("cuda")]))
     def test_lightning_transformer(self, sizes: tuple[int], device: torch.device) -> None:
         vocab_size = 49152
         input_ids = torch.randint(0, vocab_size, sizes, device=device, dtype=torch.long)
