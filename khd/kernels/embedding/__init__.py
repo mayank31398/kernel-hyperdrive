@@ -1,0 +1,2 @@
+from .torch_implementation import embedding_torch
+from .triton_implementation import embedding_triton

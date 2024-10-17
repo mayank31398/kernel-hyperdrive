@@ -42,13 +42,7 @@ std::vector<torch::Tensor> swiglu_backward_cuda(torch::Tensor gate,
 
     int num_elements = gate.numel();
 
-    swiglu_backward_cuda_kernel(gate.view(-1),
-                                up.view(-1),
-                                output_grad.view(-1),
-                                gate_grad.view(-1),
-                                up_grad.view(-1),
-                                num_elements,
-                                BLOCK_SIZE);
+    swiglu_backward_cuda_kernel(gate, up, output_grad, gate_grad, up_grad, num_elements, BLOCK_SIZE);
 
     return {gate_grad, up_grad};
 }

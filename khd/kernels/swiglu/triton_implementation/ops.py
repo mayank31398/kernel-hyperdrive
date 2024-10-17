@@ -23,9 +23,9 @@ class _Swiglu_Triton(torch.autograd.Function):
         BLOCK_SIZE = 1024
 
         swiglu_forward_triton_kernel[grid](
-            gate_ptr=gate.view(-1),
-            up_ptr=up.view(-1),
-            output_ptr=output.view(-1),
+            gate_ptr=gate,
+            up_ptr=up,
+            output_ptr=output,
             num_elements=num_elements,
             BLOCK_SIZE=BLOCK_SIZE,
         )
@@ -46,11 +46,11 @@ class _Swiglu_Triton(torch.autograd.Function):
 
         # the kernel uses the gate and up tensors to store the gradients in-place for memory savings
         swiglu_backward_triton_kernel[grid](
-            gate_ptr=gate.view(-1),
-            up_ptr=up.view(-1),
-            output_grad_ptr=output_grad.view(-1),
-            gate_grad_ptr=gate_grad.view(-1),
-            up_grad_ptr=up_grad.view(-1),
+            gate_ptr=gate,
+            up_ptr=up,
+            output_grad_ptr=output_grad,
+            gate_grad_ptr=gate_grad,
+            up_grad_ptr=up_grad,
             num_elements=num_elements,
             BLOCK_SIZE=BLOCK_SIZE,
         )
