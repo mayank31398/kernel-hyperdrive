@@ -26,7 +26,7 @@ class _Embedding_Triton(torch.autograd.Function):
         )
 
         embedding_forward_triton_kernel[grid](
-            x_ptr=input_ids.view(-1),
+            x_ptr=input_ids,
             wte_ptr=wte,
             wte_stride_v=wte.stride(0),
             wte_stride_h=wte.stride(1),
