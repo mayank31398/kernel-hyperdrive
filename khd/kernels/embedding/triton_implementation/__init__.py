@@ -1,14 +1,14 @@
 import torch
 import triton
 
-from ...constants import LIBRARY_NAME
+from ....constants import LIBRARY_NAME
 from .kernels import lightning_transformer_triton_kernel
 
 
-_KERNEL_NAME = "vector_addition_forward_triton"
+_KERNEL_NAME = "embedding_forward_triton"
 
 
-class _LightningTransformer_Triton(torch.autograd.Function):
+class _Embedding_Triton(torch.autograd.Function):
     @torch.profiler.record_function(f"{LIBRARY_NAME}:{_KERNEL_NAME}")
     @staticmethod
     def forward(ctx, input_ids: torch.Tensor, wte: torch.Tensor) -> torch.Tensor:
@@ -48,5 +48,5 @@ class _LightningTransformer_Triton(torch.autograd.Function):
         return output
 
 
-def lightning_transformer_triton(input_ids: torch.Tensor, wte: torch.Tensor) -> torch.Tensor:
-    return _LightningTransformer_Triton.apply(input_ids, wte)
+def embedding_triton(input_ids: torch.Tensor, wte: torch.Tensor) -> torch.Tensor:
+    return _Embedding_Triton.apply(input_ids, wte)
