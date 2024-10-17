@@ -2,7 +2,7 @@ import torch
 import triton
 
 from ....constants import LIBRARY_NAME
-from .kernels import lightning_transformer_triton_kernel
+from .kernels import embedding_forward_triton_kernel
 
 
 _KERNEL_NAME = "embedding_forward_triton"
@@ -26,7 +26,7 @@ class _Embedding_Triton(torch.autograd.Function):
             triton.cdiv(hidden_size, meta["BLOCK_SIZE_H"]),
         )
 
-        lightning_transformer_triton_kernel[grid](
+        embedding_forward_triton_kernel[grid](
             x_ptr=input_ids,
             x_stride_b=input_ids.stride(0),
             x_stride_s=input_ids.stride(1),

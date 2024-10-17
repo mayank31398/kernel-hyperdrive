@@ -3,30 +3,7 @@ import triton.language as tl
 
 
 @triton.jit
-def _get_word_embeddings(
-    x_ptr,
-    x_stride_b,
-    x_stride_s,
-    wte_ptr,
-    wte_stride_v,
-    wte_stride_h,
-    indices_b,
-    indices_s,
-    indices_h,
-    mask_bs,
-    mask_h,
-):
-    x_ptrs = x_ptr + indices_b[:, None] * x_stride_b + indices_s[None, :] * x_stride_s
-    x = tl.load(x_ptrs, mask=mask_bs)
-
-    wte_ptrs = wte_ptr + x[:, :, None] * wte_stride_v + indices_h[None, None, :] * wte_stride_h
-    word_embeddings = tl.load(wte_ptrs, mask=mask_h[None, None, :])
-
-    return word_embeddings
-
-
-@triton.jit
-def lightning_transformer_triton_kernel(
+def embedding_forward_triton_kernel(
     x_ptr,
     x_stride_b,
     x_stride_s,
@@ -61,19 +38,11 @@ def lightning_transformer_triton_kernel(
     mask_h = indices_h < H
     mask_bs = mask_b[:, None] & mask_s[None, :]
 
-    word_embeddings = _get_word_embeddings(
-        x_ptr=x_ptr,
-        x_stride_b=x_stride_b,
-        x_stride_s=x_stride_s,
-        wte_ptr=wte_ptr,
-        wte_stride_v=wte_stride_v,
-        wte_stride_h=wte_stride_h,
-        indices_b=indices_b,
-        indices_s=indices_s,
-        indices_h=indices_h,
-        mask_bs=mask_bs,
-        mask_h=mask_h,
-    )
+    x_ptrs = x_ptr + indices_b[:, None] * x_stride_b + indices_s[None, :] * x_stride_s
+    x = tl.load(x_ptrs, mask=mask_bs)
+
+    wte_ptrs = wte_ptr + x[:, :, None] * wte_stride_v + indices_h[None, None, :] * wte_stride_h
+    word_embeddings = tl.load(wte_ptrs, mask=mask_h[None, None, :])
 
     logit_ptr = (
         logits_ptr
@@ -81,4 +50,5 @@ def lightning_transformer_triton_kernel(
         + indices_s[None, :, None] * logits_stride_s
         + indices_h[None, None, :] * logits_stride_h
     )
+
     tl.store(logit_ptr, word_embeddings, mask=mask_bs[:, :, None] & mask_h[None, None, :])
