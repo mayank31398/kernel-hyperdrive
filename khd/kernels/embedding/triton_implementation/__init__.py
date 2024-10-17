@@ -18,7 +18,7 @@ class _Embedding_Triton(torch.autograd.Function):
         num_tokens = input_ids.numel()
         hidden_size = wte.size(-1)
 
-        output = torch.empty(*input_ids.size(), hidden_size, device=input_ids.device)
+        output = torch.empty(input_ids.numel(), hidden_size, device=input_ids.device)
 
         grid = lambda meta: (
             triton.cdiv(num_tokens, meta["BLOCK_SIZE_B"]),
@@ -39,7 +39,7 @@ class _Embedding_Triton(torch.autograd.Function):
             BLOCK_SIZE_H=64,
         )
 
-        return output
+        return output.view(*input_ids.size(), hidden_size)
 
 
 def embedding_triton(input_ids: torch.Tensor, wte: torch.Tensor) -> torch.Tensor:
