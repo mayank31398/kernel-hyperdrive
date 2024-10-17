@@ -12,6 +12,6 @@ class LightningTransformerTest(TestCommons):
     def test_lightning_transformer(self, device: torch.device) -> None:
         vocab_size = 49152
         input_ids = torch.randint(0, vocab_size, (100, 1000), device=device, dtype=torch.long)
-        wte = nn.Embedding(vocab_size, 4096)
+        wte = nn.Embedding(vocab_size, 4096).to(device)
 
         assert wte(input_ids).equal(lightning_transformer_triton(input_ids, wte.weight))
