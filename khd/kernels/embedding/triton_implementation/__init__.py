@@ -30,7 +30,7 @@ class _Embedding_Triton(torch.autograd.Function):
             wte_ptr=wte,
             wte_stride_v=wte.stride(0),
             wte_stride_h=wte.stride(1),
-            output_ptr=output.view(-1),
+            output_ptr=output,
             output_stride_b=output.stride(0),
             output_stride_h=output.stride(1),
             B=num_tokens,
