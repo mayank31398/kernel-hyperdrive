@@ -75,5 +75,10 @@ def lightning_transformer_triton_kernel(
         mask_h=mask_h,
     )
 
-    logit_ptr = logits_ptr + indices_b[:, None, None] * logits_stride_b + indices_s[None, :, None] * logits_stride_s + indices_h[None, None, :] * logits_stride_h
+    logit_ptr = (
+        logits_ptr
+        + indices_b[:, None, None] * logits_stride_b
+        + indices_s[None, :, None] * logits_stride_s
+        + indices_h[None, None, :] * logits_stride_h
+    )
     tl.store(logit_ptr, word_embeddings, mask=mask_bs[:, :, None] & mask_h[None, None, :])
