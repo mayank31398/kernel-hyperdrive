@@ -114,11 +114,11 @@ class AutoTune(ContextDecorator):
             key = self.signature.args[i]
 
             if key in self.trigger_keys:
-                _add_key(value)
+                _add_key(key, value)
 
         for key, value in kwargs.items():
             if key in self.trigger_keys:
-                _add_key(value)
+                _add_key(key, value)
 
         return tuple(input_key)
 
