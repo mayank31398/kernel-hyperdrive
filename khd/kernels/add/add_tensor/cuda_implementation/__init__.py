@@ -5,13 +5,13 @@ from .ops import _add_tensor_forward_cuda, _add_tensor_forward_cuda_compilable
 
 class _AddTensor_CUDA(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, x: torch.Tensor, y: torch.Tensor, vectorized_loop_size: int, BLOCK_SIZE: int) -> torch.Tensor:
+    def forward(ctx, x: torch.Tensor, y: torch.Tensor, vectorized_loop_size: int) -> torch.Tensor:
+        BLOCK_SIZE = 1024
+
         if torch.compiler.is_compiling():
-            output = _add_tensor_forward_cuda_compilable(
-                x=x, y=y, vectorized_loop_size=vectorized_loop_size, BLOCK_SIZE=BLOCK_SIZE
-            )
+            output = _add_tensor_forward_cuda_compilable(x=x, y=y, vectorized_loop_size=vectorized_loop_size)
         else:
-            output = _add_tensor_forward_cuda(x, y, vectorized_loop_size=vectorized_loop_size, BLOCK_SIZE=BLOCK_SIZE)
+            output = _add_tensor_forward_cuda(x, y, vectorized_loop_size=vectorized_loop_size)
 
         return output
 
@@ -20,17 +20,16 @@ class _AddTensor_CUDA(torch.autograd.Function):
         return output_grad, output_grad
 
 
-def add_tensor_cuda(x: torch.Tensor, y: torch.Tensor, vectorized_loop_size: int, BLOCK_SIZE: int) -> torch.Tensor:
+def add_tensor_cuda(x: torch.Tensor, y: torch.Tensor, vectorized_loop_size: int) -> torch.Tensor:
     """tensor addition
 
     Args:
         x (torch.Tensor): input tensor
         y (torch.Tensor): input tensor
         vectorized_loop_size (int): vector instructions' operand size
-        BLOCK_SIZE (int): block size
 
     Returns:
         torch.Tensor: output tensor
     """
 
-    return _AddTensor_CUDA.apply(x=x, y=y, vectorized_loop_size=vectorized_loop_size, BLOCK_SIZE=BLOCK_SIZE)
+    return _AddTensor_CUDA.apply(x=x, y=y, vectorized_loop_size=vectorized_loop_size)
