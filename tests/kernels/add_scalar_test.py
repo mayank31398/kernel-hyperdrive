@@ -5,7 +5,7 @@ from parameterized import parameterized
 
 from khd import add_scalar_cuda, add_scalar_torch, add_scalar_triton
 
-from .test_commons import TestCommons
+from ..test_commons import TestCommons
 
 
 class AddTensorTest(TestCommons):
