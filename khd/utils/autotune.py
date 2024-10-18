@@ -55,16 +55,20 @@ class AutoTune(ContextDecorator):
             input_key = self._get_input_key(args, kwargs)
 
             with self._recreate_cm():
-                if input_key not in self.best_configs:
+                if input_key in self.best_configs:
+                    output = func(*args, **kwargs, **self.best_configs[input_key].get_key_values())
+                else:
                     best_config, best_time = self._autotune(func, *args, **kwargs)
-                    self.best_configs[input_key] = best_config
 
                     if _DEBUG_AUTOTUNE and (
                         not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0
                     ):
                         print(f"config {best_config} achieved the best time ({best_time} sec) for {input_key}")
 
-                return func(*args, **kwargs, **self.best_configs[input_key].get_key_values())
+                    output = func(*args, **kwargs, **best_config.get_key_values())
+                    self.best_configs[input_key] = best_config
+
+            return output
 
         return inner
 
