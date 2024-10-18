@@ -154,12 +154,11 @@ class AutoTune(ContextDecorator):
 
                     input_key.append(f"{variable_name} = {trigger(value)}")
             else:
-                trigger = triggers[0]
 
                 assert len(triggers) == 1
                 assert (
-                    trigger == variable_name
-                ), f"trigger ({variable_name}) is not a tensor and shouldn't have the trigger ({trigger})"
+                    triggers[0] is None
+                ), f"trigger ({variable_name}) is not a tensor and shouldn't have a functional trigger"
 
                 input_key.append(f"{variable_name} = {value}")
 
