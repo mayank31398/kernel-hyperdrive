@@ -185,7 +185,7 @@ class AutoTune(ContextDecorator):
         keys = set(self.configs[0].get_key_values().keys())
 
         for config in self.configs:
-            assert set(config.get_key_values().keys()) == keys
+            assert set(config.get_key_values().keys()) == keys, "autotune configs have different keys"
 
     def __enter__(self) -> Any:
         return
