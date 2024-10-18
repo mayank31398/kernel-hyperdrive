@@ -1,5 +1,6 @@
 import inspect
 import os
+from collections import defaultdict
 from contextlib import ContextDecorator
 from functools import wraps
 from time import perf_counter
@@ -32,13 +33,23 @@ class Config:
 
 class AutoTune(ContextDecorator):
     def __init__(
-        self, configs: list[Config], trigger_keys: list[str] = {}, num_iterations: int = 100, in_place_op: bool = False
+        self,
+        configs: list[Config],
+        triggers: set[str] = set(),
+        warmup_iterations: int = 5,
+        benchmark_iterations: int = 100,
+        in_place_op: bool = False,
     ) -> None:
         self.configs = configs
         self._check_configs()
 
-        self.trigger_keys = set(trigger_keys)
-        self.num_iterations = num_iterations
+        self.variable_name_trigger_map = defaultdict(list)
+        for trigger in triggers:
+            variable_name, trigger = self._parse_trigger(trigger)
+            self.variable_name_trigger_map[variable_name].append(trigger)
+
+        self.warmup_iterations = warmup_iterations
+        self.benchmark_iterations = benchmark_iterations
         self.in_place_op = in_place_op
 
         if self.in_place_op:
@@ -56,7 +67,8 @@ class AutoTune(ContextDecorator):
 
             with self._recreate_cm():
                 if input_key in self.best_configs:
-                    output = func(*args, **kwargs, **self.best_configs[input_key].get_key_values())
+                    best_config = self.best_configs[input_key]
+                    output = func(*args, **kwargs, **best_config.get_key_values())
                 else:
                     best_config, best_time = self._autotune(func, *args, **kwargs)
 
@@ -72,12 +84,37 @@ class AutoTune(ContextDecorator):
 
         return inner
 
+    def _parse_trigger(self, trigger: str) -> tuple[str, Callable]:
+        split_trigger = trigger.split(_SEPARATOR)
+        variable_name = split_trigger[0]
+
+        if len(split_trigger) == 1:
+            func = None
+        elif len(split_trigger) == 2:
+            func = split_trigger[1]
+
+            if func == "dtype":
+                func = lambda tensor: tensor.dtype
+            elif func.startswith("size"):
+                dim = int(func[5:][:-1])
+                func = lambda tensor: tensor.size(dim)
+            elif func.startswith("shape"):
+                dim = int(func[6:][:-1])
+                func = lambda tensor: tensor.size(dim)
+            elif func.startswith("stride"):
+                dim = int(func[7:][:-1])
+                func = lambda tensor: tensor.stride(dim)
+            else:
+                raise ValueError(f"unexpected triggeer found ({trigger})")
+
+        return variable_name, func
+
     def _autotune(self, func: Callable, *args, **kwargs) -> tuple[Config, float]:
         def _get_kwargs_from_args_and_kwargs(*args, **kwargs) -> dict:
             result = {}
             for i, value in enumerate(args):
-                key = self.signature.args[i]
-                result[key] = value
+                variable_name = self.signature.args[i]
+                result[variable_name] = value
 
             result.update(kwargs)
             return result
@@ -100,77 +137,48 @@ class AutoTune(ContextDecorator):
     def _get_input_key(self, args: list, kwargs: dict) -> Any:
         input_key = []
 
-        def _add_key(key: str, value) -> None:
-            if isinstance(value, torch.Tensor):
-                split_key = key.split(_SEPARATOR)
+        def _add_key(variable_name: str, value) -> None:
+            if variable_name not in self.variable_name_trigger_map:
+                return
 
-                if len(split_key) == 1:
-                    input_key.append(value.size())
-                    input_key.append(value.stride())
-                    input_key.append(value.dtype)
-                else:
-                    for _key in split_key:
-                        _value = self._get_tensor_attribute(value, _key)
-                        input_key.append(_value)
+            triggers = self.variable_name_trigger_map[variable_name]
+
+            if isinstance(value, torch.Tensor):
+                for trigger in triggers:
+                    if trigger is None:
+                        trigger = lambda tensor: (tensor.dtype, tensor.size(), tensor.stride())
+
+                    input_key.append(trigger(value))
             else:
+                assert len(triggers) == 1
                 input_key.append(value)
 
         for i, value in enumerate(args):
-            key = self.signature.args[i]
+            variable_name = self.signature.args[i]
+            _add_key(variable_name, value)
 
-            if key in self.trigger_keys:
-                _add_key(key, value)
-
-        for key, value in kwargs.items():
-            if key in self.trigger_keys:
-                _add_key(key, value)
+        for variable_name, value in kwargs.items():
+            _add_key(variable_name, value)
 
         return tuple(input_key)
 
-    def _get_tensor_attribute(self, tensor: torch.Tensor, key: str) -> int | torch.dtype:
-        if key == "dtype":
-            attribute = tensor.dtype
-        else:
-            is_size = key.startswith("size")
-            is_shape = key.startswith("shape")
-            is_stride = key.startswith("stride")
-
-            if not (is_shape or is_size or is_stride):
-                raise RuntimeError(f"unexpected key found ({key})")
-
-            if is_size:
-                prefix = "size("
-                suffix = ")"
-            elif is_shape:
-                prefix = "shape["
-                suffix = "]"
-            elif is_stride:
-                prefix = "stride("
-                suffix = ")"
-
-            key = key.split(prefix)[1]
-            key = key.split(suffix)[0]
-            dim = int(key)
-
-            if is_size or is_shape:
-                attribute = tensor.size(dim)
-            elif is_stride:
-                attribute = tensor.stride(dim)
-
-        return attribute
-
     def _run_benchmark(self, func: Callable, *args, **kwargs) -> float:
+        device_synchronize()
+
+        for _ in range(self.warmup_iterations):
+            func(*args, **kwargs)
+
         device_synchronize()
         start_time = perf_counter()
 
-        for _ in range(self.num_iterations):
+        for _ in range(self.benchmark_iterations):
             func(*args, **kwargs)
 
         device_synchronize()
         end_time = perf_counter()
         elapsed_time = end_time - start_time
 
-        return elapsed_time
+        return elapsed_time / self.benchmark_iterations
 
     def _get_signature(self, func: Callable) -> None:
         if self.signature is not None:
@@ -180,19 +188,24 @@ class AutoTune(ContextDecorator):
 
         for config in self.configs:
             config = config.get_key_values()
-            for key in config:
-                key = key.split(_SEPARATOR)[0]
-                assert key in self.signature.args, f"unexpected arg ({key}) found in config"
 
-        for key in self.trigger_keys:
-            key = key.split(_SEPARATOR)[0]
-            assert key in self.signature.args, f"unexpected arg ({key}) found in trigger_keys"
+            for variable_name in config:
+                assert (
+                    variable_name in self.signature.args
+                ), f"unexpected variable_name ({variable_name}) found in config"
+
+        for variable_name in self.variable_name_trigger_map:
+            assert (
+                variable_name in self.signature.args
+            ), f"unexpected variable_name ({variable_name}) found in triggers"
 
     def _check_configs(self) -> None:
-        keys = set(self.configs[0].get_key_values().keys())
+        variable_names = set(self.configs[0].get_key_values().keys())
 
         for config in self.configs:
-            assert set(config.get_key_values().keys()) == keys, "autotune configs have different keys"
+            assert (
+                set(config.get_key_values().keys()) == variable_names
+            ), "autotune configs have different variable names"
 
     def __enter__(self) -> Any:
         return
