@@ -95,6 +95,10 @@ class AutoTune(ContextDecorator):
 
             if func == "dtype":
                 func = lambda tensor: tensor.dtype
+            elif func in ["size()", "shape"]:
+                func = lambda tensor: tensor.size()
+            elif func == "stride()":
+                func = lambda tensor: tensor.stride()
             elif func.startswith("size"):
                 dim = int(func[5:][:-1])
                 func = lambda tensor: tensor.size(dim)
