@@ -5,7 +5,7 @@ from parameterized import parameterized
 
 from khd import embedding_torch, embedding_triton
 
-from .test_commons import TestCommons
+from ..test_commons import TestCommons
 
 
 class EmbeddingTest(TestCommons):

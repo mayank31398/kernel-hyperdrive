@@ -19,9 +19,10 @@ class _AddScalar_Triton(torch.autograd.Function):
 
         BLOCK_SIZE = 1024
 
-        add_scalar_forward_triton_kernel[grid](
-            x_ptr=x, y=y, output_ptr=output, num_elements=num_elements, BLOCK_SIZE=BLOCK_SIZE
-        )
+        with torch.device(x.device):
+            add_scalar_forward_triton_kernel[grid](
+                x_ptr=x, y=y, output_ptr=output, num_elements=num_elements, BLOCK_SIZE=BLOCK_SIZE
+            )
 
         return output
 

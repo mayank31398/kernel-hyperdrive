@@ -5,7 +5,7 @@ from parameterized import parameterized
 
 from khd import swiglu_cuda, swiglu_torch, swiglu_triton
 
-from .test_commons import TestCommons
+from ..test_commons import TestCommons
 
 
 class SwigluTest(TestCommons):
