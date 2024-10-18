@@ -152,10 +152,10 @@ class AutoTune(ContextDecorator):
                     if trigger is None:
                         trigger = lambda tensor: (tensor.dtype, tensor.size(), tensor.stride())
 
-                    input_key.append(trigger(value))
+                    input_key.append(f"{variable_name} = {trigger(value)}")
             else:
                 assert len(triggers) == 1
-                input_key.append(value)
+                input_key.append(f"{variable_name} = {value}")
 
         for i, value in enumerate(args):
             variable_name = self.signature.args[i]
