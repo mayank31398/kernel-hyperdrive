@@ -9,9 +9,11 @@ class _AddTensor_CUDA(torch.autograd.Function):
         BLOCK_SIZE = 1024
 
         if torch.compiler.is_compiling():
-            output = _add_tensor_forward_cuda_compilable(x=x, y=y, vectorized_loop_size=vectorized_loop_size)
+            output = _add_tensor_forward_cuda_compilable(
+                x=x, y=y, vectorized_loop_size=vectorized_loop_size, BLOCK_SIZE=BLOCK_SIZE
+            )
         else:
-            output = _add_tensor_forward_cuda(x, y, vectorized_loop_size=vectorized_loop_size)
+            output = _add_tensor_forward_cuda(x, y, vectorized_loop_size=vectorized_loop_size, BLOCK_SIZE=BLOCK_SIZE)
 
         return output
 
