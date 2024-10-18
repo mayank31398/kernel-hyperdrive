@@ -34,4 +34,4 @@ def add_tensor_cuda(x: torch.Tensor, y: torch.Tensor, vectorized_loop_size: int)
         torch.Tensor: output tensor
     """
 
-    return _AddTensor_CUDA.apply(x=x, y=y, vectorized_loop_size=vectorized_loop_size)
+    return _AddTensor_CUDA.apply(x, y, vectorized_loop_size)
