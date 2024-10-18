@@ -6,8 +6,8 @@ from .kernels import add_tensor_forward_triton_kernel
 
 
 class _AddTensor_Triton(torch.autograd.Function):
-    @AutoTune(configs=get_default_triton_autotune_configs(), triggers={"x.dtype"})
     @staticmethod
+    @AutoTune(configs=get_default_triton_autotune_configs(), triggers={"x.dtype"})
     def forward(ctx, x: torch.Tensor, y: torch.Tensor, BLOCK_SIZE: int) -> torch.Tensor:
         assert x.is_cuda, "tensor x is not on GPU"
         assert y.is_cuda, "tensor y is not on GPU"
