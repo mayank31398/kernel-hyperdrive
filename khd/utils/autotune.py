@@ -95,10 +95,18 @@ class AutoTune(ContextDecorator):
     def _get_input_key(self, args: list, kwargs: dict) -> Any:
         input_key = []
 
-        def _add_key(value) -> None:
+        def _add_key(key: str, value) -> None:
             if isinstance(value, torch.Tensor):
-                input_key.append(value.size())
-                input_key.append(value.dtype)
+                split_key = key.split(".")
+
+                if len(split_key) == 1:
+                    input_key.append(value.size())
+                    input_key.append(value.stride())
+                    input_key.append(value.dtype)
+                else:
+                    for _key in split_key:
+                        _value = self._get_tensor_attribute(value, _key)
+                        input_key.append(_value)
             else:
                 input_key.append(value)
 
@@ -114,13 +122,46 @@ class AutoTune(ContextDecorator):
 
         return tuple(input_key)
 
+    def _get_tensor_attribute(self, tensor: torch.Tensor, key: str) -> int | torch.dtype:
+        if key == "dtype":
+            attribute = tensor.dtype
+        else:
+            is_size = key.startswith("size")
+            is_shape = key.startswith("shape")
+            is_stride = key.startswith("stride")
+
+            if not (is_shape or is_size or is_stride):
+                raise RuntimeError(f"unexpected key found ({key})")
+
+            if is_size:
+                prefix = "size("
+                suffix = ")"
+            elif is_shape:
+                prefix = "shape["
+                suffix = "]"
+            elif is_stride:
+                prefix = "stride("
+                suffix = ")"
+
+            key = key.split(prefix)[1]
+            key = key.split(suffix)[0]
+            dim = int(key)
+
+            if is_size or is_shape:
+                attribute = tensor.size(dim)
+            elif is_stride:
+                attribute = tensor.stride(dim)
+
+        return attribute
+
     def _run_benchmark(self, func: Callable, *args, **kwargs) -> float:
+        device_synchronize()
         start_time = perf_counter()
 
         for _ in range(self.num_iterations):
             func(*args, **kwargs)
-        device_synchronize()
 
+        device_synchronize()
         end_time = perf_counter()
         elapsed_time = end_time - start_time
 
