@@ -1,12 +1,14 @@
 import torch
 import triton
 
+from .....utils import AutoTune, get_default_triton_autotune_configs
 from .kernels import add_tensor_forward_triton_kernel
 
 
 class _AddTensor_Triton(torch.autograd.Function):
+    @AutoTune(configs=get_default_triton_autotune_configs(), triggers={"x.dtype"})
     @staticmethod
-    def forward(ctx, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    def forward(ctx, x: torch.Tensor, y: torch.Tensor, BLOCK_SIZE: int) -> torch.Tensor:
         assert x.is_cuda, "tensor x is not on GPU"
         assert y.is_cuda, "tensor y is not on GPU"
 
@@ -17,8 +19,6 @@ class _AddTensor_Triton(torch.autograd.Function):
 
         num_elements = x.numel()
         grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE"]),)
-
-        BLOCK_SIZE = 1024
 
         with torch.device(x.device):
             add_tensor_forward_triton_kernel[grid](

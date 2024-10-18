@@ -223,7 +223,7 @@ class AutoTune(ContextDecorator):
         return
 
 
-def get_vectorized_autotune_configs(extra_config_condition: Callable = None) -> list[dict]:
+def get_default_cuda_autotune_configs(extra_config_condition: Callable = None) -> list[Config]:
     configs = []
 
     # common configs for fp32, fp16 and bf16
@@ -235,3 +235,7 @@ def get_vectorized_autotune_configs(extra_config_condition: Callable = None) -> 
         configs.append(Config({"vectorized_loop_size": 8, "BLOCK_SIZE": block_size}, condition=extra_config_condition))
 
     return configs
+
+
+def get_default_triton_autotune_configs() -> list[Config]:
+    return [Config({"BLOCK_SIZE": block_size}) for block_size in [64, 128, 256, 512, 1024]]
