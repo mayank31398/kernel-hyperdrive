@@ -177,17 +177,11 @@ class AutoTune(ContextDecorator):
         for config in self.configs:
             config = config.get_key_values()
             for key in config:
-                key = key.split(_SEPARATOR)
-                if len(key) > 1:
-                    key = key[0]
-
+                key = key.split(_SEPARATOR)[0]
                 assert key in self.signature.args, f"unexpected arg ({key}) found in config"
 
         for key in self.trigger_keys:
-            key = key.split(_SEPARATOR)
-            if len(key) > 1:
-                key = key[0]
-
+            key = key.split(_SEPARATOR)[0]
             assert key in self.signature.args, f"unexpected arg ({key}) found in trigger_keys"
 
     def _check_configs(self) -> None:
