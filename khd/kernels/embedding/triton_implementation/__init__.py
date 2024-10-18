@@ -25,19 +25,20 @@ class _Embedding_Triton(torch.autograd.Function):
             triton.cdiv(hidden_size, meta["BLOCK_SIZE_H"]),
         )
 
-        embedding_forward_triton_kernel[grid](
-            x_ptr=input_ids,
-            wte_ptr=wte,
-            wte_stride_v=wte.stride(0),
-            wte_stride_h=wte.stride(1),
-            output_ptr=output,
-            output_stride_b=output.stride(0),
-            output_stride_h=output.stride(1),
-            B=num_tokens,
-            H=hidden_size,
-            BLOCK_SIZE_B=64,
-            BLOCK_SIZE_H=64,
-        )
+        with torch.device(input_ids.device):
+            embedding_forward_triton_kernel[grid](
+                x_ptr=input_ids,
+                wte_ptr=wte,
+                wte_stride_v=wte.stride(0),
+                wte_stride_h=wte.stride(1),
+                output_ptr=output,
+                output_stride_b=output.stride(0),
+                output_stride_h=output.stride(1),
+                B=num_tokens,
+                H=hidden_size,
+                BLOCK_SIZE_B=64,
+                BLOCK_SIZE_H=64,
+            )
 
         return output.view(*input_ids.size(), hidden_size)
 

@@ -41,33 +41,34 @@ def _scatter2scatter(
         triton.cdiv(sorted_expert_idxs.size(0), meta["BLOCK_M"]) * triton.cdiv(meta["N"], meta["BLOCK_N"]),
     )
 
-    scatter2scatter_triton_kernel[grid](
-        # X_ptr, stride_xm, stride_xk,
-        X,
-        X.stride(0),
-        X.stride(1),
-        # W_ptr, stride_we, stride_wk, stride_wn,
-        W,
-        W.stride(0),
-        W.stride(1),
-        W.stride(2),
-        # Y_ptr, stride_ym, stride_yn,
-        out,
-        out.stride(0),
-        out.stride(1),
-        grouped_idx_ptr=sorted_scattered_idxs,
-        expert_idxs_ptr=sorted_expert_idxs,
-        FAN_OUT=FAN_OUT,
-        M=X.size(0),
-        K=X.size(1),
-        N=out.size(1),
-        E=W.size(0),
-        BLOCK_M=BLOCK_M,
-        ACC_TYPE=tl.float32,
-        allow_tf32=torch.backends.cudnn.allow_tf32,
-        x_grouped=x_grouped,
-        y_grouped=y_grouped,
-    )
+    with torch.device(X.device):
+        scatter2scatter_triton_kernel[grid](
+            # X_ptr, stride_xm, stride_xk,
+            X,
+            X.stride(0),
+            X.stride(1),
+            # W_ptr, stride_we, stride_wk, stride_wn,
+            W,
+            W.stride(0),
+            W.stride(1),
+            W.stride(2),
+            # Y_ptr, stride_ym, stride_yn,
+            out,
+            out.stride(0),
+            out.stride(1),
+            grouped_idx_ptr=sorted_scattered_idxs,
+            expert_idxs_ptr=sorted_expert_idxs,
+            FAN_OUT=FAN_OUT,
+            M=X.size(0),
+            K=X.size(1),
+            N=out.size(1),
+            E=W.size(0),
+            BLOCK_M=BLOCK_M,
+            ACC_TYPE=tl.float32,
+            allow_tf32=torch.backends.cudnn.allow_tf32,
+            x_grouped=x_grouped,
+            y_grouped=y_grouped,
+        )
 
 
 # custom op is needed because of https://github.com/pytorch/pytorch/issues/136394
@@ -131,29 +132,30 @@ def scatter2scatter(
 def _group_bwd_W(DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor, DW: torch.Tensor, E: int) -> None:
     grid = lambda meta: (E * triton.cdiv(meta["K"], meta["BLOCK_K"]), triton.cdiv(meta["N"], meta["BLOCK_N"]))
 
-    groupXtY_triton_kernel[grid](
-        # DY_ptr, stride_dym, stride_dyk,
-        DY,
-        DY.stride(0),
-        DY.stride(1),
-        # X_ptr, stride_xm, stride_xn,
-        X,
-        X.stride(0),
-        X.stride(1),
-        # DW_ptr, stride_dwe, stride_dwk, stride_dwn,
-        DW,
-        DW.stride(0),
-        DW.stride(1),
-        DW.stride(2),
-        # expert_offsets_ptr,
-        expert_offsets,
-        # K: tl.constexpr, N: tl.constexpr,
-        N=DY.size(-1),
-        K=X.size(-1),
-        # ACC_TYPE: tl.constexpr,
-        ACC_TYPE=tl.float32,
-        allow_tf32=torch.backends.cudnn.allow_tf32,
-    )
+    with torch.device(X.device):
+        groupXtY_triton_kernel[grid](
+            # DY_ptr, stride_dym, stride_dyk,
+            DY,
+            DY.stride(0),
+            DY.stride(1),
+            # X_ptr, stride_xm, stride_xn,
+            X,
+            X.stride(0),
+            X.stride(1),
+            # DW_ptr, stride_dwe, stride_dwk, stride_dwn,
+            DW,
+            DW.stride(0),
+            DW.stride(1),
+            DW.stride(2),
+            # expert_offsets_ptr,
+            expert_offsets,
+            # K: tl.constexpr, N: tl.constexpr,
+            N=DY.size(-1),
+            K=X.size(-1),
+            # ACC_TYPE: tl.constexpr,
+            ACC_TYPE=tl.float32,
+            allow_tf32=torch.backends.cudnn.allow_tf32,
+        )
 
 
 # custom op is needed because of https://github.com/pytorch/pytorch/issues/136394
@@ -184,24 +186,25 @@ def _group(
 
     grid = lambda meta: (triton.cdiv(meta["N"], meta["BLOCK_N"]),)
 
-    group_triton_kernel[grid](
-        # A_ptr, stride_an, stride_ai,
-        A,
-        A.stride(0),
-        A.stride(1),
-        coeff is not None,
-        coeff,
-        fan_out,
-        # Y_ptr, stride_yn, stride_yk,
-        out,
-        out.stride(0),
-        out.stride(1),
-        # grouped_idx_ptr,
-        sorted_expert_idxs,
-        # N: tl.constexpr, K: tl.constexpr,
-        N,
-        K,
-    )
+    with torch.device(A.device):
+        group_triton_kernel[grid](
+            # A_ptr, stride_an, stride_ai,
+            A,
+            A.stride(0),
+            A.stride(1),
+            coeff is not None,
+            coeff,
+            fan_out,
+            # Y_ptr, stride_yn, stride_yk,
+            out,
+            out.stride(0),
+            out.stride(1),
+            # grouped_idx_ptr,
+            sorted_expert_idxs,
+            # N: tl.constexpr, K: tl.constexpr,
+            N,
+            K,
+        )
 
 
 # custom op is needed because of https://github.com/pytorch/pytorch/issues/136394

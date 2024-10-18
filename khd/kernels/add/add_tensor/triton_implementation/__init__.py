@@ -20,9 +20,10 @@ class _AddTensor_Triton(torch.autograd.Function):
 
         BLOCK_SIZE = 1024
 
-        add_tensor_forward_triton_kernel[grid](
-            x.view(-1), y.view(-1), output.view(-1), num_elements, BLOCK_SIZE=BLOCK_SIZE
-        )
+        with torch.device(x.device):
+            add_tensor_forward_triton_kernel[grid](
+                x_ptr=x, y_ptr=y, output_ptr=output, num_elements=num_elements, BLOCK_SIZE=BLOCK_SIZE
+            )
 
         return output
 
