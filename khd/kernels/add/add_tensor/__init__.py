@@ -3,10 +3,11 @@ import torch
 from ....enums import KernelBackend
 from ....utils import Config, CutoTune, ensure_same_strides
 from .cuda_implementation import add_tensor_forward_cuda
+from .torch_implementation import add_tensor_torch
 from .triton_implementation import add_tensor_forward_triton
 
 
-class _AddTensor(torch.autograd.Function):
+class _AddTensor_KHD(torch.autograd.Function):
     @staticmethod
     @CutoTune(
         configs=[Config({"kernel_backend": KernelBackend.cuda}), Config({"kernel_backend": KernelBackend.triton})],
@@ -50,5 +51,11 @@ class _AddTensor(torch.autograd.Function):
         return output_grad, output_grad, None
 
 
-def add_tensor(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    return _AddTensor.apply(x, y)
+def add_tensor_khd(
+    x: torch.Tensor,
+    y: torch.Tensor,
+    kernel_backend: KernelBackend,
+    vectorized_loop_size: int | None = None,
+    BLOCK_SIZE: int | None = None,
+) -> torch.Tensor:
+    return _AddTensor_KHD.apply(x, y, kernel_backend, vectorized_loop_size, BLOCK_SIZE)
