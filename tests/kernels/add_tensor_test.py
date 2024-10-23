@@ -4,7 +4,7 @@ from typing import Callable
 import torch
 from parameterized import parameterized
 
-from khd import add_tensor_cuda, add_tensor_torch, add_tensor_triton
+from khd import KernelBackend, add_tensor_khd, add_tensor_torch
 
 from ..test_commons import TestCommons
 
@@ -16,14 +16,14 @@ class AddTensorTest(TestCommons):
             [torch.device("cuda")],
             TestCommons.get_dtypes(),
             [
-                partial(add_tensor_cuda, vectorized_loop_size=1),
-                partial(add_tensor_cuda, vectorized_loop_size=2),
-                partial(add_tensor_cuda, vectorized_loop_size=4),
-                torch.compile(partial(add_tensor_cuda, vectorized_loop_size=1)),
-                torch.compile(partial(add_tensor_cuda, vectorized_loop_size=2)),
-                torch.compile(partial(add_tensor_cuda, vectorized_loop_size=4)),
-                add_tensor_triton,
-                torch.compile(add_tensor_triton),
+                partial(add_tensor_khd, kernel_backend=KernelBackend.cuda, vectorized_loop_size=1),
+                partial(add_tensor_khd, kernel_backend=KernelBackend.cuda, vectorized_loop_size=2),
+                partial(add_tensor_khd, kernel_backend=KernelBackend.cuda, vectorized_loop_size=4),
+                torch.compile(partial(add_tensor_khd, kernel_backend=KernelBackend.cuda, vectorized_loop_size=1)),
+                torch.compile(partial(add_tensor_khd, kernel_backend=KernelBackend.cuda, vectorized_loop_size=2)),
+                torch.compile(partial(add_tensor_khd, kernel_backend=KernelBackend.cuda, vectorized_loop_size=4)),
+                partial(add_tensor_khd, kernel_backend=KernelBackend.triton),
+                torch.compile(partial(add_tensor_khd, kernel_backend=KernelBackend.triton)),
             ],
         )
         + TestCommons.make_args_matrix(
@@ -31,8 +31,8 @@ class AddTensorTest(TestCommons):
             [torch.device("cuda")],
             [torch.float16, torch.bfloat16],
             [
-                partial(add_tensor_cuda, vectorized_loop_size=8),
-                torch.compile(partial(add_tensor_cuda, vectorized_loop_size=8)),
+                partial(add_tensor_khd, kernel_backend=KernelBackend.cuda, vectorized_loop_size=8),
+                torch.compile(partial(add_tensor_khd, kernel_backend=KernelBackend.cuda, vectorized_loop_size=8)),
             ],
         )
     )

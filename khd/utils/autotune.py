@@ -16,7 +16,7 @@ _DEBUG_AUTOTUNE = bool(os.getenv("DEBUG_KHD_AUTOTUNE", 0))
 _SEPARATOR = "."
 
 
-class Config:
+class CutoTuneConfig:
     def __init__(self, config: dict, condition: Callable = None) -> None:
         self.config = config
         self.condition = condition
@@ -31,11 +31,12 @@ class Config:
         return str(self.config)
 
 
-class AutoTune(ContextDecorator):
+class CutoTune(ContextDecorator):
     def __init__(
         self,
-        configs: list[Config],
+        configs: list[CutoTuneConfig],
         triggers: set[str] = set(),
+        overrideables: set[str] = set(),
         warmup_iterations: int = 5,
         benchmark_iterations: int = 100,
         in_place_op: bool = False,
@@ -44,6 +45,8 @@ class AutoTune(ContextDecorator):
         self._check_configs()
 
         self.variable_name_trigger_map = defaultdict(list)
+        self.overrideables = overrideables
+
         for trigger in triggers:
             variable_name, trigger = self._parse_trigger(trigger)
             self.variable_name_trigger_map[variable_name].append(trigger)
@@ -113,7 +116,7 @@ class AutoTune(ContextDecorator):
 
         return variable_name, func
 
-    def _autotune(self, func: Callable, *args, **kwargs) -> tuple[Config, float]:
+    def _autotune(self, func: Callable, *args, **kwargs) -> tuple[CutoTuneConfig, float]:
         def _get_kwargs_from_args_and_kwargs(*args, **kwargs) -> dict:
             result = {}
             for i, value in enumerate(args):
@@ -223,15 +226,47 @@ class AutoTune(ContextDecorator):
         return
 
 
-def get_vectorized_autotune_configs(extra_config_condition: Callable = None) -> list[dict]:
+def get_default_cuda_autotune_configs(extra_config_condition: Callable = None) -> list[CutoTuneConfig]:
     configs = []
 
     # common configs for fp32, fp16 and bf16
     for vectorized_loop_size in [1, 2, 4]:
         for block_size in [64, 128, 256, 512, 1024]:
-            configs.append(Config({"vectorized_loop_size": vectorized_loop_size, "BLOCK_SIZE": block_size}))
+            configs.append(CutoTuneConfig({"vectorized_loop_size": vectorized_loop_size, "BLOCK_SIZE": block_size}))
 
     for block_size in [64, 128, 256, 512, 1024]:
-        configs.append(Config({"vectorized_loop_size": 8, "BLOCK_SIZE": block_size}, condition=extra_config_condition))
+        configs.append(
+            CutoTuneConfig({"vectorized_loop_size": 8, "BLOCK_SIZE": block_size}, condition=extra_config_condition)
+        )
 
     return configs
+
+
+def get_default_triton_autotune_configs() -> list[CutoTuneConfig]:
+    return [CutoTuneConfig({"BLOCK_SIZE": block_size}) for block_size in [64, 128, 256, 512, 1024]]
+
+
+def make_contiguous(*args) -> list[torch.Tensor]:
+    output = []
+    for arg in args:
+        if isinstance(arg, torch.Tensor):
+            arg = arg.contiguous()
+
+        output.append(arg)
+
+    return output
+
+
+def ensure_same_strides(*args, expected_stride: tuple[int], force_contiguous: bool = False) -> list[torch.Tensor]:
+    if force_contiguous:
+        output = make_contiguous(*args)
+    else:
+        mismatch = False
+        for arg in args:
+            if isinstance(arg, torch.Tensor) and arg.stride() != expected_stride:
+                mismatch = True
+                break
+
+        output = make_contiguous(*args) if mismatch else args
+
+    return output
