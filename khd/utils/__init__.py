@@ -1,4 +1,4 @@
-from .autotune import (
+from .cutotune import (
     CutoTune,
     CutoTuneConfig,
     ensure_same_strides,

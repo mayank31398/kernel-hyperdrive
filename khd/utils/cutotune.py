@@ -37,7 +37,6 @@ class CutoTune(ContextDecorator):
         self,
         configs: list[CutoTuneConfig],
         triggers: set[str] = set(),
-        overrideables: set[str] = set(),
         warmup_iterations: int = 5,
         benchmark_iterations: int = 100,
         in_place_op: bool = False,
@@ -46,7 +45,6 @@ class CutoTune(ContextDecorator):
         self._check_configs()
 
         self.variable_name_trigger_map = defaultdict(list)
-        self.overrideables = overrideables
 
         for trigger in triggers:
             variable_name, trigger = self._parse_trigger(trigger)
@@ -88,20 +86,28 @@ class CutoTune(ContextDecorator):
                         self.best_configs[input_key] = best_config
 
                     return func(
-                        **self._get_function_arguments(config=self.best_configs[input_key], args=args, kwargs=kwargs)
+                        **self._get_function_arguments(
+                            config=self.best_configs[input_key], args=args, kwargs=kwargs, override_allowed=True
+                        )
                     )
 
         return inner
 
-    def _get_function_arguments(self, config: CutoTuneConfig, args: list, kwargs: dict) -> dict:
+    def _get_function_arguments(
+        self, config: CutoTuneConfig, args: list, kwargs: dict, override_allowed: bool
+    ) -> dict:
         # copy the best_config first so we can override with args or kwargs
         result = {variable_name: value for variable_name, value in config.get_key_values().items()}
 
         for i, value in enumerate(args):
             variable_name = self.signature.args[i]
-            result[variable_name] = value
 
-        result.update(kwargs)
+            if override_allowed or variable_name not in result:
+                result[variable_name] = value
+
+        for variable_name, value in kwargs.items():
+            if override_allowed or variable_name not in result:
+                result[variable_name] = value
 
         return result
 
@@ -141,12 +147,15 @@ class CutoTune(ContextDecorator):
 
         for config in self.configs:
             if not config.is_condition_valid(
-                **self._get_function_arguments(config=CutoTuneConfig({}), args=args, kwargs=kwargs)
+                **self._get_function_arguments(
+                    config=CutoTuneConfig({}), args=args, kwargs=kwargs, override_allowed=False
+                )
             ):
                 continue
 
             elapsed_time = self._run_benchmark(
-                func=func, **self._get_function_arguments(args=args, config=config, kwargs=kwargs)
+                func=func,
+                **self._get_function_arguments(args=args, config=config, kwargs=kwargs, override_allowed=False),
             )
 
             if elapsed_time < best_time:

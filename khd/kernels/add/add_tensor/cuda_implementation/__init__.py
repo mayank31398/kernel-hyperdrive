@@ -31,10 +31,7 @@ def _add_tensor_forward_cuda_compilable(
 
 
 @CutoTune(
-    configs=get_default_cuda_autotune_configs(
-        extra_config_condition=lambda kwargs: kwargs["x"].dtype == torch.float32
-    ),
-    overrideables={"vectorized_loop_size", "BLOCK_SIZE"},
+    configs=get_default_cuda_autotune_configs(extra_config_condition=lambda kwargs: kwargs["x"].dtype == torch.float32)
 )
 def add_tensor_forward_cuda(
     x: torch.Tensor,
