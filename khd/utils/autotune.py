@@ -61,7 +61,7 @@ class CutoTune(ContextDecorator):
         self.best_configs = {}
         self.signature = None
 
-    def __call__(self, func):
+    def __call__(self, func: Callable) -> Callable:
         self._get_signature(func)
 
         @wraps(func)
@@ -69,23 +69,33 @@ class CutoTune(ContextDecorator):
             input_key = self._get_input_key(args, kwargs)
 
             with self._recreate_cm():
-                if input_key in self.best_configs:
-                    best_config = self.best_configs[input_key]
-                    output = func(*args, **kwargs, **best_config.get_key_values())
-                else:
-                    best_config, best_time = self._autotune(func, *args, **kwargs)
+                if input_key not in self.best_configs:
+                    best_config, best_time = self._autotune(func=func, args=args, kwargs=kwargs)
 
                     if _DEBUG_AUTOTUNE and (
                         not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0
                     ):
                         print(f"config {best_config} achieved the best time ({best_time} sec) for {input_key}")
 
-                    output = func(*args, **kwargs, **best_config.get_key_values())
                     self.best_configs[input_key] = best_config
 
-            return output
+                return func(
+                    **self._get_function_arguments(config=self.best_configs[input_key], args=args, kwargs=kwargs)
+                )
 
         return inner
+
+    def _get_function_arguments(self, config: CutoTuneConfig, args: list, kwargs: dict) -> dict:
+        # copy the best_config first so we can override with args or kwargs
+        result = {variable_name: value for variable_name, value in config.get_key_values().items()}
+
+        for i, value in enumerate(args):
+            variable_name = self.signature.args[i]
+            result[variable_name] = value
+
+        result.update(kwargs)
+
+        return result
 
     def _parse_trigger(self, trigger: str) -> tuple[str, Callable]:
         split_trigger = trigger.split(_SEPARATOR)
@@ -116,24 +126,20 @@ class CutoTune(ContextDecorator):
 
         return variable_name, func
 
-    def _autotune(self, func: Callable, *args, **kwargs) -> tuple[CutoTuneConfig, float]:
-        def _get_kwargs_from_args_and_kwargs(*args, **kwargs) -> dict:
-            result = {}
-            for i, value in enumerate(args):
-                variable_name = self.signature.args[i]
-                result[variable_name] = value
-
-            result.update(kwargs)
-            return result
-
+    @torch.no_grad()
+    def _autotune(self, func: Callable, args: list, kwargs: dict) -> tuple[CutoTuneConfig, float]:
         best_config = None
         best_time = float("inf")
 
         for config in self.configs:
-            if not config.is_condition_valid(**_get_kwargs_from_args_and_kwargs(*args, **kwargs)):
+            if not config.is_condition_valid(
+                **self._get_function_arguments(config=CutoTuneConfig({}), args=args, kwargs=kwargs)
+            ):
                 continue
 
-            elapsed_time = self._run_benchmark(func, *args, **kwargs, **config.get_key_values())
+            elapsed_time = self._run_benchmark(
+                func=func, **self._get_function_arguments(args=args, config=config, kwargs=kwargs)
+            )
 
             if elapsed_time < best_time:
                 best_config = config
@@ -144,7 +150,7 @@ class CutoTune(ContextDecorator):
     def _get_input_key(self, args: list, kwargs: dict) -> Any:
         input_key = []
 
-        def _add_key(variable_name: str, value) -> None:
+        def _maybe_add_key(variable_name: str, value) -> None:
             if variable_name not in self.variable_name_trigger_map:
                 return
 
@@ -167,24 +173,25 @@ class CutoTune(ContextDecorator):
 
         for i, value in enumerate(args):
             variable_name = self.signature.args[i]
-            _add_key(variable_name, value)
+            _maybe_add_key(variable_name, value)
 
         for variable_name, value in kwargs.items():
-            _add_key(variable_name, value)
+            _maybe_add_key(variable_name, value)
 
         return tuple(input_key)
 
-    def _run_benchmark(self, func: Callable, *args, **kwargs) -> float:
+    @torch.no_grad()
+    def _run_benchmark(self, func: Callable, **kwargs: dict) -> float:
         device_synchronize()
 
         for _ in range(self.warmup_iterations):
-            func(*args, **kwargs)
+            func(**kwargs)
 
         device_synchronize()
         start_time = perf_counter()
 
         for _ in range(self.benchmark_iterations):
-            func(*args, **kwargs)
+            func(**kwargs)
 
         device_synchronize()
         end_time = perf_counter()
