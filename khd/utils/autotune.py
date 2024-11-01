@@ -12,7 +12,7 @@ import torch.distributed
 from .synchronization import device_synchronize
 
 
-_DEBUG_CUTOTUNE = bool(os.getenv("_DEBUG_CUTOTUNE", 0))
+_DEBUG_CUTOTUNE = bool(os.getenv("DEBUG_CUTOTUNE", 0))
 _DISABLE_CUTOTUNE = bool(os.getenv("DISABLE_CUTOTUNE", 0))
 _SEPARATOR = "."
 
