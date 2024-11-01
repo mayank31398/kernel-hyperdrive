@@ -12,7 +12,8 @@ import torch.distributed
 from .synchronization import device_synchronize
 
 
-_DEBUG_AUTOTUNE = bool(os.getenv("DEBUG_KHD_AUTOTUNE", 0))
+_DEBUG_CUTOTUNE = bool(os.getenv("_DEBUG_CUTOTUNE", 0))
+_DISABLE_CUTOTUNE = bool(os.getenv("DISABLE_CUTOTUNE", 0))
 _SEPARATOR = "."
 
 
@@ -62,26 +63,33 @@ class CutoTune(ContextDecorator):
         self.signature = None
 
     def __call__(self, func: Callable) -> Callable:
-        self._get_signature(func)
+        if _DISABLE_CUTOTUNE:
 
-        @wraps(func)
-        def inner(*args, **kwargs):
-            input_key = self._get_input_key(args, kwargs)
+            @wraps(func)
+            def inner(*args, **kwargs):
+                return func(*args, **kwargs)
 
-            with self._recreate_cm():
-                if input_key not in self.best_configs:
-                    best_config, best_time = self._autotune(func=func, args=args, kwargs=kwargs)
+        else:
+            self._get_signature(func)
 
-                    if _DEBUG_AUTOTUNE and (
-                        not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0
-                    ):
-                        print(f"config {best_config} achieved the best time ({best_time} sec) for {input_key}")
+            @wraps(func)
+            def inner(*args, **kwargs):
+                input_key = self._get_input_key(args, kwargs)
 
-                    self.best_configs[input_key] = best_config
+                with self._recreate_cm():
+                    if input_key not in self.best_configs:
+                        best_config, best_time = self._autotune(func=func, args=args, kwargs=kwargs)
 
-                return func(
-                    **self._get_function_arguments(config=self.best_configs[input_key], args=args, kwargs=kwargs)
-                )
+                        if _DEBUG_CUTOTUNE and (
+                            not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0
+                        ):
+                            print(f"config {best_config} achieved the best time ({best_time} sec) for {input_key}")
+
+                        self.best_configs[input_key] = best_config
+
+                    return func(
+                        **self._get_function_arguments(config=self.best_configs[input_key], args=args, kwargs=kwargs)
+                    )
 
         return inner
 
