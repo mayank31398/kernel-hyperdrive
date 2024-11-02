@@ -8,29 +8,27 @@ from ....utils import torch_custom_op
 _KERNEL_NAME = "add_scalar_forward_cuda"
 
 
-@torch_custom_op(f"{LIBRARY_NAME}::{_KERNEL_NAME}", mutates_args={})
-def _add_scalar_forward_cuda_compilable(x: torch.Tensor, y: float, BLOCK_SIZE: int) -> torch.Tensor:
-    return KernelRegistry.get_kernel(_KERNEL_NAME)(x, y, BLOCK_SIZE)
+def _add_scalar_forward_cuda(x: torch.Tensor, y: float, output: torch.Tensor, BLOCK_SIZE: int) -> None:
+    KernelRegistry.get_kernel(_KERNEL_NAME)(x, y, output, BLOCK_SIZE)
 
 
-@_add_scalar_forward_cuda_compilable.register_fake
-def _(x: torch.Tensor, y: float, BLOCK_SIZE: int) -> torch.Tensor:
-    return torch.empty_like(x)
+@torch_custom_op(f"{LIBRARY_NAME}::{_KERNEL_NAME}", mutates_args={"output"})
+def _add_scalar_forward_cuda_compilable(x: torch.Tensor, y: float, output: torch.Tensor, BLOCK_SIZE: int) -> None:
+    _add_scalar_forward_cuda(x, y, output, BLOCK_SIZE)
 
 
 class _AddScalar_CUDA(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, x: torch.Tensor, y: float) -> torch.Tensor:
+    def forward(ctx, x: torch.Tensor, y: float, BLOCK_SIZE: int) -> torch.Tensor:
         if y == 0:
             return x
 
-        BLOCK_SIZE = 1024
+        output = torch.empty_like(x)
 
         if torch.compiler.is_compiling():
-            output = _add_scalar_forward_cuda_compilable(x, y, BLOCK_SIZE)
+            _add_scalar_forward_cuda_compilable(x=x, y=y, output=output, BLOCK_SIZE=BLOCK_SIZE)
         else:
-            kernel = KernelRegistry.get_kernel(_KERNEL_NAME)
-            output = kernel(x, y, BLOCK_SIZE)
+            _add_scalar_forward_cuda(x=x, y=y, output=output, BLOCK_SIZE=BLOCK_SIZE)
 
         return output
 
@@ -39,15 +37,16 @@ class _AddScalar_CUDA(torch.autograd.Function):
         return output_grad, None
 
 
-def add_scalar_cuda(x: torch.Tensor, y: float) -> torch.Tensor:
+def add_scalar_cuda(x: torch.Tensor, y: float, BLOCK_SIZE: int) -> torch.Tensor:
     """tensor addition
 
     Args:
         x (torch.Tensor): input tensor
         y (float): input scalar
+        BLOCK_SIZE (int): block size
 
     Returns:
         torch.Tensor: output tensor
     """
 
-    return _AddScalar_CUDA.apply(x, y)
+    return _AddScalar_CUDA.apply(x, y, BLOCK_SIZE)

@@ -85,12 +85,12 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
     }
 }
 
-void add_tensor_forward_cuda_kernel_dispatch(const torch::Tensor x,
-                                             const torch::Tensor y,
-                                             const torch::Tensor output,
-                                             const int &vectorized_loop_size,
-                                             const int &num_elements,
-                                             const int &BLOCK_SIZE) {
+void add_tensor_forward_cuda(const torch::Tensor x,
+                             const torch::Tensor y,
+                             const torch::Tensor output,
+                             const int &vectorized_loop_size,
+                             const int &num_elements,
+                             const int &BLOCK_SIZE) {
     AT_DISPATCH_CUSTOM_FLOAT_TYPES(
         x.scalar_type(), "add_tensor_forward_cuda_kernel", ([&] {
             const int num_elements_per_block = BLOCK_SIZE * vectorized_loop_size;
