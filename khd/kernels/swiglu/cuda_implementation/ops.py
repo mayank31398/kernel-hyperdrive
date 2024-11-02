@@ -23,7 +23,6 @@ def _(gate: torch.Tensor, up: torch.Tensor, BLOCK_SIZE: int) -> torch.Tensor:
     return torch.empty_like(gate)
 
 
-@torch_custom_op(f"{LIBRARY_NAME}::{_BACKWARD_KERNEL_NAME}", mutates_args={})
 def _swiglu_backward_cuda(
     gate: torch.Tensor, up: torch.Tensor, output_grad: torch.Tensor, BLOCK_SIZE: int
 ) -> tuple[torch.Tensor, torch.Tensor]:
