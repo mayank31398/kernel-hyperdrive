@@ -1,3 +1,4 @@
+from functools import partial
 from typing import Callable
 
 import torch
@@ -15,10 +16,10 @@ class AddTensorTest(TestCommons):
             [torch.device("cuda")],
             TestCommons.get_dtypes(),
             [
-                add_scalar_cuda,
-                add_scalar_triton,
-                torch.compile(add_scalar_cuda),
-                torch.compile(add_scalar_triton),
+                partial(add_scalar_cuda, BLOCK_SIZE=1024),
+                partial(add_scalar_triton, BLOCK_SIZE=1024),
+                torch.compile(partial(add_scalar_cuda, BLOCK_SIZE=1024)),
+                torch.compile(partial(add_scalar_triton, BLOCK_SIZE=1024)),
             ],
         )
     )
