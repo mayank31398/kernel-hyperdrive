@@ -26,7 +26,7 @@ class _AddScalar_Triton(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor | None]:
-        return output_grad, None
+        return output_grad, None, None
 
 
 def add_scalar_triton(x: torch.Tensor, y: float, BLOCK_SIZE: int) -> torch.Tensor:
