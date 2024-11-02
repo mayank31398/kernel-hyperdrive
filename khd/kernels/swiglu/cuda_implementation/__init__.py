@@ -1,7 +1,6 @@
 import torch
 
 from ....constants import LIBRARY_NAME
-from ....kernel_registry import KernelRegistry
 from .ops import (
     _swiglu_backward_cuda,
     _swiglu_backward_cuda_compilable,
