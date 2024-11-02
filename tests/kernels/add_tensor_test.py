@@ -31,8 +31,8 @@ class AddTensorTest(TestCommons):
             [torch.device("cuda")],
             [torch.float16, torch.bfloat16],
             [
-                partial(add_tensor_cuda, vectorized_loop_size=8),
-                torch.compile(partial(add_tensor_cuda, vectorized_loop_size=8)),
+                partial(add_tensor_cuda, vectorized_loop_size=8, BLOCK_SIZE=1024),
+                torch.compile(partial(add_tensor_cuda, vectorized_loop_size=8, BLOCK_SIZE=1024)),
             ],
         )
     )
