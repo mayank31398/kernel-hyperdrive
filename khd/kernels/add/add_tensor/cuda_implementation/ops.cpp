@@ -4,7 +4,6 @@ void add_tensor_forward_cuda(const torch::Tensor x,
                              const torch::Tensor y,
                              torch::Tensor output,
                              const int &vectorized_loop_size,
-                             const int &num_elements,
                              const int &BLOCK_SIZE);
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
