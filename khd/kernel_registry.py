@@ -14,7 +14,7 @@ class KernelRegistry:
 
     @staticmethod
     def get_kernel(name: str) -> Callable:
-        kernel = getattr(torch.ops.khd, name, None)
+        kernel = KernelRegistry.cuda_kernel_registry.get(name, None)
 
         if kernel is None:
             KernelRegistry.compile_kernel(name)
