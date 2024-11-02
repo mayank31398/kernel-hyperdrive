@@ -1,7 +1,5 @@
 import torch
 
-from .ops import _add_tensor_forward_cuda, _add_tensor_forward_cuda_compilable
-
 
 class _AddTensor_CUDA(torch.autograd.Function):
     @staticmethod
@@ -14,14 +12,9 @@ class _AddTensor_CUDA(torch.autograd.Function):
 
         output = torch.empty_like(x)
 
-        if torch.compiler.is_compiling():
-            _add_tensor_forward_cuda_compilable(
-                x=x, y=y, output=output, vectorized_loop_size=vectorized_loop_size, BLOCK_SIZE=BLOCK_SIZE
-            )
-        else:
-            _add_tensor_forward_cuda(
-                x=x, y=y, output=output, vectorized_loop_size=vectorized_loop_size, BLOCK_SIZE=BLOCK_SIZE
-            )
+        torch.ops.khd.add_tensor_forward_cuda(
+            x=x, y=y, output=output, vectorized_loop_size=vectorized_loop_size, BLOCK_SIZE=BLOCK_SIZE
+        )
 
         return output
 
