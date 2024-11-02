@@ -3,11 +3,6 @@ import torch
 from .....kernel_registry import KernelRegistry
 
 
-_KERNEL_NAME = "add_tensor_forward_cuda"
-
-KernelRegistry.get_kernel(_KERNEL_NAME)
-
-
 class _AddTensor_CUDA(torch.autograd.Function):
     @staticmethod
     def forward(ctx, x: torch.Tensor, y: torch.Tensor, vectorized_loop_size: int, BLOCK_SIZE: int) -> torch.Tensor:
@@ -19,7 +14,7 @@ class _AddTensor_CUDA(torch.autograd.Function):
 
         output = torch.empty_like(x)
 
-        torch.ops.khd.add_tensor_forward_cuda(
+        KernelRegistry.get_kernel("add_tensor_forward_cuda")(
             x=x, y=y, output=output, vectorized_loop_size=vectorized_loop_size, BLOCK_SIZE=BLOCK_SIZE
         )
 
