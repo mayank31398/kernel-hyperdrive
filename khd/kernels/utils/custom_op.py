@@ -32,8 +32,16 @@ def torch_custom_op(
     schema: str | None = None,
 ) -> Callable | _IdentityOp:
     if _IS_CUSTOM_OP_IN_PYTORCH:
-        op = custom_op(name, fn, mutates_args=mutates_args, device_types=device_types, schema=schema)
-    else:
-        op = _IdentityOp if fn is None else _IdentityOp(fn)
 
-    return op
+        def inner(*args, **kwargs):
+            if torch.compiler.is_compiling():
+                return custom_op(name, fn, mutates_args=mutates_args, device_types=device_types, schema=schema)(
+                    *args, **kwargs
+                )
+            else:
+                return fn(*args, **kwargs)
+
+    else:
+        inner = _IdentityOp if fn is None else _IdentityOp(fn)
+
+    return inner
