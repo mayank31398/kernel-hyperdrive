@@ -56,8 +56,8 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
     }
 }
 
-void add_scalar_forward_cuda(const torch::Tensor x, const float &y, torch::Tensor output, const int &BLOCK_SIZE) {
-    const int num_elements = x.numel();
+void add_scalar_forward_cuda(const torch::Tensor x, const double &y, torch::Tensor output, const int64_t &BLOCK_SIZE) {
+    const int64_t num_elements = x.numel();
 
     AT_DISPATCH_CUSTOM_FLOAT_TYPES(
         x.scalar_type(), "add_scalar_forward_cuda_kernel", ([&] {
