@@ -1,16 +1,9 @@
 import torch
 
-from .....constants import LIBRARY_NAME
 from .....kernel_registry import KernelRegistry
-from ....utils import torch_custom_op
 
 
-_KERNEL_NAME = "add_tensor_forward_cuda"
-
-
-@torch_custom_op(f"{LIBRARY_NAME}::{_KERNEL_NAME}", mutates_args={"output"})
-def _(x: torch.Tensor, y: torch.Tensor, output: torch.Tensor, vectorized_loop_size: int, BLOCK_SIZE: int) -> None:
-    KernelRegistry.get_kernel(_KERNEL_NAME)(x, y, output, vectorized_loop_size, BLOCK_SIZE)
+KernelRegistry.get_kernel("add_tensor_forward_cuda")
 
 
 class _AddTensor_CUDA(torch.autograd.Function):

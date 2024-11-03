@@ -88,8 +88,8 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
 void add_tensor_forward_cuda(const torch::Tensor x,
                              const torch::Tensor y,
                              const torch::Tensor output,
-                             const int &vectorized_loop_size,
-                             const int &BLOCK_SIZE) {
+                             const int64_t &vectorized_loop_size,
+                             const int64_t &BLOCK_SIZE) {
     const int num_elements = x.numel();
 
     AT_DISPATCH_CUSTOM_FLOAT_TYPES(
