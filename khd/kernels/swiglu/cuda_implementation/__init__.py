@@ -2,19 +2,18 @@ import torch
 
 from ....constants import LIBRARY_NAME
 from ....kernel_registry import KernelRegistry
-from ...utils import torch_custom_op
 
 
 _FORWARD_KERNEL_NAME = "swiglu_forward_cuda"
 _BACKWARD_KERNEL_NAME = "swiglu_backward_cuda"
 
 
-@torch_custom_op(f"{LIBRARY_NAME}::{_FORWARD_KERNEL_NAME}", mutates_args={"output"})
+@torch.library.custom_op(f"{LIBRARY_NAME}::{_FORWARD_KERNEL_NAME}", mutates_args={"output"})
 def _swiglu_forward_cuda(gate: torch.Tensor, up: torch.Tensor, output: torch.Tensor, BLOCK_SIZE: int) -> None:
     KernelRegistry.get_kernel(_FORWARD_KERNEL_NAME)(gate, up, output, BLOCK_SIZE)
 
 
-@torch_custom_op(f"{LIBRARY_NAME}::{_BACKWARD_KERNEL_NAME}", mutates_args={"gate_grad", "up_grad"})
+@torch.library.custom_op(f"{LIBRARY_NAME}::{_BACKWARD_KERNEL_NAME}", mutates_args={"gate_grad", "up_grad"})
 def _swiglu_backward_cuda(
     gate: torch.Tensor,
     up: torch.Tensor,
