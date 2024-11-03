@@ -5,6 +5,9 @@ from ....kernel_registry import KernelRegistry
 from ...utils import torch_custom_op
 
 
+KernelRegistry.get_kernel("add_tensor_forward_cuda")
+
+
 _BACKWARD_KERNEL_NAME = "swiglu_backward_cuda"
 
 
