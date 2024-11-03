@@ -1,3 +1,4 @@
+from functools import partial
 from typing import Callable
 
 import torch
@@ -15,10 +16,10 @@ class SwigluTest(TestCommons):
             [torch.device("cuda")],
             TestCommons.get_dtypes(),
             [
-                swiglu_cuda,
-                swiglu_triton,
-                torch.compile(swiglu_cuda),
-                torch.compile(swiglu_triton),
+                partial(swiglu_cuda, BLOCK_SIZE_forward=1024, BLOCK_SIZE_backward=1024),
+                partial(swiglu_triton, BLOCK_SIZE_forward=1024, BLOCK_SIZE_backward=1024),
+                torch.compile(partial(swiglu_cuda, BLOCK_SIZE_forward=1024, BLOCK_SIZE_backward=1024)),
+                torch.compile(partial(swiglu_triton, BLOCK_SIZE_forward=1024, BLOCK_SIZE_backward=1024)),
             ],
         )
     )
