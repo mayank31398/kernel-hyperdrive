@@ -1,5 +1,10 @@
 import torch
 
+from .....kernel_registry import KernelRegistry
+
+
+KernelRegistry.get_kernel("add_scalar_forward_cuda")
+
 
 class _AddScalar_CUDA(torch.autograd.Function):
     @staticmethod
