@@ -54,7 +54,7 @@ class _Swiglu_Triton(torch.autograd.Function):
                 BLOCK_SIZE=BLOCK_SIZE,
             )
 
-        return gate_grad, up_grad
+        return gate_grad, up_grad, None
 
 
 def swiglu_triton(gate: torch.Tensor, up: torch.Tensor, BLOCK_SIZE_forward: int) -> torch.Tensor:
