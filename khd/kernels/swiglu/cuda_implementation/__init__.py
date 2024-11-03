@@ -16,7 +16,7 @@ def _swiglu_forward_cuda(gate: torch.Tensor, up: torch.Tensor, output: torch.Ten
 def _swiglu_forward_cuda_compileable(
     gate: torch.Tensor, up: torch.Tensor, output: torch.Tensor, BLOCK_SIZE: int
 ) -> None:
-    _swiglu_forward_cuda(gate, up, output, BLOCK_SIZE)
+    _swiglu_forward_cuda(gate=gate, up=up, output=output, BLOCK_SIZE=BLOCK_SIZE)
 
 
 def _swiglu_backward_cuda(
@@ -39,7 +39,9 @@ def _swiglu_backward_cuda_compileable(
     up_grad: torch.Tensor,
     BLOCK_SIZE: int,
 ) -> None:
-    _swiglu_backward_cuda(gate, up, output_grad, gate_grad, up_grad, BLOCK_SIZE)
+    _swiglu_backward_cuda(
+        gate=gate, up=up, output_grad=output_grad, gate_grad=gate_grad, up_grad=up_grad, BLOCK_SIZE=BLOCK_SIZE
+    )
 
 
 class _Swiglu_CUDA(torch.autograd.Function):
