@@ -1,6 +1,9 @@
 import torch
 
-from .ops import _add_scalar_forward_cuda, _add_scalar_forward_cuda_compilable
+from .....kernel_registry import KernelRegistry
+
+
+_KERNEL_NAME = "add_scalar_forward_cuda"
 
 
 class _AddScalar_CUDA(torch.autograd.Function):
@@ -11,10 +14,7 @@ class _AddScalar_CUDA(torch.autograd.Function):
 
         output = torch.empty_like(x)
 
-        if torch.compiler.is_compiling():
-            _add_scalar_forward_cuda_compilable(x=x, y=y, output=output, BLOCK_SIZE=BLOCK_SIZE)
-        else:
-            _add_scalar_forward_cuda(x=x, y=y, output=output, BLOCK_SIZE=BLOCK_SIZE)
+        KernelRegistry.get_kernel(_KERNEL_NAME)(x=x, y=y, output=output, BLOCK_SIZE=BLOCK_SIZE)
 
         return output
 

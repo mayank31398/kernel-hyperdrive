@@ -14,11 +14,10 @@ class KernelRegistry:
 
     @staticmethod
     def get_kernel(name: str) -> Callable:
-        is_kernel_compiled = name in KernelRegistry.cuda_kernel_registry
+        kernel = KernelRegistry.cuda_kernel_registry.get(name, None)
 
-        if is_kernel_compiled:
-            kernel = getattr(torch.ops.khd, name)
-        else:
+        # if kernel is compiled, we return the torch op since its compatible with torch compile
+        if kernel is None:
             KernelRegistry.compile_kernel(name)
             kernel = KernelRegistry.get_kernel(name)
 
@@ -26,7 +25,7 @@ class KernelRegistry:
 
     @torch._dynamo.disable
     @staticmethod
-    def compile_kernel(name: str) -> Callable:
+    def compile_kernel(name: str) -> None:
         function_map = []
         all_functions = []
         source_map = []

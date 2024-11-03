@@ -1,12 +1,7 @@
 import torch
 
 from ....constants import LIBRARY_NAME
-from .ops import (
-    _swiglu_backward_cuda,
-    _swiglu_backward_cuda_compilable,
-    _swiglu_forward_cuda,
-    _swiglu_forward_cuda_compilable,
-)
+from ....kernel_registry import KernelRegistry
 
 
 _FORWARD_KERNEL_NAME = "swiglu_forward_cuda"
@@ -21,10 +16,7 @@ class _Swiglu_CUDA(torch.autograd.Function):
 
         BLOCK_SIZE = 1024
 
-        if torch.compiler.is_compiling():
-            output = _swiglu_forward_cuda_compilable(gate, up, BLOCK_SIZE)
-        else:
-            output = _swiglu_forward_cuda(gate, up, BLOCK_SIZE)
+        output = KernelRegistry.get_kernel(_FORWARD_KERNEL_NAME)(gate, up, BLOCK_SIZE)
 
         return output
 
@@ -35,10 +27,7 @@ class _Swiglu_CUDA(torch.autograd.Function):
 
         BLOCK_SIZE = 1024
 
-        if torch.compiler.is_compiling():
-            gate_grad, up_grad = _swiglu_backward_cuda_compilable(gate, up, output_grad, BLOCK_SIZE)
-        else:
-            gate_grad, up_grad = _swiglu_backward_cuda(gate, up, output_grad, BLOCK_SIZE)
+        gate_grad, up_grad = KernelRegistry.get_kernel(_BACKWARD_KERNEL_NAME)(gate, up, output_grad, BLOCK_SIZE)
 
         return gate_grad, up_grad
 
