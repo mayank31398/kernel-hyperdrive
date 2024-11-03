@@ -18,8 +18,8 @@ class SwigluTest(TestCommons):
             [
                 partial(swiglu_cuda, BLOCK_SIZE_forward=1024),
                 partial(swiglu_triton, BLOCK_SIZE_forward=1024),
-                torch.compile(partial(swiglu_cuda, BLOCK_SIZE_forward=1024)),
-                torch.compile(partial(swiglu_triton, BLOCK_SIZE_forward=1024)),
+                torch.compile(partial(swiglu_cuda, BLOCK_SIZE_forward=1024, BLOCK_SIZE_backward=1024)),
+                torch.compile(partial(swiglu_triton, BLOCK_SIZE_forward=1024, BLOCK_SIZE_backward=1024)),
             ],
         )
     )

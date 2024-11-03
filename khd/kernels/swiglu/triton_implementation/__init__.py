@@ -6,7 +6,9 @@ from .kernels import swiglu_backward_triton_kernel, swiglu_forward_triton_kernel
 
 class _Swiglu_Triton(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, gate: torch.Tensor, up: torch.Tensor, BLOCK_SIZE_forward: int) -> torch.Tensor:
+    def forward(
+        ctx, gate: torch.Tensor, up: torch.Tensor, BLOCK_SIZE_forward: int, BLOCK_SIZE_backward: int
+    ) -> torch.Tensor:
         assert gate.is_cuda, "tensor gate is not on GPU"
         assert up.is_cuda, "tensor up is not on GPU"
 
@@ -14,6 +16,7 @@ class _Swiglu_Triton(torch.autograd.Function):
         assert gate.type() == up.type(), "tensors gate and up should have same dtype"
 
         ctx.save_for_backward(gate, up)
+        ctx.BLOCK_SIZE_backward = BLOCK_SIZE_backward
 
         output = torch.empty_like(gate)
 
@@ -41,8 +44,6 @@ class _Swiglu_Triton(torch.autograd.Function):
         gate_grad = torch.empty_like(gate)
         up_grad = torch.empty_like(up)
 
-        BLOCK_SIZE = 1024
-
         with torch.device(gate.device):
             swiglu_backward_triton_kernel[grid](
                 gate_ptr=gate,
@@ -51,22 +52,25 @@ class _Swiglu_Triton(torch.autograd.Function):
                 gate_grad_ptr=gate_grad,
                 up_grad_ptr=up_grad,
                 num_elements=num_elements,
-                BLOCK_SIZE=BLOCK_SIZE,
+                BLOCK_SIZE=ctx.BLOCK_SIZE_backward,
             )
 
-        return gate_grad, up_grad, None
+        return gate_grad, up_grad, None, None
 
 
-def swiglu_triton(gate: torch.Tensor, up: torch.Tensor, BLOCK_SIZE_forward: int) -> torch.Tensor:
+def swiglu_triton(
+    gate: torch.Tensor, up: torch.Tensor, BLOCK_SIZE_forward: int, BLOCK_SIZE_backward: int
+) -> torch.Tensor:
     """swiglu
 
     Args:
         x (torch.Tensor): input tensor
         y (torch.Tensor): input tensor
         BLOCK_SIZE_forward (int): forward block size
+        BLOCK_SIZE_backward (int): backward block size
 
     Returns:
         torch.Tensor: output tensor
     """
 
-    return _Swiglu_Triton.apply(gate, up, BLOCK_SIZE_forward)
+    return _Swiglu_Triton.apply(gate, up, BLOCK_SIZE_forward, BLOCK_SIZE_backward)
