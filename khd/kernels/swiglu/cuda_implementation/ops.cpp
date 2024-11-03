@@ -10,7 +10,7 @@ void swiglu_backward_cuda(torch::Tensor gate,
                           const int64_t BLOCK_SIZE);
 
 TORCH_LIBRARY_FRAGMENT(khd, m) {
-    m.def("swiglu_forward_cuda(Tensor gate, Tensor up, Tensor output, int num_elements, int BLOCK_SIZE) -> ()");
+    m.def("swiglu_forward_cuda(Tensor gate, Tensor up, Tensor output, int BLOCK_SIZE) -> ()");
     m.def("swiglu_backward_cuda(Tensor gate, Tensor up, Tensor output_grad, Tensor gate_grad, Tensor up_grad, int "
           "BLOCK_SIZE) -> ()");
 }
