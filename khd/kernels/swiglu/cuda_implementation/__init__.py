@@ -27,7 +27,7 @@ def _swiglu_backward_cuda(
     up_grad: torch.Tensor,
     BLOCK_SIZE: int,
 ) -> None:
-    KernelRegistry.get_kernel(_FORWARD_KERNEL_NAME)(gate, up, output_grad, gate_grad, up_grad, BLOCK_SIZE)
+    KernelRegistry.get_kernel(_BACKWARD_KERNEL_NAME)(gate, up, output_grad, gate_grad, up_grad, BLOCK_SIZE)
 
 
 @torch.library.custom_op(f"{LIBRARY_NAME}::{_BACKWARD_KERNEL_NAME}", mutates_args={"gate_grad", "up_grad"})
