@@ -38,7 +38,7 @@ class _Swiglu_CUDA(torch.autograd.Function):
             gate, up, output_grad, gate_grad, up_grad, ctx.BLOCK_SIZE_backward
         )
 
-        return gate_grad, up_grad, None
+        return gate_grad, up_grad, None, None
 
 
 def swiglu_cuda(
