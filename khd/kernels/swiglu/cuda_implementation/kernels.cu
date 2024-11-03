@@ -155,13 +155,14 @@ void swiglu_forward_cuda(torch::Tensor gate, torch::Tensor up, torch::Tensor out
         }));
 }
 
-void swiglu_backward_cuda_kernel(torch::Tensor gate,
-                                 torch::Tensor up,
-                                 torch::Tensor output_grad,
-                                 torch::Tensor gate_grad,
-                                 torch::Tensor up_grad,
-                                 const int num_elements,
-                                 const int BLOCK_SIZE) {
+void swiglu_backward_cuda(torch::Tensor gate,
+                          torch::Tensor up,
+                          torch::Tensor output_grad,
+                          torch::Tensor gate_grad,
+                          torch::Tensor up_grad,
+                          const int64_t BLOCK_SIZE) {
+    const int num_elements = gate.numel();
+
     AT_DISPATCH_CUSTOM_FLOAT_TYPES(
         gate.scalar_type(), "swiglu_backward_cuda_kernel", ([&] {
             const int num_elements_per_thread = get_num_elements_in_vector_dtype<scalar_t, fp32_4>();

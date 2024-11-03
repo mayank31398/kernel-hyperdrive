@@ -1,28 +1,10 @@
 import torch
 
-from ....constants import LIBRARY_NAME
 from ....kernel_registry import KernelRegistry
-from ...utils import torch_custom_op
 
 
 KernelRegistry.get_kernel("swiglu_forward_cuda")
-
-
-_BACKWARD_KERNEL_NAME = "swiglu_backward_cuda"
-
-
-@torch_custom_op(f"{LIBRARY_NAME}::{_BACKWARD_KERNEL_NAME}", mutates_args={})
-def swiglu_backward_cuda(
-    gate: torch.Tensor, up: torch.Tensor, output_grad: torch.Tensor, BLOCK_SIZE: int
-) -> tuple[torch.Tensor, torch.Tensor]:
-    return KernelRegistry.get_kernel(_BACKWARD_KERNEL_NAME)(gate, up, output_grad, BLOCK_SIZE)
-
-
-@swiglu_backward_cuda.register_fake
-def _(
-    gate: torch.Tensor, up: torch.Tensor, output_grad: torch.Tensor, BLOCK_SIZE: int
-) -> tuple[torch.Tensor, torch.Tensor]:
-    return torch.empty_like(gate), torch.empty_like(gate)
+KernelRegistry.get_kernel("swiglu_backward_cuda")
 
 
 class _Swiglu_CUDA(torch.autograd.Function):
@@ -48,7 +30,10 @@ class _Swiglu_CUDA(torch.autograd.Function):
 
         BLOCK_SIZE = 1024
 
-        gate_grad, up_grad = torch.ops.khd.swiglu_backward_cuda(gate, up, output_grad, BLOCK_SIZE)
+        gate_grad = torch.empty_like(gate)
+        up_grad = torch.empty_like(up)
+
+        gate_grad, up_grad = torch.ops.khd.swiglu_backward_cuda(gate, up, output_grad, gate_grad, up_grad, BLOCK_SIZE)
 
         return gate_grad, up_grad, None
 
