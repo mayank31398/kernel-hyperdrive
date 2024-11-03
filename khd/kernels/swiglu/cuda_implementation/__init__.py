@@ -56,4 +56,4 @@ def swiglu_cuda(
         torch.Tensor: output tensor
     """
 
-    return _Swiglu_CUDA.apply(gate, up, BLOCK_SIZE_forward)
+    return _Swiglu_CUDA.apply(gate, up, BLOCK_SIZE_forward, BLOCK_SIZE_backward)
