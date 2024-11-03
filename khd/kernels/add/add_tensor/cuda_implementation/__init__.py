@@ -10,9 +10,7 @@ _KERNEL_NAME = "add_tensor_forward_cuda"
 def _add_tensor_forward_cuda(
     x: torch.Tensor, y: torch.Tensor, output: torch.Tensor, vectorized_loop_size: int, BLOCK_SIZE: int
 ) -> None:
-    KernelRegistry.get_kernel(_KERNEL_NAME)(
-        x=x, y=y, output=output, vectorized_loop_size=vectorized_loop_size, BLOCK_SIZE=BLOCK_SIZE
-    )
+    KernelRegistry.get_kernel(_KERNEL_NAME)(x, y, output, vectorized_loop_size, BLOCK_SIZE)
 
 
 @torch.library.custom_op(f"{LIBRARY_NAME}::{_KERNEL_NAME}", mutates_args={"output"})
