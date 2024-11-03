@@ -6,7 +6,7 @@ from .kernels import swiglu_backward_triton_kernel, swiglu_forward_triton_kernel
 
 class _Swiglu_Triton(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, gate: torch.Tensor, up: torch.Tensor) -> torch.Tensor:
+    def forward(ctx, gate: torch.Tensor, up: torch.Tensor, BLOCK_SIZE_forward: int) -> torch.Tensor:
         assert gate.is_cuda, "tensor gate is not on GPU"
         assert up.is_cuda, "tensor up is not on GPU"
 
@@ -20,15 +20,13 @@ class _Swiglu_Triton(torch.autograd.Function):
         num_elements = gate.numel()
         grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE"]),)
 
-        BLOCK_SIZE = 1024
-
         with torch.device(gate.device):
             swiglu_forward_triton_kernel[grid](
                 gate_ptr=gate,
                 up_ptr=up,
                 output_ptr=output,
                 num_elements=num_elements,
-                BLOCK_SIZE=BLOCK_SIZE,
+                BLOCK_SIZE=BLOCK_SIZE_forward,
             )
 
         return output
@@ -59,15 +57,16 @@ class _Swiglu_Triton(torch.autograd.Function):
         return gate_grad, up_grad
 
 
-def swiglu_triton(gate: torch.Tensor, up: torch.Tensor) -> torch.Tensor:
+def swiglu_triton(gate: torch.Tensor, up: torch.Tensor, BLOCK_SIZE_forward: int) -> torch.Tensor:
     """swiglu
 
     Args:
         x (torch.Tensor): input tensor
         y (torch.Tensor): input tensor
+        BLOCK_SIZE_forward (int): forward block size
 
     Returns:
         torch.Tensor: output tensor
     """
 
-    return _Swiglu_Triton.apply(gate, up)
+    return _Swiglu_Triton.apply(gate, up, BLOCK_SIZE_forward)

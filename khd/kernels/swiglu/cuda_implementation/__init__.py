@@ -53,15 +53,16 @@ class _Swiglu_CUDA(torch.autograd.Function):
         return gate_grad, up_grad
 
 
-def swiglu_cuda(gate: torch.Tensor, up: torch.Tensor) -> torch.Tensor:
+def swiglu_cuda(gate: torch.Tensor, up: torch.Tensor, BLOCK_SIZE_forward: int) -> torch.Tensor:
     """swiglu
 
     Args:
         gate (torch.Tensor): gate tensor
         up (torch.Tensor): up tensor
+        BLOCK_SIZE_forward (int): forward block size
 
     Returns:
         torch.Tensor: output tensor
     """
 
-    return _Swiglu_CUDA.apply(gate, up)
+    return _Swiglu_CUDA.apply(gate, up, BLOCK_SIZE_forward)
