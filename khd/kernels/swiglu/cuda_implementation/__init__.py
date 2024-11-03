@@ -38,7 +38,7 @@ class _Swiglu_CUDA(torch.autograd.Function):
 
         output = torch.empty_like(gate)
 
-        output = torch.ops.khd.swiglu_forward_cuda(gate, up, BLOCK_SIZE_forward)
+        torch.ops.khd.swiglu_forward_cuda(gate, up, output, BLOCK_SIZE_forward)
 
         return output
 

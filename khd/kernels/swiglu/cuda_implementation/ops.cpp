@@ -14,12 +14,6 @@ std::vector<torch::Tensor> swiglu_backward_cuda(torch::Tensor gate,
                                                 torch::Tensor up,
                                                 torch::Tensor output_grad,
                                                 const int BLOCK_SIZE) {
-    TORCH_CHECK(gate.device().is_cuda(), "tensor gate is not on GPU");
-    TORCH_CHECK(up.device().is_cuda(), "tensor up is not on GPU");
-
-    TORCH_CHECK(gate.sizes() == up.sizes(), "tensors gate and up should have same shape");
-    TORCH_CHECK(gate.scalar_type() == up.scalar_type(), "tensors gate and up should have same dtype");
-
     torch::Tensor gate_grad = torch::empty_like(gate);
     torch::Tensor up_grad = torch::empty_like(gate);
 
