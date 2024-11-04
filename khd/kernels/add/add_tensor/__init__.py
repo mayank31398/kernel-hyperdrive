@@ -1,21 +1,14 @@
 import torch
 
 from ....enums import KernelBackend
-from ....utils import CutoTune, CutoTuneConfig, ensure_same_strides
-from .cuda_implementation import add_tensor_forward_cuda
+from ....utils import ensure_same_strides
+from .cuda_implementation import add_tensor_cuda
 from .torch_implementation import add_tensor_torch
-from .triton_implementation import add_tensor_forward_triton
+from .triton_implementation import add_tensor_triton
 
 
 class _AddTensor_KHD(torch.autograd.Function):
     @staticmethod
-    @CutoTune(
-        configs=[
-            CutoTuneConfig({"kernel_backend": KernelBackend.cuda}),
-            CutoTuneConfig({"kernel_backend": KernelBackend.triton}),
-        ],
-        triggers={"x.dtype"},
-    )
     def forward(
         ctx,
         x: torch.Tensor,

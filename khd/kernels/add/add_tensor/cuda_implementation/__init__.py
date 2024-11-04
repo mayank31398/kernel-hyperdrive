@@ -53,6 +53,7 @@ def add_tensor_cuda(x: torch.Tensor, y: torch.Tensor, vectorized_loop_size: int,
     Args:
         x (torch.Tensor): input tensor
         y (torch.Tensor): input tensor
+        vectorized_loop_size (int): vector instruction size
         BLOCK_SIZE (int): block size
 
     Returns:
