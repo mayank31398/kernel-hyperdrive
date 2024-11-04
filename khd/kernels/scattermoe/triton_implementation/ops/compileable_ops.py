@@ -3,7 +3,6 @@ import triton
 import triton.language as tl
 
 from .....constants import LIBRARY_NAME
-from ....utils import torch_custom_op
 from ..kernels import group_triton_kernel, groupXtY_triton_kernel, scatter2scatter_triton_kernel
 
 
@@ -12,7 +11,7 @@ torch._dynamo.config.capture_scalar_outputs = True
 
 
 # bincount is not compilable
-@torch_custom_op(f"{LIBRARY_NAME}::bincount", mutates_args={})
+@torch.library.custom_op(f"{LIBRARY_NAME}::bincount", mutates_args={})
 def compileable_bincount(x: torch.Tensor, minlength: int) -> torch.Tensor:
     return x.bincount(minlength=minlength)
 
@@ -72,7 +71,7 @@ def _scatter2scatter(
 
 
 # custom op is needed because of https://github.com/pytorch/pytorch/issues/136394
-@torch_custom_op(f"{LIBRARY_NAME}::scatter2scatter", mutates_args={"out"})
+@torch.library.custom_op(f"{LIBRARY_NAME}::scatter2scatter", mutates_args={"out"})
 def _scatter2scatter_compileable(
     X: torch.Tensor,
     W: torch.Tensor,
@@ -159,7 +158,7 @@ def _group_bwd_W(DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor
 
 
 # custom op is needed because of https://github.com/pytorch/pytorch/issues/136394
-@torch_custom_op(f"{LIBRARY_NAME}::group_bwd_W", mutates_args={"DW"})
+@torch.library.custom_op(f"{LIBRARY_NAME}::group_bwd_W", mutates_args={"DW"})
 def _group_bwd_W_compileable(
     DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor, DW: torch.Tensor, E: int
 ) -> None:
@@ -208,7 +207,7 @@ def _group(
 
 
 # custom op is needed because of https://github.com/pytorch/pytorch/issues/136394
-@torch_custom_op(f"{LIBRARY_NAME}::group", mutates_args={"out"})
+@torch.library.custom_op(f"{LIBRARY_NAME}::group", mutates_args={"out"})
 def _group_compileable(
     A: torch.Tensor,
     sorted_expert_idxs: torch.Tensor,

@@ -1,6 +1,7 @@
 import os
 from typing import Callable
 
+import torch
 import yaml
 from torch.utils.cpp_extension import load as load_cpp_extension
 
@@ -15,14 +16,16 @@ class KernelRegistry:
     def get_kernel(name: str) -> Callable:
         kernel = KernelRegistry.cuda_kernel_registry.get(name, None)
 
+        # if kernel is compiled, we return the torch op since its compatible with torch compile
         if kernel is None:
             KernelRegistry.compile_kernel(name)
             kernel = KernelRegistry.get_kernel(name)
 
         return kernel
 
+    @torch._dynamo.disable
     @staticmethod
-    def compile_kernel(name: str) -> Callable:
+    def compile_kernel(name: str) -> None:
         function_map = []
         all_functions = []
         source_map = []
