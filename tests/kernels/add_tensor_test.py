@@ -28,8 +28,14 @@ class AddTensorTest(TestCommons):
                 torch.compile(
                     partial(add_tensor_khd, kernel_backend=KernelBackend.cuda, vectorized_loop_size=4, BLOCK_SIZE=1024)
                 ),
-                partial(add_tensor_khd, kernel_backend=KernelBackend.triton, BLOCK_SIZE=1024),
-                torch.compile(partial(add_tensor_khd, kernel_backend=KernelBackend.triton, BLOCK_SIZE=1024)),
+                partial(
+                    add_tensor_khd, kernel_backend=KernelBackend.triton, vectorized_loop_size=None, BLOCK_SIZE=1024
+                ),
+                torch.compile(
+                    partial(
+                        add_tensor_khd, kernel_backend=KernelBackend.triton, vectorized_loop_size=None, BLOCK_SIZE=1024
+                    )
+                ),
             ],
         )
         + TestCommons.make_args_matrix(
