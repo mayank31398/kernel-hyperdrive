@@ -21,7 +21,6 @@ _SEPARATOR = "."
 
 class CutoTuneConfig:
     def __init__(self, config: dict, condition: Callable = None) -> None:
-        print(config)
         self.config = config
         self.condition = condition
 
