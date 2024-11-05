@@ -261,7 +261,7 @@ class CutoTune(ContextDecorator):
         return
 
 
-def get_default_cuda_autotune_configs(extra_config_condition: Callable = None) -> list[CutoTuneConfig]:
+def get_default_cuda_cutotune_configs(extra_config_condition: Callable = None) -> list[CutoTuneConfig]:
     configs = []
 
     # common configs for fp32, fp16 and bf16
@@ -277,5 +277,5 @@ def get_default_cuda_autotune_configs(extra_config_condition: Callable = None) -
     return configs
 
 
-def get_default_triton_autotune_configs() -> list[CutoTuneConfig]:
+def get_default_triton_cutotune_configs() -> list[CutoTuneConfig]:
     return [CutoTuneConfig({"BLOCK_SIZE": block_size}) for block_size in [64, 128, 256, 512, 1024]]
