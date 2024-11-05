@@ -3,6 +3,7 @@ import os
 from collections import defaultdict
 from contextlib import ContextDecorator
 from functools import wraps
+from itertools import product
 from time import perf_counter
 from typing import Any, Callable
 
@@ -10,7 +11,6 @@ import torch
 import torch.distributed
 
 from ..constants import OVERRIDE_IGNORE_VALUE
-from ..enums import KernelBackend
 from .synchronization import device_synchronize
 
 
@@ -263,38 +263,13 @@ class CutoTune(ContextDecorator):
         return
 
 
-def get_default_cuda_cutotune_configs(
-    vectorized_loop_size_8_condition: Callable = None, **extras
-) -> list[CutoTuneConfig]:
+def make_cutotune_config(condition: Callable = None, **kwargs: dict[str, list]) -> list[CutoTuneConfig]:
     configs = []
+    all_values = product(*list(kwargs.values()))
 
-    # common configs for fp32, fp16 and bf16
-    for vectorized_loop_size in [1, 2, 4]:
-        for block_size in [64, 128, 256, 512, 1024]:
-            config = {
-                "kernel_backend": KernelBackend.cuda,
-                "vectorized_loop_size": vectorized_loop_size,
-                "BLOCK_SIZE": block_size,
-            }
-            config.update(extras)
-
-            configs.append(CutoTuneConfig(config))
-
-    for block_size in [64, 128, 256, 512, 1024]:
-        config = {"kernel_backend": KernelBackend.cuda, "vectorized_loop_size": 8, "BLOCK_SIZE": block_size}
-        config.update(extras)
-
-        configs.append(CutoTuneConfig(config, condition=vectorized_loop_size_8_condition))
-
-    return configs
-
-
-def get_default_triton_cutotune_configs(**extras) -> list[CutoTuneConfig]:
-    configs = []
-    for block_size in [64, 128, 256, 512, 1024]:
-        config = {"kernel_backend": KernelBackend.triton, "BLOCK_SIZE": block_size}
-        config.update(extras)
-
-        configs.append(CutoTuneConfig(config))
+    for values in all_values:
+        config = {key: value for key, value in zip(kwargs.keys(), values)}
+        config = CutoTuneConfig(config, condition=condition)
+        configs.append(config)
 
     return configs
