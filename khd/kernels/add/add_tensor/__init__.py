@@ -1,10 +1,11 @@
 import torch
+import triton
 
 from ....enums import KernelBackend
 from ....utils import ensure_same_strides
-from .cuda_implementation import add_tensor_cuda
+from .cuda_implementation import add_tensor_forward_cuda_kernel, add_tensor_forward_cuda_kernel_compileable
 from .torch_implementation import add_tensor_torch
-from .triton_implementation import add_tensor_triton
+from .triton_implementation import add_tensor_forward_triton_kernel
 
 
 class _AddTensor_KHD(torch.autograd.Function):
@@ -26,25 +27,34 @@ class _AddTensor_KHD(torch.autograd.Function):
         x, y = ensure_same_strides(x, y, expected_stride=x.stride())
         output = torch.empty_like(x)
 
-        kwargs = {"x": x, "y": y, "output": output}
-        if BLOCK_SIZE is not None:
-            kwargs["BLOCK_SIZE"] = BLOCK_SIZE
+        num_elements = x.numel()
 
         if kernel_backend == KernelBackend.cuda:
-            if vectorized_loop_size is not None:
-                kwargs["vectorized_loop_size"] = vectorized_loop_size
-
-            add_tensor_forward_cuda(**kwargs)
+            if torch.compiler.is_compiling():
+                add_tensor_forward_cuda_kernel_compileable(
+                    x=x, y=y, output=output, vectorized_loop_size=vectorized_loop_size, BLOCK_SIZE=BLOCK_SIZE
+                )
+            else:
+                add_tensor_forward_cuda_kernel(
+                    x=x, y=y, output=output, vectorized_loop_size=vectorized_loop_size, BLOCK_SIZE=BLOCK_SIZE
+                )
         elif kernel_backend == KernelBackend.triton:
             assert vectorized_loop_size is None
 
-            add_tensor_forward_triton(**kwargs)
+            grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE"]),)
+
+            with torch.device(x.device):
+                add_tensor_forward_triton_kernel[grid](
+                    x_ptr=x, y_ptr=y, output_ptr=output, num_elements=num_elements, BLOCK_SIZE=BLOCK_SIZE
+                )
+        else:
+            raise ValueError(f"unexpected kernel_backend ({kernel_backend})")
 
         return output
 
     @staticmethod
     def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor | None]:
-        return output_grad, output_grad, None
+        return output_grad, output_grad, None, None, None
 
 
 def add_tensor_khd(
