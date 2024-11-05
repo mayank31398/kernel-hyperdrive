@@ -30,7 +30,7 @@ class _AddScalar_KHD(torch.autograd.Function):
 
             with torch.device(x.device):
                 add_scalar_forward_triton_kernel[grid](
-                    x_ptr=x, y_ptr=y, output_ptr=output, num_elements=num_elements, BLOCK_SIZE=BLOCK_SIZE
+                    x_ptr=x, y=y, output_ptr=output, num_elements=num_elements, BLOCK_SIZE=BLOCK_SIZE
                 )
         else:
             raise ValueError(f"unexpected kernel_backend ({kernel_backend})")
