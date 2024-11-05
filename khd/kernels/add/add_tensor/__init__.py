@@ -3,7 +3,7 @@ import triton
 
 from ....constants import OVERRIDE_IGNORE_VALUE
 from ....enums import KernelBackend
-from ....utils import CutoTune, ensure_same_strides, make_cutotune_config
+from ....utils import CutoTune, ensure_same_strides, get_cartesian_product_cutotune_configs
 from .cuda_implementation import add_tensor_forward_cuda_kernel, add_tensor_forward_cuda_kernel_compileable
 from .torch_implementation import add_tensor_torch
 from .triton_implementation import add_tensor_forward_triton_kernel
@@ -12,16 +12,16 @@ from .triton_implementation import add_tensor_forward_triton_kernel
 class _AddTensor_KHD(torch.autograd.Function):
     @staticmethod
     @CutoTune(
-        configs=make_cutotune_config(
+        configs=get_cartesian_product_cutotune_configs(
             kernel_backend=[KernelBackend.cuda], vectorized_loop_size=[1, 2, 4], BLOCK_SIZE=[64, 128, 256, 512, 1024]
         )
-        + make_cutotune_config(
+        + get_cartesian_product_cutotune_configs(
             kernel_backend=[KernelBackend.cuda],
             vectorized_loop_size=[8],
             BLOCK_SIZE=[64, 128, 256, 512, 1024],
             condition=lambda **kwargs: kwargs["x"].dtype in [torch.float16, torch.bfloat16],
         )
-        + make_cutotune_config(
+        + get_cartesian_product_cutotune_configs(
             kernel_backend=[KernelBackend.triton], vectorized_loop_size=[None], BLOCK_SIZE=[64, 128, 256, 512, 1024]
         ),
         triggers={"x.dtype"},

@@ -263,7 +263,9 @@ class CutoTune(ContextDecorator):
         return
 
 
-def make_cutotune_config(condition: Callable = None, **kwargs: dict[str, list]) -> list[CutoTuneConfig]:
+def get_cartesian_product_cutotune_configs(
+    condition: Callable = None, **kwargs: dict[str, list]
+) -> list[CutoTuneConfig]:
     configs = []
     all_values = product(*list(kwargs.values()))
 
