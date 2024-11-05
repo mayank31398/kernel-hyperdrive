@@ -19,7 +19,7 @@ class _AddTensor_KHD(torch.autograd.Function):
             kernel_backend=[KernelBackend.cuda],
             vectorized_loop_size=[8],
             BLOCK_SIZE=[64, 128, 256, 512, 1024],
-            condition=lambda kwargs: kwargs["x"].dtype in [torch.float16, torch.bfloat16],
+            condition=lambda **kwargs: kwargs["x"].dtype in [torch.float16, torch.bfloat16],
         )
         + make_cutotune_config(
             kernel_backend=[KernelBackend.triton], vectorized_loop_size=[None], BLOCK_SIZE=[64, 128, 256, 512, 1024]
