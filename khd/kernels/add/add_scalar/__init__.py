@@ -10,12 +10,6 @@ from .triton_implementation import add_scalar_forward_triton_kernel
 
 class _AddScalar_KHD(torch.autograd.Function):
     @staticmethod
-    @CutoTune(
-        configs=get_default_cuda_cutotune_configs(
-            vectorized_loop_size_8_condition=lambda **kwargs: kwargs["x"].dtype in [torch.float16, torch.bfloat16]
-        )
-        + get_default_triton_cutotune_configs(vectorized_loop_size=None)
-    )
     def forward(
         ctx, x: torch.Tensor, y: float, kernel_backend: KernelBackend, BLOCK_SIZE: int | None = None
     ) -> torch.Tensor:
