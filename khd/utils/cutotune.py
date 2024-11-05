@@ -68,7 +68,8 @@ class CutoTune(ContextDecorator):
                 return func(*args, **kwargs)
 
         else:
-            self._get_signature(func)
+            if self.signature is not None:
+                self._get_signature(func)
 
             @wraps(func)
             def inner(*args, **kwargs):
@@ -76,7 +77,7 @@ class CutoTune(ContextDecorator):
 
                 with self._recreate_cm():
                     if input_key not in self.best_configs:
-                        best_config, best_time = self._autotune(func=func, args=args, kwargs=kwargs)
+                        best_config, best_time = self._cutotune(func=func, args=args, kwargs=kwargs)
 
                         if _DEBUG_CUTOTUNE and (
                             not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0
@@ -118,21 +119,19 @@ class CutoTune(ContextDecorator):
         if len(split_trigger) == 1:
             func = None
         elif len(split_trigger) == 2:
-            func = split_trigger[1]
-
-            if func == "dtype":
+            if split_trigger[1] == "dtype":
                 func = lambda tensor: tensor.dtype
-            elif func in ["size()", "shape"]:
+            elif split_trigger[1] in ["size()", "shape"]:
                 func = lambda tensor: tensor.size()
-            elif func == "stride()":
+            elif split_trigger[1] == "stride()":
                 func = lambda tensor: tensor.stride()
-            elif func.startswith("size"):
+            elif split_trigger[1].startswith("size"):
                 dim = int(func[5:][:-1])
                 func = lambda tensor: tensor.size(dim)
-            elif func.startswith("shape"):
+            elif split_trigger[1].startswith("shape"):
                 dim = int(func[6:][:-1])
                 func = lambda tensor: tensor.size(dim)
-            elif func.startswith("stride"):
+            elif split_trigger[1].startswith("stride"):
                 dim = int(func[7:][:-1])
                 func = lambda tensor: tensor.stride(dim)
             else:
@@ -141,7 +140,7 @@ class CutoTune(ContextDecorator):
         return variable_name, func
 
     @torch.no_grad()
-    def _autotune(self, func: Callable, args: list, kwargs: dict) -> tuple[CutoTuneConfig, float]:
+    def _cutotune(self, func: Callable, args: list, kwargs: dict) -> tuple[CutoTuneConfig, float]:
         best_config = None
         best_time = float("inf")
 
@@ -217,9 +216,6 @@ class CutoTune(ContextDecorator):
         return elapsed_time / self.benchmark_iterations
 
     def _get_signature(self, func: Callable) -> None:
-        if self.signature is not None:
-            return
-
         self.signature = inspect.getfullargspec(func)
 
         for config in self.configs:
@@ -241,7 +237,7 @@ class CutoTune(ContextDecorator):
         for config in self.configs:
             assert (
                 set(config.get_key_values().keys()) == variable_names
-            ), "autotune configs have different variable names"
+            ), "cutotune configs have different variable names"
 
     def __enter__(self) -> Any:
         return
