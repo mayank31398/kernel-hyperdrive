@@ -78,7 +78,7 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
             // clang-format off
             #pragma unroll
             // clang-format on
-            for (int i = start; i < num_elements; i++) {
+            for (int64_t i = start; i < num_elements; i++) {
                 output[i] = x[i] + y[i];
             }
         }
