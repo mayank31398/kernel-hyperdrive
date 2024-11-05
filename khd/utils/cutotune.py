@@ -287,7 +287,11 @@ def get_default_cuda_cutotune_configs(
 
 
 def get_default_triton_cutotune_configs(**extras) -> list[CutoTuneConfig]:
-    return [
-        CutoTuneConfig({"kernel_backend": KernelBackend.triton, "BLOCK_SIZE": block_size}.update(extras))
-        for block_size in [64, 128, 256, 512, 1024]
-    ]
+    configs = []
+    for block_size in [64, 128, 256, 512, 1024]:
+        config = {"kernel_backend": KernelBackend.triton, "BLOCK_SIZE": block_size}
+        config.update(extras)
+
+        configs.append(CutoTuneConfig(config))
+
+    return configs
