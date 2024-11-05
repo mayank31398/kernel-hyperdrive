@@ -7,7 +7,7 @@ from .torch_implementation import add_scalar_torch
 from .triton_implementation import add_scalar_forward_triton_kernel
 
 
-class _AddScalar_CUDA(torch.autograd.Function):
+class _AddScalar_KHD(torch.autograd.Function):
     @staticmethod
     def forward(
         ctx, x: torch.Tensor, y: float, kernel_backend: KernelBackend, BLOCK_SIZE: int | None = None
@@ -45,4 +45,4 @@ class _AddScalar_CUDA(torch.autograd.Function):
 def add_scalar_khd(
     x: torch.Tensor, y: float, kernel_backend: KernelBackend, BLOCK_SIZE: int | None = None
 ) -> torch.Tensor:
-    return _AddScalar_CUDA.apply(x, y, kernel_backend, BLOCK_SIZE)
+    return _AddScalar_KHD.apply(x, y, kernel_backend, BLOCK_SIZE)

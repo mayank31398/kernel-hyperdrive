@@ -4,7 +4,7 @@ from typing import Callable
 import torch
 from parameterized import parameterized
 
-from khd import swiglu_cuda, swiglu_torch, swiglu_triton
+from khd import KernelBackend, swiglu_khd, swiglu_torch
 
 from ..test_commons import TestCommons
 
@@ -16,10 +16,38 @@ class SwigluTest(TestCommons):
             [torch.device("cuda")],
             TestCommons.get_dtypes(),
             [
-                partial(swiglu_cuda, BLOCK_SIZE_forward=1024, BLOCK_SIZE_backward=1024),
-                partial(swiglu_triton, BLOCK_SIZE_forward=1024, BLOCK_SIZE_backward=1024),
-                torch.compile(partial(swiglu_cuda, BLOCK_SIZE_forward=1024, BLOCK_SIZE_backward=1024)),
-                torch.compile(partial(swiglu_triton, BLOCK_SIZE_forward=1024, BLOCK_SIZE_backward=1024)),
+                partial(
+                    swiglu_khd,
+                    kernel_backend_forward=KernelBackend.cuda,
+                    kernel_backend_backward=KernelBackend.cuda,
+                    BLOCK_SIZE_forward=1024,
+                    BLOCK_SIZE_backward=1024,
+                ),
+                partial(
+                    swiglu_khd,
+                    kernel_backend_forward=KernelBackend.triton,
+                    kernel_backend_backward=KernelBackend.triton,
+                    BLOCK_SIZE_forward=1024,
+                    BLOCK_SIZE_backward=1024,
+                ),
+                torch.compile(
+                    partial(
+                        swiglu_khd,
+                        kernel_backend_forward=KernelBackend.cuda,
+                        kernel_backend_backward=KernelBackend.cuda,
+                        BLOCK_SIZE_forward=1024,
+                        BLOCK_SIZE_backward=1024,
+                    )
+                ),
+                torch.compile(
+                    partial(
+                        swiglu_khd,
+                        kernel_backend_forward=KernelBackend.triton,
+                        kernel_backend_backward=KernelBackend.triton,
+                        BLOCK_SIZE_forward=1024,
+                        BLOCK_SIZE_backward=1024,
+                    )
+                ),
             ],
         )
     )

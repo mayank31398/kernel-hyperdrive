@@ -9,7 +9,6 @@ from .kernels import (
     add_tensor_torch,
     embedding_torch,
     embedding_triton,
-    swiglu_cuda,
+    swiglu_khd,
     swiglu_torch,
-    swiglu_triton,
 )
