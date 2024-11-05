@@ -16,10 +16,6 @@ class _AddScalar_CUDA(torch.autograd.Function):
             return x
 
         assert x.is_cuda, "tensor x is not on GPU"
-        assert y.is_cuda, "tensor y is not on GPU"
-
-        assert x.size() == y.size(), "tensors x and y should have same shape"
-        assert x.type() == y.type(), "tensors x and y should have same dtype"
 
         output = torch.empty_like(x)
 
