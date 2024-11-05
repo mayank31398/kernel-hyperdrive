@@ -21,6 +21,7 @@ _SEPARATOR = "."
 
 class CutoTuneConfig:
     def __init__(self, config: dict, condition: Callable = None) -> None:
+        print(config)
         self.config = config
         self.condition = condition
 
@@ -30,7 +31,7 @@ class CutoTuneConfig:
     def get_key_values(self) -> dict:
         return self.config
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return str(self.config)
 
 
@@ -271,19 +272,16 @@ def get_default_cuda_cutotune_configs(
     # common configs for fp32, fp16 and bf16
     for vectorized_loop_size in [1, 2, 4]:
         for block_size in [64, 128, 256, 512, 1024]:
-            configs.append(
-                CutoTuneConfig({"vectorized_loop_size": vectorized_loop_size, "BLOCK_SIZE": block_size}.update(extras))
-            )
+            config = {"vectorized_loop_size": vectorized_loop_size, "BLOCK_SIZE": block_size}
+            config.update(extras)
+
+            configs.append(CutoTuneConfig(config))
 
     for block_size in [64, 128, 256, 512, 1024]:
-        configs.append(
-            CutoTuneConfig(
-                {"kernel_backend": KernelBackend.cuda, "vectorized_loop_size": 8, "BLOCK_SIZE": block_size}.update(
-                    extras
-                ),
-                condition=vectorized_loop_size_8_condition,
-            )
-        )
+        config = {"kernel_backend": KernelBackend.cuda, "vectorized_loop_size": 8, "BLOCK_SIZE": block_size}
+        config.update(extras)
+
+        configs.append(CutoTuneConfig(config, condition=vectorized_loop_size_8_condition))
 
     return configs
 
