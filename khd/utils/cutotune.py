@@ -9,6 +9,8 @@ from typing import Any, Callable
 import torch
 import torch.distributed
 
+from ..constants import OVERRIDE_IGNORE_VALUE
+from ..enums import KernelBackend
 from .synchronization import device_synchronize
 
 
@@ -40,7 +42,7 @@ class CutoTune(ContextDecorator):
         warmup_iterations: int = 5,
         benchmark_iterations: int = 100,
         in_place_op: bool = False,
-        override_ignore_value: str = "...",
+        override_ignore_value: str = OVERRIDE_IGNORE_VALUE,
     ) -> None:
         self.configs = configs
 
@@ -261,21 +263,33 @@ class CutoTune(ContextDecorator):
         return
 
 
-def get_default_cuda_cutotune_configs(extra_config_condition: Callable = None) -> list[CutoTuneConfig]:
+def get_default_cuda_cutotune_configs(
+    vectorized_loop_size_8_condition: Callable = None, **extras
+) -> list[CutoTuneConfig]:
     configs = []
 
     # common configs for fp32, fp16 and bf16
     for vectorized_loop_size in [1, 2, 4]:
         for block_size in [64, 128, 256, 512, 1024]:
-            configs.append(CutoTuneConfig({"vectorized_loop_size": vectorized_loop_size, "BLOCK_SIZE": block_size}))
+            configs.append(
+                CutoTuneConfig({"vectorized_loop_size": vectorized_loop_size, "BLOCK_SIZE": block_size}.update(extras))
+            )
 
     for block_size in [64, 128, 256, 512, 1024]:
         configs.append(
-            CutoTuneConfig({"vectorized_loop_size": 8, "BLOCK_SIZE": block_size}, condition=extra_config_condition)
+            CutoTuneConfig(
+                {"kernel_backend": KernelBackend.cuda, "vectorized_loop_size": 8, "BLOCK_SIZE": block_size}.update(
+                    extras
+                ),
+                condition=vectorized_loop_size_8_condition,
+            )
         )
 
     return configs
 
 
-def get_default_triton_cutotune_configs() -> list[CutoTuneConfig]:
-    return [CutoTuneConfig({"BLOCK_SIZE": block_size}) for block_size in [64, 128, 256, 512, 1024]]
+def get_default_triton_cutotune_configs(**extras) -> list[CutoTuneConfig]:
+    return [
+        CutoTuneConfig({"kernel_backend": KernelBackend.triton, "BLOCK_SIZE": block_size}.update(extras))
+        for block_size in [64, 128, 256, 512, 1024]
+    ]

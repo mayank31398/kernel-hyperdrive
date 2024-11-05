@@ -1,1 +1,2 @@
 LIBRARY_NAME = "khd"
+OVERRIDE_IGNORE_VALUE = "..."

@@ -1,8 +1,14 @@
 import torch
 import triton
 
+from ....constants import OVERRIDE_IGNORE_VALUE
 from ....enums import KernelBackend
-from ....utils import ensure_same_strides
+from ....utils import (
+    CutoTune,
+    ensure_same_strides,
+    get_default_cuda_cutotune_configs,
+    get_default_triton_cutotune_configs,
+)
 from .cuda_implementation import add_tensor_forward_cuda_kernel, add_tensor_forward_cuda_kernel_compileable
 from .torch_implementation import add_tensor_torch
 from .triton_implementation import add_tensor_forward_triton_kernel
@@ -10,13 +16,19 @@ from .triton_implementation import add_tensor_forward_triton_kernel
 
 class _AddTensor_KHD(torch.autograd.Function):
     @staticmethod
+    @CutoTune(
+        configs=get_default_cuda_cutotune_configs(
+            vectorized_loop_size_8_condition=lambda **kwargs: kwargs["x"].dtype in [torch.float16, torch.bfloat16]
+        )
+        + get_default_triton_cutotune_configs(vectorized_loop_size=None)
+    )
     def forward(
         ctx,
         x: torch.Tensor,
         y: torch.Tensor,
         kernel_backend: KernelBackend,
-        vectorized_loop_size: int | None = None,
-        BLOCK_SIZE: int | None = None,
+        vectorized_loop_size: int,
+        BLOCK_SIZE: int,
     ) -> torch.Tensor:
         assert x.is_cuda, "tensor x is not on GPU"
         assert y.is_cuda, "tensor y is not on GPU"
@@ -59,8 +71,8 @@ class _AddTensor_KHD(torch.autograd.Function):
 def add_tensor_khd(
     x: torch.Tensor,
     y: torch.Tensor,
-    kernel_backend: KernelBackend,
-    vectorized_loop_size: int | None = None,
-    BLOCK_SIZE: int | None = None,
+    kernel_backend: KernelBackend = OVERRIDE_IGNORE_VALUE,
+    vectorized_loop_size: int = OVERRIDE_IGNORE_VALUE,
+    BLOCK_SIZE: int = OVERRIDE_IGNORE_VALUE,
 ) -> torch.Tensor:
     return _AddTensor_KHD.apply(x, y, kernel_backend, vectorized_loop_size, BLOCK_SIZE)
