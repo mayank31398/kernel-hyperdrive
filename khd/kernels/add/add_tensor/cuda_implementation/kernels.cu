@@ -94,8 +94,8 @@ void add_tensor_forward_cuda(const torch::Tensor x,
 
     AT_DISPATCH_CUSTOM_FLOAT_TYPES(
         x.scalar_type(), "add_tensor_forward_cuda_kernel", ([&] {
-            const int64_t num_elements_per_block = BLOCK_SIZE * vectorized_loop_size;
-            const int64_t NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
+            const int num_elements_per_block = BLOCK_SIZE * vectorized_loop_size;
+            const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
 
             switch (vectorized_loop_size) {
             case 1:
