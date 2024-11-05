@@ -7,8 +7,8 @@ from .kernels import (
     add_scalar_torch,
     add_tensor_khd,
     add_tensor_torch,
+    embedding_khd,
     embedding_torch,
-    embedding_triton,
     swiglu_khd,
     swiglu_torch,
 )

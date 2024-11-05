@@ -1,9 +1,10 @@
+from functools import partial
 from typing import Callable
 
 import torch
 from parameterized import parameterized
 
-from khd import embedding_torch, embedding_triton
+from khd import KernelBackend, embedding_khd, embedding_torch
 
 from ..test_commons import TestCommons
 
@@ -15,7 +16,12 @@ class EmbeddingTest(TestCommons):
             [(7153, 937), (27153, 1937), (97153, 2937), (17153, 31937)],
             [torch.device("cuda")],
             TestCommons.get_dtypes(),
-            [embedding_triton, torch.compile(embedding_triton)],
+            [
+                partial(embedding_khd, kernel_backend=KernelBackend.triton, BLOCK_SIZE_B=64, BLOCK_SIZE_H=64),
+                torch.compile(
+                    partial(embedding_khd, kernel_backend=KernelBackend.triton, BLOCK_SIZE_B=64, BLOCK_SIZE_H=64)
+                ),
+            ],
         )
     )
     def test_add_tensor(
