@@ -27,8 +27,6 @@ class _AddTensor_KHD(torch.autograd.Function):
         x, y = ensure_same_strides(x, y, expected_stride=x.stride())
         output = torch.empty_like(x)
 
-        num_elements = x.numel()
-
         if kernel_backend == KernelBackend.cuda:
             if torch.compiler.is_compiling():
                 add_tensor_forward_cuda_kernel_compileable(
@@ -41,6 +39,7 @@ class _AddTensor_KHD(torch.autograd.Function):
         elif kernel_backend == KernelBackend.triton:
             assert vectorized_loop_size is None
 
+            num_elements = x.numel()
             grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE"]),)
 
             with torch.device(x.device):

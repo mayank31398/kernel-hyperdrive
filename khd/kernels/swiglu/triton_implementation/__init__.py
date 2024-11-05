@@ -61,16 +61,4 @@ class _Swiglu_Triton(torch.autograd.Function):
 def swiglu_triton(
     gate: torch.Tensor, up: torch.Tensor, BLOCK_SIZE_forward: int, BLOCK_SIZE_backward: int
 ) -> torch.Tensor:
-    """swiglu
-
-    Args:
-        x (torch.Tensor): input tensor
-        y (torch.Tensor): input tensor
-        BLOCK_SIZE_forward (int): forward block size
-        BLOCK_SIZE_backward (int): backward block size
-
-    Returns:
-        torch.Tensor: output tensor
-    """
-
     return _Swiglu_Triton.apply(gate, up, BLOCK_SIZE_forward, BLOCK_SIZE_backward)
