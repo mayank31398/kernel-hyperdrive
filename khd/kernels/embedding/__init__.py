@@ -23,7 +23,7 @@ class _Embedding_KHD(torch.autograd.Function):
         num_tokens = input_ids.numel()
         hidden_size = wte.size(-1)
 
-        input_ids = make_contiguous(input_ids)
+        input_ids = make_contiguous(input_ids)[0]
         assert wte.is_contiguous()
 
         output = torch.empty(num_tokens, hidden_size, dtype=wte.dtype, device=input_ids.device)
