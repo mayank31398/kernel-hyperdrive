@@ -268,29 +268,3 @@ def get_default_cuda_autotune_configs(extra_config_condition: Callable = None) -
 
 def get_default_triton_autotune_configs() -> list[CutoTuneConfig]:
     return [CutoTuneConfig({"BLOCK_SIZE": block_size}) for block_size in [64, 128, 256, 512, 1024]]
-
-
-def make_contiguous(*args) -> list[torch.Tensor]:
-    output = []
-    for arg in args:
-        if isinstance(arg, torch.Tensor):
-            arg = arg.contiguous()
-
-        output.append(arg)
-
-    return output
-
-
-def ensure_same_strides(*args, expected_stride: tuple[int], force_contiguous: bool = False) -> list[torch.Tensor]:
-    if force_contiguous:
-        output = make_contiguous(*args)
-    else:
-        mismatch = False
-        for arg in args:
-            if isinstance(arg, torch.Tensor) and arg.stride() != expected_stride:
-                mismatch = True
-                break
-
-        output = make_contiguous(*args) if mismatch else args
-
-    return output
