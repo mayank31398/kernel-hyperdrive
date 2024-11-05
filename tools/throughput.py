@@ -1,17 +1,20 @@
+from functools import partial
 from time import perf_counter
 
 import torch
 from tabulate import tabulate
 
-# from khd import add_scalar_cuda, add_scalar_torch, add_scalar_triton
-from khd import add_tensor_cuda, add_tensor_torch, add_tensor_triton
+from khd import KernelBackend, add_tensor_khd, add_tensor_torch
 
 
 n = 100
 
 headers = ["dtype", "torch", "cuda", "triton"]
-# kernels = [add_scalar_torch, add_scalar_cuda, add_scalar_triton]
-kernels = [add_tensor_torch, add_tensor_cuda, add_tensor_triton]
+kernels = [
+    add_tensor_torch,
+    partial(add_tensor_khd, kernel_backend=KernelBackend.cuda),
+    partial(add_tensor_khd, kernel_backend=KernelBackend.triton),
+]
 
 table = []
 
