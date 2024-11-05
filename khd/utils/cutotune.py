@@ -40,15 +40,12 @@ class CutoTune(ContextDecorator):
         warmup_iterations: int = 5,
         benchmark_iterations: int = 100,
         in_place_op: bool = False,
+        override_ignore_value: str = "...",
     ) -> None:
         self.configs = configs
+
         self._check_configs()
-
-        self.variable_name_trigger_map = defaultdict(list)
-
-        for trigger in triggers:
-            variable_name, trigger = self._parse_trigger(trigger)
-            self.variable_name_trigger_map[variable_name].append(trigger)
+        self._setup_trigger_map(triggers)
 
         self.warmup_iterations = warmup_iterations
         self.benchmark_iterations = benchmark_iterations
@@ -60,6 +57,8 @@ class CutoTune(ContextDecorator):
         self.best_configs = {}
         self.signature = None
 
+        self.override_ignore_value = override_ignore_value
+
     def __call__(self, func: Callable) -> Callable:
         if _DISABLE_CUTOTUNE:
 
@@ -68,16 +67,16 @@ class CutoTune(ContextDecorator):
                 return func(*args, **kwargs)
 
         else:
-            if self.signature is not None:
+            if self.signature is None:
                 self._get_signature(func)
 
             @wraps(func)
             def inner(*args, **kwargs):
-                input_key = self._get_input_key(args, kwargs)
+                input_key = self._get_input_key(*args, **kwargs)
 
                 with self._recreate_cm():
                     if input_key not in self.best_configs:
-                        best_config, best_time = self._cutotune(func=func, args=args, kwargs=kwargs)
+                        best_config, best_time = self._cutotune(func, *args, **kwargs)
 
                         if _DEBUG_CUTOTUNE and (
                             not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0
@@ -103,44 +102,17 @@ class CutoTune(ContextDecorator):
         for i, value in enumerate(args):
             variable_name = self.signature.args[i]
 
-            if override_allowed or variable_name not in result:
+            if (override_allowed and value != self.override_ignore_value) or variable_name not in result:
                 result[variable_name] = value
 
         for variable_name, value in kwargs.items():
-            if override_allowed or variable_name not in result:
+            if (override_allowed and value != self.override_ignore_value) or variable_name not in result:
                 result[variable_name] = value
 
         return result
 
-    def _parse_trigger(self, trigger: str) -> tuple[str, Callable]:
-        split_trigger = trigger.split(_SEPARATOR)
-        variable_name = split_trigger[0]
-
-        if len(split_trigger) == 1:
-            func = None
-        elif len(split_trigger) == 2:
-            if split_trigger[1] == "dtype":
-                func = lambda tensor: tensor.dtype
-            elif split_trigger[1] in ["size()", "shape"]:
-                func = lambda tensor: tensor.size()
-            elif split_trigger[1] == "stride()":
-                func = lambda tensor: tensor.stride()
-            elif split_trigger[1].startswith("size"):
-                dim = int(func[5:][:-1])
-                func = lambda tensor: tensor.size(dim)
-            elif split_trigger[1].startswith("shape"):
-                dim = int(func[6:][:-1])
-                func = lambda tensor: tensor.size(dim)
-            elif split_trigger[1].startswith("stride"):
-                dim = int(func[7:][:-1])
-                func = lambda tensor: tensor.stride(dim)
-            else:
-                raise ValueError(f"unexpected triggeer found ({trigger})")
-
-        return variable_name, func
-
     @torch.no_grad()
-    def _cutotune(self, func: Callable, args: list, kwargs: dict) -> tuple[CutoTuneConfig, float]:
+    def _cutotune(self, func: Callable, *args, **kwargs) -> tuple[CutoTuneConfig, float]:
         best_config = None
         best_time = float("inf")
 
@@ -154,16 +126,18 @@ class CutoTune(ContextDecorator):
 
             elapsed_time = self._run_benchmark(
                 func=func,
-                **self._get_function_arguments(args=args, config=config, kwargs=kwargs, override_allowed=False),
+                **self._get_function_arguments(config=config, args=args, kwargs=kwargs, override_allowed=False),
             )
 
             if elapsed_time < best_time:
                 best_config = config
                 best_time = elapsed_time
 
+        assert best_config is not None, "no best_config found, check that at least 1 cutotune config is valid"
+
         return best_config, best_time
 
-    def _get_input_key(self, args: list, kwargs: dict) -> Any:
+    def _get_input_key(self, *args, **kwargs) -> Any:
         input_key = []
 
         def _maybe_add_key(variable_name: str, value) -> None:
@@ -175,11 +149,11 @@ class CutoTune(ContextDecorator):
             if isinstance(value, torch.Tensor):
                 for trigger in triggers:
                     if trigger is None:
+                        assert len(triggers) == 1
                         trigger = lambda tensor: (tensor.dtype, tensor.size(), tensor.stride())
 
                     input_key.append(f"{variable_name} = {trigger(value)}")
             else:
-
                 assert len(triggers) == 1
                 assert (
                     triggers[0] is None
@@ -238,6 +212,47 @@ class CutoTune(ContextDecorator):
             assert (
                 set(config.get_key_values().keys()) == variable_names
             ), "cutotune configs have different variable names"
+
+    def _setup_trigger_map(self, triggers: set[str]) -> None:
+        assert isinstance(triggers, set), "triggers should be a set"
+
+        self.variable_name_trigger_map = defaultdict(list)
+
+        for trigger in triggers:
+            variable_name, trigger = self._parse_trigger(trigger)
+            self.variable_name_trigger_map[variable_name].append(trigger)
+
+        # filter to remove all triggers if None, this is usefull for Tensor based triggers
+        for variable_name in self.variable_name_trigger_map:
+            if None in self.variable_name_trigger_map[variable_name]:
+                self.variable_name_trigger_map[variable_name] = [None]
+
+    def _parse_trigger(self, trigger: str) -> tuple[str, Callable]:
+        split_trigger = trigger.split(_SEPARATOR)
+        variable_name = split_trigger[0]
+
+        if len(split_trigger) == 1:
+            func = None
+        elif len(split_trigger) == 2:
+            if split_trigger[1] == "dtype":
+                func = lambda tensor: tensor.dtype
+            elif split_trigger[1] in ["size()", "shape"]:
+                func = lambda tensor: tensor.size()
+            elif split_trigger[1] == "stride()":
+                func = lambda tensor: tensor.stride()
+            elif split_trigger[1].startswith("size"):
+                dim = int(func[5:][:-1])
+                func = lambda tensor: tensor.size(dim)
+            elif split_trigger[1].startswith("shape"):
+                dim = int(func[6:][:-1])
+                func = lambda tensor: tensor.size(dim)
+            elif split_trigger[1].startswith("stride"):
+                dim = int(func[7:][:-1])
+                func = lambda tensor: tensor.stride(dim)
+            else:
+                raise ValueError(f"unexpected triggeer found ({trigger})")
+
+        return variable_name, func
 
     def __enter__(self) -> Any:
         return
