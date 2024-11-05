@@ -13,16 +13,23 @@ class _AddTensor_KHD(torch.autograd.Function):
     @staticmethod
     @CutoTune(
         configs=get_cartesian_product_cutotune_configs(
-            kernel_backend=[KernelBackend.cuda], vectorized_loop_size=[1, 2, 4], BLOCK_SIZE=BLOCK_SIZES_POWERS_OF_2
+            kernel_backend=[KernelBackend.cuda],
+            vectorized_loop_size=[1, 2, 4],
+            BLOCK_SIZE=BLOCK_SIZES_POWERS_OF_2,
+            condition=lambda **kwargs: kwargs["kernel_backend"] == KernelBackend.cuda,
         )
         + get_cartesian_product_cutotune_configs(
             kernel_backend=[KernelBackend.cuda],
             vectorized_loop_size=[8],
             BLOCK_SIZE=BLOCK_SIZES_POWERS_OF_2,
-            condition=lambda **kwargs: kwargs["x"].dtype in [torch.float16, torch.bfloat16],
+            condition=lambda **kwargs: kwargs["x"].dtype in [torch.float16, torch.bfloat16]
+            and kwargs["kernel_backend"] == KernelBackend.cuda,
         )
         + get_cartesian_product_cutotune_configs(
-            kernel_backend=[KernelBackend.triton], vectorized_loop_size=[None], BLOCK_SIZE=BLOCK_SIZES_POWERS_OF_2
+            kernel_backend=[KernelBackend.triton],
+            vectorized_loop_size=[None],
+            BLOCK_SIZE=BLOCK_SIZES_POWERS_OF_2,
+            condition=lambda **kwargs: kwargs["kernel_backend"] == KernelBackend.triton,
         ),
         triggers={"x.dtype"},
     )
