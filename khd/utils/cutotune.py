@@ -272,7 +272,11 @@ def get_default_cuda_cutotune_configs(
     # common configs for fp32, fp16 and bf16
     for vectorized_loop_size in [1, 2, 4]:
         for block_size in [64, 128, 256, 512, 1024]:
-            config = {"vectorized_loop_size": vectorized_loop_size, "BLOCK_SIZE": block_size}
+            config = {
+                "kernel_backend": KernelBackend.cuda,
+                "vectorized_loop_size": vectorized_loop_size,
+                "BLOCK_SIZE": block_size,
+            }
             config.update(extras)
 
             configs.append(CutoTuneConfig(config))
