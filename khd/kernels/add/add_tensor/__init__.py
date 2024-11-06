@@ -12,14 +12,22 @@ from .triton_implementation import add_tensor_forward_triton_kernel
 class _AddTensor_KHD(torch.autograd.Function):
     @staticmethod
     @CutoTune(
-        configs=get_cartesian_product_cutotune_configs(
-            kernel_backend=[KernelBackend.cuda], vectorized_loop_size=[1, 2, 4], BLOCK_SIZE=BLOCK_SIZES_POWERS_OF_2
+        configs=(
+            get_cartesian_product_cutotune_configs(
+                kernel_backend=[KernelBackend.cuda], vectorized_loop_size=[1, 2, 4], BLOCK_SIZE=BLOCK_SIZES_POWERS_OF_2
+            )
+            if torch.cuda.is_available()
+            else []
         )
-        + get_cartesian_product_cutotune_configs(
-            kernel_backend=[KernelBackend.cuda],
-            vectorized_loop_size=[8],
-            BLOCK_SIZE=BLOCK_SIZES_POWERS_OF_2,
-            condition=lambda **kwargs: kwargs["x"].dtype in [torch.float16, torch.bfloat16],
+        + (
+            get_cartesian_product_cutotune_configs(
+                kernel_backend=[KernelBackend.cuda],
+                vectorized_loop_size=[8],
+                BLOCK_SIZE=BLOCK_SIZES_POWERS_OF_2,
+                condition=lambda **kwargs: kwargs["x"].dtype in [torch.float16, torch.bfloat16],
+            )
+            if torch.cuda.is_available()
+            else []
         )
         + get_cartesian_product_cutotune_configs(
             kernel_backend=[KernelBackend.triton], vectorized_loop_size=[None], BLOCK_SIZE=BLOCK_SIZES_POWERS_OF_2
@@ -34,9 +42,6 @@ class _AddTensor_KHD(torch.autograd.Function):
         vectorized_loop_size: int,
         BLOCK_SIZE: int,
     ) -> torch.Tensor:
-        assert x.is_cuda, "tensor x is not on GPU"
-        assert y.is_cuda, "tensor y is not on GPU"
-
         assert x.size() == y.size(), "tensors x and y should have same shape"
         assert x.type() == y.type(), "tensors x and y should have same dtype"
 
