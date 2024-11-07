@@ -1,8 +1,6 @@
 import inspect
 import os
 from collections import defaultdict
-from contextlib import ContextDecorator
-from functools import wraps
 from itertools import product
 from time import perf_counter
 from typing import Any, Callable
@@ -24,11 +22,11 @@ class CutoTuneConfig:
         self.config = config
         self.condition = condition
 
-    def is_condition_valid(self, **kwargs) -> bool:
-        return True if self.condition is None else self.condition(**kwargs)
-
     def get_key_values(self) -> dict:
         return self.config
+
+    def is_condition_valid(self, **kwargs) -> bool:
+        return True if self.condition is None else self.condition(**kwargs)
 
     def __repr__(self) -> str:
         return str(self.config)
@@ -67,27 +65,21 @@ class _CutoTune:
         if _DISABLE_CUTOTUNE:
             output = self.function(*args, **kwargs)
         else:
+            input_key = self._get_input_key(*args, **kwargs)
 
-            @wraps(func)
-            def inner(*args, **kwargs):
-                input_key = self._get_input_key(*args, **kwargs)
+            if input_key not in self.best_configs:
+                best_config, best_time = self._cutotune(*args, **kwargs)
 
-                with self._recreate_cm():
-                    if input_key not in self.best_configs:
-                        best_config, best_time = self._cutotune(func, *args, **kwargs)
+                if _DEBUG_CUTOTUNE and (not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0):
+                    print(f"config {best_config} achieved the best time ({best_time} sec) for {input_key}")
 
-                        if _DEBUG_CUTOTUNE and (
-                            not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0
-                        ):
-                            print(f"config {best_config} achieved the best time ({best_time} sec) for {input_key}")
+                self.best_configs[input_key] = best_config
 
-                        self.best_configs[input_key] = best_config
-
-                    return func(
-                        **self._get_function_arguments(
-                            config=self.best_configs[input_key], args=args, kwargs=kwargs, override_allowed=True
-                        )
-                    )
+            output = self.function(
+                **self._get_function_arguments(
+                    config=self.best_configs[input_key], args=args, kwargs=kwargs, override_allowed=True
+                )
+            )
 
         return output
 
@@ -109,8 +101,8 @@ class _CutoTune:
 
         return result
 
-    @torch.no_grad()
-    def _cutotune(self, func: Callable, *args, **kwargs) -> tuple[CutoTuneConfig, float]:
+    @torch.inference_mode()
+    def _cutotune(self, *args, **kwargs) -> tuple[CutoTuneConfig, float]:
         best_config = None
         best_time = float("inf")
 
@@ -123,7 +115,6 @@ class _CutoTune:
                 continue
 
             elapsed_time = self._run_benchmark(
-                func=func,
                 **self._get_function_arguments(config=config, args=args, kwargs=kwargs, override_allowed=False),
             )
 
@@ -168,18 +159,17 @@ class _CutoTune:
 
         return tuple(input_key)
 
-    @torch.no_grad()
-    def _run_benchmark(self, func: Callable, **kwargs: dict) -> float:
+    def _run_benchmark(self, **kwargs: dict) -> float:
         device_synchronize()
 
         for _ in range(self.warmup_iterations):
-            func(**kwargs)
+            self.function(**kwargs)
 
         device_synchronize()
         start_time = perf_counter()
 
         for _ in range(self.benchmark_iterations):
-            func(**kwargs)
+            self.function(**kwargs)
 
         device_synchronize()
         end_time = perf_counter()
