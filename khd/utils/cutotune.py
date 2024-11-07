@@ -37,6 +37,7 @@ class CutoTuneConfig:
 class _CutoTune(ContextDecorator):
     def __init__(
         self,
+        function: Callable,
         configs: list[CutoTuneConfig],
         triggers: set[str] = set(),
         warmup_iterations: int = 5,
@@ -44,6 +45,7 @@ class _CutoTune(ContextDecorator):
         in_place_op: bool = False,
         override_ignore_value: str = OVERRIDE_IGNORE_VALUE,
     ) -> None:
+        self.function = function
         self.configs = configs
 
         self._check_configs()
@@ -61,13 +63,9 @@ class _CutoTune(ContextDecorator):
 
         self.override_ignore_value = override_ignore_value
 
-    def __call__(self, func: Callable) -> Callable:
+    def __call__(self, *args, **kwargs) -> Any:
         if _DISABLE_CUTOTUNE:
-
-            @wraps(func)
-            def inner(*args, **kwargs):
-                return func(*args, **kwargs)
-
+            return self.function(*args, **kwargs)
         else:
             if self.signature is None:
                 self._get_signature(func)
