@@ -65,7 +65,7 @@ class _CutoTune(ContextDecorator):
 
     def __call__(self, *args, **kwargs) -> Any:
         if _DISABLE_CUTOTUNE:
-            return self.function(*args, **kwargs)
+            output = self.function(*args, **kwargs)
         else:
 
             @wraps(func)
@@ -89,7 +89,7 @@ class _CutoTune(ContextDecorator):
                         )
                     )
 
-        return inner
+        return output
 
     def _get_function_arguments(
         self, config: CutoTuneConfig, args: list, kwargs: dict, override_allowed: bool
