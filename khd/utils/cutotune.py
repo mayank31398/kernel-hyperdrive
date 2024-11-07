@@ -75,8 +75,6 @@ class _CutoTune(ContextDecorator):
             raise NotImplementedError()
 
         self.best_configs = {}
-        self.signature = None
-
         self.override_ignore_value = override_ignore_value
 
     def __call__(self, *args, **kwargs) -> Any:
