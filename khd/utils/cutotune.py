@@ -34,7 +34,7 @@ class CutoTuneConfig:
         return str(self.config)
 
 
-class _CutoTune(ContextDecorator):
+class _CutoTune:
     def __init__(
         self,
         function: Callable,
