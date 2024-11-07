@@ -46,7 +46,23 @@ class _CutoTune(ContextDecorator):
         override_ignore_value: str = OVERRIDE_IGNORE_VALUE,
     ) -> None:
         self.function = function
+        self.signature = inspect.getfullargspec(function)
+
         self.configs = configs
+
+        # check configs
+        for config in self.configs:
+            config = config.get_key_values()
+
+            for variable_name in config:
+                assert (
+                    variable_name in self.signature.args
+                ), f"unexpected variable_name ({variable_name}) found in config"
+
+        for variable_name in self.variable_name_trigger_map:
+            assert (
+                variable_name in self.signature.args
+            ), f"unexpected variable_name ({variable_name}) found in triggers"
 
         self._check_configs()
         self._setup_trigger_map(triggers)
@@ -67,8 +83,6 @@ class _CutoTune(ContextDecorator):
         if _DISABLE_CUTOTUNE:
             return self.function(*args, **kwargs)
         else:
-            if self.signature is None:
-                self._get_signature(func)
 
             @wraps(func)
             def inner(*args, **kwargs):
@@ -188,22 +202,6 @@ class _CutoTune(ContextDecorator):
         elapsed_time = end_time - start_time
 
         return elapsed_time / self.benchmark_iterations
-
-    def _get_signature(self, func: Callable) -> None:
-        self.signature = inspect.getfullargspec(func)
-
-        for config in self.configs:
-            config = config.get_key_values()
-
-            for variable_name in config:
-                assert (
-                    variable_name in self.signature.args
-                ), f"unexpected variable_name ({variable_name}) found in config"
-
-        for variable_name in self.variable_name_trigger_map:
-            assert (
-                variable_name in self.signature.args
-            ), f"unexpected variable_name ({variable_name}) found in triggers"
 
     def _check_configs(self) -> None:
         variable_names = set(self.configs[0].get_key_values().keys())
