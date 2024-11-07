@@ -8,7 +8,6 @@ from typing import Any, Callable
 import torch
 import torch.distributed
 
-from ..constants import OVERRIDE_IGNORE_VALUE
 from .synchronization import device_synchronize
 
 
@@ -32,6 +31,9 @@ class CutoTuneConfig:
         return str(self.config)
 
 
+class CutoTuneOverrideable: ...
+
+
 class _CutoTune:
     def __init__(
         self,
@@ -41,7 +43,6 @@ class _CutoTune:
         warmup_iterations: int = 5,
         benchmark_iterations: int = 100,
         in_place_op: bool = False,
-        override_ignore_value: str = OVERRIDE_IGNORE_VALUE,
     ) -> None:
         self.function = function
         self.signature = inspect.getfullargspec(function)
@@ -59,7 +60,6 @@ class _CutoTune:
             raise NotImplementedError()
 
         self.best_configs = {}
-        self.override_ignore_value = override_ignore_value
 
     def __call__(self, *args, **kwargs) -> Any:
         if _DISABLE_CUTOTUNE:
