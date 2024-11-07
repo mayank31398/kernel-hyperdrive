@@ -249,7 +249,6 @@ def cutotune(
     warmup_iterations: int = 5,
     benchmark_iterations: int = 100,
     in_place_op: bool = False,
-    override_ignore_value: str = OVERRIDE_IGNORE_VALUE,
 ) -> _CutoTune:
     def inner(function: Callable) -> Callable:
         return _CutoTune(
@@ -259,7 +258,6 @@ def cutotune(
             warmup_iterations=warmup_iterations,
             benchmark_iterations=benchmark_iterations,
             in_place_op=in_place_op,
-            override_ignore_value=override_ignore_value,
         )
 
     return inner
