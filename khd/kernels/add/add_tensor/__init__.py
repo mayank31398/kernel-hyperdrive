@@ -3,7 +3,7 @@ import triton
 
 from ....constants import BLOCK_SIZES_POWERS_OF_2, OVERRIDE_IGNORE_VALUE
 from ....enums import KernelBackend
-from ....utils import CutoTune, ensure_same_strides, get_cartesian_product_cutotune_configs
+from ....utils import cutotune, ensure_same_strides, get_cartesian_product_cutotune_configs
 from .cuda_implementation import add_tensor_forward_cuda_kernel, add_tensor_forward_cuda_kernel_compileable
 from .torch_implementation import add_tensor_torch
 from .triton_implementation import add_tensor_forward_triton_kernel
@@ -11,7 +11,7 @@ from .triton_implementation import add_tensor_forward_triton_kernel
 
 class _AddTensor_KHD(torch.autograd.Function):
     @staticmethod
-    @CutoTune(
+    @cutotune(
         configs=(
             get_cartesian_product_cutotune_configs(
                 kernel_backend=[KernelBackend.cuda], vectorized_loop_size=[1, 2, 4], BLOCK_SIZE=BLOCK_SIZES_POWERS_OF_2

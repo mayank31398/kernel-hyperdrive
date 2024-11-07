@@ -34,7 +34,7 @@ class CutoTuneConfig:
         return str(self.config)
 
 
-class CutoTune(ContextDecorator):
+class _CutoTune(ContextDecorator):
     def __init__(
         self,
         configs: list[CutoTuneConfig],
@@ -261,6 +261,27 @@ class CutoTune(ContextDecorator):
 
     def __exit__(self, exception_type, exception_value, exception_traceback) -> Any:
         return
+
+
+def cutotune(
+    configs: list[CutoTuneConfig],
+    triggers: set[str] = set(),
+    warmup_iterations: int = 5,
+    benchmark_iterations: int = 100,
+    in_place_op: bool = False,
+    override_ignore_value: str = OVERRIDE_IGNORE_VALUE,
+) -> _CutoTune:
+    def inner(function: Callable) -> Callable:
+        return _CutoTune(
+            configs=configs,
+            triggers=triggers,
+            warmup_iterations=warmup_iterations,
+            benchmark_iterations=benchmark_iterations,
+            in_place_op=in_place_op,
+            override_ignore_value=override_ignore_value,
+        )
+
+    return inner
 
 
 def get_cartesian_product_cutotune_configs(
