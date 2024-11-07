@@ -271,6 +271,7 @@ def cutotune(
 ) -> _CutoTune:
     def inner(function: Callable) -> Callable:
         return _CutoTune(
+            function=function,
             configs=configs,
             triggers=triggers,
             warmup_iterations=warmup_iterations,
