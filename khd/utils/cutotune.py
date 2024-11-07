@@ -50,22 +50,8 @@ class _CutoTune(ContextDecorator):
 
         self.configs = configs
 
-        # check configs
-        for config in self.configs:
-            config = config.get_key_values()
-
-            for variable_name in config:
-                assert (
-                    variable_name in self.signature.args
-                ), f"unexpected variable_name ({variable_name}) found in config"
-
-        for variable_name in self.variable_name_trigger_map:
-            assert (
-                variable_name in self.signature.args
-            ), f"unexpected variable_name ({variable_name}) found in triggers"
-
-        self._check_configs()
         self._setup_trigger_map(triggers)
+        self._check_configs()
 
         self.warmup_iterations = warmup_iterations
         self.benchmark_iterations = benchmark_iterations
@@ -205,9 +191,19 @@ class _CutoTune(ContextDecorator):
         variable_names = set(self.configs[0].get_key_values().keys())
 
         for config in self.configs:
+            config = config.get_key_values()
+
+            assert set(config.keys()) == variable_names, "cutotune configs have different variable names"
+
+            for variable_name in config:
+                assert (
+                    variable_name in self.signature.args
+                ), f"unexpected variable_name ({variable_name}) found in config"
+
+        for variable_name in self.variable_name_trigger_map:
             assert (
-                set(config.get_key_values().keys()) == variable_names
-            ), "cutotune configs have different variable names"
+                variable_name in self.signature.args
+            ), f"unexpected variable_name ({variable_name}) found in triggers"
 
     def _setup_trigger_map(self, triggers: set[str]) -> None:
         assert isinstance(triggers, set), "triggers should be a set"
