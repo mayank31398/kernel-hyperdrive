@@ -3,7 +3,7 @@ import os
 from collections import defaultdict
 from itertools import product
 from time import perf_counter
-from typing import Any, Callable
+from typing import Any, Callable, get_args
 
 import torch
 import torch.distributed
@@ -47,6 +47,11 @@ class _CutoTune:
         self.function = function
         self.signature = inspect.getfullargspec(function)
 
+        self.overrideables = set()
+        for key in self.signature.annotations:
+            if CutoTuneOverrideable in get_args(self.signature.annotations[key]):
+                self.overrideables.add(key)
+
         self.configs = configs
 
         self._setup_trigger_map(triggers)
@@ -63,6 +68,7 @@ class _CutoTune:
 
     def __call__(self, *args, **kwargs) -> Any:
         if _DISABLE_CUTOTUNE:
+            self._check_not_cutotune_overrideable(*args, **kwargs)
             output = self.function(*args, **kwargs)
         else:
             input_key = self._get_input_key(*args, **kwargs)
@@ -82,6 +88,15 @@ class _CutoTune:
             )
 
         return output
+
+    def _check_not_cutotune_overrideable(self, *args, **kwargs) -> None:
+        for i, value in enumerate(args):
+            assert not isinstance(
+                value, CutoTuneOverrideable
+            ), f"{self.signature.args[i]} should not be CutoTuneOverrideable"
+
+        for variable_name, value in kwargs.items():
+            assert not isinstance(value, CutoTuneOverrideable), f"{variable_name} should not be CutoTuneOverrideable"
 
     def _get_function_arguments(
         self, config: CutoTuneConfig, args: list, kwargs: dict, override_allowed: bool
