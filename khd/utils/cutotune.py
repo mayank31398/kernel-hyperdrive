@@ -123,11 +123,11 @@ class _CutoTune:
         for i, value in enumerate(args):
             variable_name = self.signature.args[i]
 
-            if (override_allowed and value != self.override_ignore_value) or variable_name not in result:
+            if override_allowed or variable_name not in result:
                 result[variable_name] = value
 
         for variable_name, value in kwargs.items():
-            if (override_allowed and value != self.override_ignore_value) or variable_name not in result:
+            if override_allowed or variable_name not in result:
                 result[variable_name] = value
 
         return result
