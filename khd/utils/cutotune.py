@@ -63,9 +63,10 @@ class _CutoTune:
 
     def __call__(self, *args, **kwargs) -> Any:
         if _DISABLE_CUTOTUNE:
-            self._check_not_cutotune_overrideable(*args, **kwargs)
+            self._check_no_args_are_cutotune_overrideable(*args, **kwargs)
             output = self.function(*args, **kwargs)
         else:
+            self._check_all_or_no_args_are_cutotune_overrideable(*args, **kwargs)
             lookup_key = self._get_lookup_key(*args, **kwargs)
 
             if lookup_key not in self.best_configs:
@@ -84,7 +85,7 @@ class _CutoTune:
 
         return output
 
-    def _check_not_cutotune_overrideable(self, *args, **kwargs) -> None:
+    def _check_no_args_are_cutotune_overrideable(self, *args, **kwargs) -> None:
         for i, value in enumerate(args):
             assert not isinstance(
                 value, CutoTuneParameter
@@ -92,6 +93,26 @@ class _CutoTune:
 
         for variable_name, value in kwargs.items():
             assert not isinstance(value, CutoTuneParameter), f"{variable_name} should not be CutoTuneParameter"
+
+    def _check_all_or_no_args_are_cutotune_overrideable(self, *args, **kwargs) -> None:
+        num_cutotune_overrideables = 0
+
+        for i, value in enumerate(args):
+            variable_name = self.signature.args[i]
+
+            if isinstance(value, CutoTuneParameter):
+                assert variable_name in self.overrideables
+                num_cutotune_overrideables += 1
+
+        for variable_name, value in kwargs.items():
+            if isinstance(value, CutoTuneParameter):
+                assert variable_name in self.overrideables
+                num_cutotune_overrideables += 1
+
+        assert num_cutotune_overrideables in [
+            0,
+            len(self.overrideables),
+        ], f"invalid number of CutoTuneParameter arguments, should be either 0 or {len(self.overrideables)}"
 
     def _get_function_arguments(
         self, config: CutoTuneConfig, args: list, kwargs: dict, override_allowed: bool
