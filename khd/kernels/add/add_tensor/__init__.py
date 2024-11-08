@@ -3,7 +3,7 @@ import triton
 
 from ....constants import BLOCK_SIZES_POWERS_OF_2
 from ....enums import KernelBackend
-from ....utils import CutoTuneOverrideable, cutotune, ensure_same_strides, get_cartesian_product_cutotune_configs
+from ....utils import CutoTuneParameter, cutotune, ensure_same_strides, get_cartesian_product_cutotune_configs
 from .cuda_implementation import add_tensor_forward_cuda_kernel, add_tensor_forward_cuda_kernel_compileable
 from .torch_implementation import add_tensor_torch
 from .triton_implementation import add_tensor_forward_triton_kernel
@@ -38,9 +38,9 @@ class _AddTensor_KHD(torch.autograd.Function):
         ctx,
         x: torch.Tensor,
         y: torch.Tensor,
-        kernel_backend: KernelBackend | CutoTuneOverrideable,
-        vectorized_loop_size: int | CutoTuneOverrideable,
-        BLOCK_SIZE: int | CutoTuneOverrideable,
+        kernel_backend: KernelBackend | CutoTuneParameter,
+        vectorized_loop_size: int | CutoTuneParameter,
+        BLOCK_SIZE: int | CutoTuneParameter,
     ) -> torch.Tensor:
         assert x.size() == y.size(), "tensors x and y should have same shape"
         assert x.type() == y.type(), "tensors x and y should have same dtype"
@@ -80,8 +80,8 @@ class _AddTensor_KHD(torch.autograd.Function):
 def add_tensor_khd(
     x: torch.Tensor,
     y: torch.Tensor,
-    kernel_backend: KernelBackend | CutoTuneOverrideable = CutoTuneOverrideable(),
-    vectorized_loop_size: int | CutoTuneOverrideable = CutoTuneOverrideable(),
-    BLOCK_SIZE: int | CutoTuneOverrideable = CutoTuneOverrideable(),
+    kernel_backend: KernelBackend | CutoTuneParameter = CutoTuneParameter(),
+    vectorized_loop_size: int | CutoTuneParameter = CutoTuneParameter(),
+    BLOCK_SIZE: int | CutoTuneParameter = CutoTuneParameter(),
 ) -> torch.Tensor:
     return _AddTensor_KHD.apply(x, y, kernel_backend, vectorized_loop_size, BLOCK_SIZE)

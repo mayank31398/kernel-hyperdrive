@@ -31,7 +31,7 @@ class CutoTuneConfig:
         return str(self.config)
 
 
-class CutoTuneOverrideable: ...
+class CutoTuneParameter: ...
 
 
 class _CutoTune:
@@ -87,11 +87,11 @@ class _CutoTune:
     def _check_not_cutotune_overrideable(self, *args, **kwargs) -> None:
         for i, value in enumerate(args):
             assert not isinstance(
-                value, CutoTuneOverrideable
-            ), f"{self.signature.args[i]} should not be CutoTuneOverrideable"
+                value, CutoTuneParameter
+            ), f"{self.signature.args[i]} should not be CutoTuneParameter"
 
         for variable_name, value in kwargs.items():
-            assert not isinstance(value, CutoTuneOverrideable), f"{variable_name} should not be CutoTuneOverrideable"
+            assert not isinstance(value, CutoTuneParameter), f"{variable_name} should not be CutoTuneParameter"
 
     def _get_function_arguments(
         self, config: CutoTuneConfig, args: list, kwargs: dict, override_allowed: bool
@@ -208,7 +208,7 @@ class _CutoTune:
     def _setup_overrideables(self) -> None:
         self.overrideables = set()
         for key in self.signature.annotations:
-            if CutoTuneOverrideable in get_args(self.signature.annotations[key]):
+            if CutoTuneParameter in get_args(self.signature.annotations[key]):
                 self.overrideables.add(key)
 
     def _setup_trigger_map(self, triggers: set[str]) -> None:
@@ -228,7 +228,7 @@ class _CutoTune:
         for variable_name in self.overrideables:
             assert (
                 variable_name not in self.variable_name_trigger_map
-            ), "trigger can't be an instance of CutoTuneOverrideable"
+            ), "trigger can't be an instance of CutoTuneParameter"
 
     def _parse_trigger(self, trigger: str) -> tuple[str, Callable]:
         split_trigger = trigger.split(_SEPARATOR)
