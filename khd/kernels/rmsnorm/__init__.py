@@ -30,6 +30,8 @@ class _RMSNorm_KHD(torch.autograd.Function):
         if x.stride(-1) != 1:
             x = x.contiguous()
 
+        assert x.dim() > 1, "x should have more than 1 dimensions"
+
         if weight is not None:
             assert weight.dim() == 1, "weight should be 1D"
             assert weight.size(-1) == x.size(-1), "hidden size for x and weight tensor is different"
