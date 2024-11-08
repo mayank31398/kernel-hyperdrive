@@ -15,11 +15,11 @@ class _AddScalar_KHD(torch.autograd.Function):
         if y == 0:
             return x
 
-        assert x.is_cuda, "tensor x is not on GPU"
-
         output = torch.empty_like(x)
 
         if kernel_backend == KernelBackend.cuda:
+            assert x.is_cuda, "tensor x is not on GPU"
+
             if torch.compiler.is_compiling():
                 add_scalar_forward_cuda_kernel_compileable(x=x, y=y, output=output, BLOCK_SIZE=BLOCK_SIZE)
             else:
