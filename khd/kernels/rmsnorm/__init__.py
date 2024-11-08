@@ -4,7 +4,7 @@ import triton
 from ...constants import BLOCK_SIZES_POWERS_OF_2
 from ...enums import KernelBackend
 from ...utils import CutoTuneParameter, cutotune, get_cartesian_product_cutotune_configs
-from .torch_implementation import RMSNorm_Torch
+from .torch_implementation import rmsnorm_torch
 from .triton_implementation import rmsnorm_forward_triton_kernel
 
 
