@@ -46,7 +46,7 @@ def rmsnorm_forward_triton_kernel(
         mask_bh = mask_b[:, None] & mask_h[None, :]
 
         x_ptrs = x_ptr + indices_b[:, None] * x_stride_b + indices_h[None, :] * x_stride_h
-        x = tl.load(x_ptrs, mask=mask_bh)
+        x = tl.load(x_ptrs, mask=mask_bh).to(tl.float32)
 
         x *= denominator
 
