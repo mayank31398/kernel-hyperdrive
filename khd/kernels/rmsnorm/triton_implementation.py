@@ -7,6 +7,7 @@ def rmsnorm_forward_triton_kernel(
     x_ptr,
     x_stride_b,
     x_stride_h,
+    has_weight,
     weight_ptr,
     output_ptr,
     output_stride_b,
@@ -39,9 +40,10 @@ def rmsnorm_forward_triton_kernel(
         denominator = tl.rsqrt((denominator / H) + eps)
         x *= denominator
 
-        weight = tl.load(weight_ptr + indices_h)
-        weight = weight[None, :]
-        x *= weight
+        if has_weight:
+            weight = tl.load(weight_ptr + indices_h)
+            weight = weight[None, :]
+            x *= weight
 
         output_ptrs = output_ptr + indices_b[:, None] * output_stride_b + indices_h[None, :] * output_stride_h
         tl.store(output_ptrs, x, mask=mask_bh)
@@ -70,9 +72,10 @@ def rmsnorm_forward_triton_kernel(
 
             x *= denominator
 
-            weight = tl.load(weight_ptr + indices_h, mask=mask_h)
-            weight = weight[None, :]
-            x *= weight
+            if has_weight:
+                weight = tl.load(weight_ptr + indices_h, mask=mask_h)
+                weight = weight[None, :]
+                x *= weight
 
             output_ptrs = output_ptr + indices_b[:, None] * output_stride_b + indices_h[None, :] * output_stride_h
             tl.store(output_ptrs, x, mask=mask_bh)

@@ -54,6 +54,7 @@ class _RMSNorm_KHD(torch.autograd.Function):
                     x_ptr=x,
                     x_stride_b=x.stride(0),
                     x_stride_h=x.stride(1),
+                    has_weight=weight is not None,
                     weight_ptr=weight,
                     output_ptr=output,
                     output_stride_b=output.stride(0),
