@@ -72,4 +72,4 @@ def rmsnorm_khd(
     BLOCK_SIZE_B: int | CutoTuneParameter = CutoTuneParameter(),
     BLOCK_SIZE_H: int | CutoTuneParameter = CutoTuneParameter(),
 ) -> torch.Tensor:
-    return _RMSNorm_KHD.apply(x, weight, kernel_backend, BLOCK_SIZE_B, BLOCK_SIZE_H)
+    return _RMSNorm_KHD.apply(x, weight, eps, kernel_backend, BLOCK_SIZE_B, BLOCK_SIZE_H)
