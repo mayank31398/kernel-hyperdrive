@@ -45,7 +45,7 @@ class _AddTensor_KHD(torch.autograd.Function):
         assert x.size() == y.size(), "tensors x and y should have same shape"
         assert x.type() == y.type(), "tensors x and y should have same dtype"
 
-        x, y = ensure_same_strides(x, y, expected_stride=x.stride())
+        x, y = ensure_same_strides(x, y)
         output = torch.empty_like(x)
 
         if kernel_backend == KernelBackend.cuda:

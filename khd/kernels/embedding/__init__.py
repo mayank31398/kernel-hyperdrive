@@ -17,20 +17,17 @@ class _Embedding_KHD(torch.autograd.Function):
         BLOCK_SIZE_B: int,
         BLOCK_SIZE_H: int,
     ) -> torch.Tensor:
-        assert input_ids.is_cuda, "tensor input_ids is not on GPU"
-        assert wte.is_cuda, "tensor wte is not on GPU"
-
-        num_tokens = input_ids.numel()
+        num_elements = input_ids.numel()
         hidden_size = wte.size(-1)
 
         input_ids = make_contiguous(input_ids)[0]
         assert wte.is_contiguous()
 
-        output = torch.empty(num_tokens, hidden_size, dtype=wte.dtype, device=input_ids.device)
+        output = torch.empty(num_elements, hidden_size, dtype=wte.dtype, device=input_ids.device)
 
         if kernel_backend == KernelBackend.triton:
             grid = lambda meta: (
-                triton.cdiv(num_tokens, meta["BLOCK_SIZE_B"]),
+                triton.cdiv(num_elements, meta["BLOCK_SIZE_B"]),
                 triton.cdiv(hidden_size, meta["BLOCK_SIZE_H"]),
             )
 
@@ -43,7 +40,7 @@ class _Embedding_KHD(torch.autograd.Function):
                     output_ptr=output,
                     output_stride_b=output.stride(0),
                     output_stride_h=output.stride(1),
-                    B=num_tokens,
+                    B=num_elements,
                     H=hidden_size,
                     BLOCK_SIZE_B=BLOCK_SIZE_B,
                     BLOCK_SIZE_H=BLOCK_SIZE_H,

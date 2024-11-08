@@ -24,13 +24,10 @@ class _Swiglu_KHD(torch.autograd.Function):
         BLOCK_SIZE_forward: int,
         BLOCK_SIZE_backward: int,
     ) -> torch.Tensor:
-        assert gate.is_cuda, "tensor gate is not on GPU"
-        assert up.is_cuda, "tensor up is not on GPU"
-
         assert gate.size() == up.size(), "tensors gate and up should have same shape"
         assert gate.type() == up.type(), "tensors gate and up should have same dtype"
 
-        gate, up = ensure_same_strides(gate, up, expected_stride=gate.stride())
+        gate, up = ensure_same_strides(gate, up)
 
         ctx.save_for_backward(gate, up)
         ctx.BLOCK_SIZE_backward = BLOCK_SIZE_backward
@@ -39,6 +36,9 @@ class _Swiglu_KHD(torch.autograd.Function):
         output = torch.empty_like(gate)
 
         if kernel_backend_forward == KernelBackend.cuda:
+            assert gate.is_cuda, "tensor gate is not on GPU"
+            assert up.is_cuda, "tensor up is not on GPU"
+
             if torch.compiler.is_compiling():
                 swiglu_forward_cuda_kernel_compileable(gate=gate, up=up, output=output, BLOCK_SIZE=BLOCK_SIZE_forward)
             else:
