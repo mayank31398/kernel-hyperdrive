@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import triton
 
-from .kernels import rmsnorm_triton_kernel
+from .kernels import rmsnorm_forward_triton_kernel
 
 
 class _RMSNorm_Triton(torch.autograd.Function):
@@ -27,13 +27,9 @@ class _RMSNorm_Triton(torch.autograd.Function):
         num_elements = x.size(0)
         grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE"]),)
 
-        rmsnorm_triton_kernel[grid](x, weight, output, num_elements, BLOCK_SIZE=1024)
+        rmsnorm_forward_triton_kernel[grid](x, weight, output, num_elements, BLOCK_SIZE=1024)
 
         return output
-
-    @staticmethod
-    def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        return output_grad, output_grad
 
 
 def rmsnorm_triton(x: torch.Tensor, weight: torch.Tensor | None, eps: float | None) -> torch.Tensor:
