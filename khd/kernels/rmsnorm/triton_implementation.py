@@ -23,7 +23,7 @@ def rmsnorm_forward_triton_kernel(
     mask_b = indices_b < B
 
     denominator = tl.zeros((BLOCK_SIZE_B, BLOCK_SIZE_H), dtype=tl.float32)
-    for pid_h in range(0, triton.cdiv(H, BLOCK_SIZE_H)):
+    for pid_h in tl.arange(0, triton.cdiv(H, BLOCK_SIZE_H)):
         block_start_h = pid_h * BLOCK_SIZE_H
         indices_h = block_start_h + tl.arange(0, BLOCK_SIZE_H)
         mask_h = indices_h < H
@@ -38,7 +38,7 @@ def rmsnorm_forward_triton_kernel(
     denominator += eps
     denominator = tl.rsqrt(denominator)
 
-    for pid_h in range(0, triton.cdiv(H, BLOCK_SIZE_H)):
+    for pid_h in tl.arange(0, triton.cdiv(H, BLOCK_SIZE_H)):
         block_start_h = pid_h * BLOCK_SIZE_H
         indices_h = block_start_h + tl.arange(0, BLOCK_SIZE_H)
         mask_h = indices_h < H
