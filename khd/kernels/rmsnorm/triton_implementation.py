@@ -22,22 +22,24 @@ def rmsnorm_forward_triton_kernel(
     indices_b = block_start_b + tl.arange(0, BLOCK_SIZE_B)
     mask_b = indices_b < B
 
+    num_iterations_h = tl.cdiv(H, BLOCK_SIZE_H)
+
     denominator = tl.zeros((BLOCK_SIZE_B, 1), dtype=tl.float32)
 
-    for pid_h in range(0, tl.cdiv(H, BLOCK_SIZE_H)):
+    for pid_h in range(0, num_iterations_h):
         block_start_h = pid_h * BLOCK_SIZE_H
         indices_h = block_start_h + tl.arange(0, BLOCK_SIZE_H)
         mask_h = indices_h < H
         mask_bh = mask_b[:, None] & mask_h[None, :]
 
         x_ptrs = x_ptr + indices_b[:, None] * x_stride_b + indices_h[None, :] * x_stride_h
-        x = tl.load(x_ptrs, mask=mask_bh, other=0).to(tl.float32)
+        x = tl.load(x_ptrs, mask=mask_bh).to(tl.float32)
 
-        denominator += tl.sum(x * x, axis=1)
+        denominator += tl.sum(x * x, axis=1, keep_dims=True)
 
     denominator = tl.rsqrt((denominator / H) + eps)
 
-    for pid_h in range(0, tl.cdiv(H, BLOCK_SIZE_H)):
+    for pid_h in range(0, num_iterations_h):
         block_start_h = pid_h * BLOCK_SIZE_H
         indices_h = block_start_h + tl.arange(0, BLOCK_SIZE_H)
         mask_h = indices_h < H
