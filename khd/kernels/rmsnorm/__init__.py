@@ -36,7 +36,7 @@ class _RMSNorm_KHD(torch.autograd.Function):
             x = x.contiguous()
 
         hidden_size = x.size(-1)
-        num_elements = x.numel() / hidden_size
+        num_elements = x.numel() // hidden_size
 
         output = torch.empty_like(x)
 
