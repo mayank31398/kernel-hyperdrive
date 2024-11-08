@@ -31,8 +31,8 @@ class _RMSNorm_KHD(torch.autograd.Function):
             x = x.contiguous()
 
         if weight is not None:
-            assert weight.dim() == 1
-            assert weight.size(-1) == x.size(-1), ""
+            assert weight.dim() == 1, "weight should be 1D"
+            assert weight.size(-1) == x.size(-1), "hidden size for x and weight tensor is different"
 
             weight = weight.contiguous()
 
