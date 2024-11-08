@@ -9,7 +9,8 @@ from .kernels import (
     add_tensor_torch,
     embedding_khd,
     embedding_torch,
+    rmsnorm_khd,
+    rmsnorm_torch,
     swiglu_khd,
     swiglu_torch,
 )
-from .rmsnorm import RMSNorm_Torch, RMSNorm_Triton
