@@ -7,6 +7,7 @@ def rmsnorm_forward_triton_kernel(
     x_ptr,
     x_stride_b,
     x_stride_h,
+    weight_ptr,
     output_ptr,
     output_stride_b,
     output_stride_h,
