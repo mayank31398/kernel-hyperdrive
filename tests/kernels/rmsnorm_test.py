@@ -38,7 +38,7 @@ class RMSNormTest(TestCommons):
             ],
         )
     )
-    def test_add_tensor(self, size: tuple[int], device: torch.device, dtype: torch.dtype, function: Callable) -> None:
+    def test_rmsnorm(self, size: tuple[int], device: torch.device, dtype: torch.dtype, function: Callable) -> None:
         x_kernel, x_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
         weight_kernel, weight_expected = self.get_random_duplicated_tensors(size[-1], device=device, dtype=dtype)
 

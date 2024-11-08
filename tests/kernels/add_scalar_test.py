@@ -23,7 +23,7 @@ class AddTensorTest(TestCommons):
             ],
         )
     )
-    def test_add_tensor(self, size: tuple[int], device: torch.device, dtype: torch.dtype, function: Callable) -> None:
+    def test_add_scalar(self, size: tuple[int], device: torch.device, dtype: torch.dtype, function: Callable) -> None:
         x_kernel, x_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
         y = 0.42
 

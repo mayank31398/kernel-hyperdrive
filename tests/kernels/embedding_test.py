@@ -24,7 +24,7 @@ class EmbeddingTest(TestCommons):
             ],
         )
     )
-    def test_add_tensor(
+    def test_embedding(
         self,
         input_ids_size: tuple[int],
         wte_size: tuple[int],
