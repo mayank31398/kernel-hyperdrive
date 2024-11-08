@@ -45,21 +45,16 @@ class _CutoTune:
         in_place_op: bool = False,
     ) -> None:
         self.function = function
-        self.signature = inspect.getfullargspec(function)
-
-        self.overrideables = set()
-        for key in self.signature.annotations:
-            if CutoTuneOverrideable in get_args(self.signature.annotations[key]):
-                self.overrideables.add(key)
-
         self.configs = configs
-
-        self._setup_trigger_map(triggers)
-        self._check_configs()
-
         self.warmup_iterations = warmup_iterations
         self.benchmark_iterations = benchmark_iterations
         self.in_place_op = in_place_op
+
+        self.signature = inspect.getfullargspec(function)
+
+        self._setup_overrideables()
+        self._setup_trigger_map(triggers)
+        self._check_configs()
 
         if self.in_place_op:
             raise NotImplementedError()
@@ -209,6 +204,12 @@ class _CutoTune:
             assert (
                 variable_name in self.signature.args
             ), f"unexpected variable_name ({variable_name}) found in triggers"
+
+    def _setup_overrideables(self) -> None:
+        self.overrideables = set()
+        for key in self.signature.annotations:
+            if CutoTuneOverrideable in get_args(self.signature.annotations[key]):
+                self.overrideables.add(key)
 
     def _setup_trigger_map(self, triggers: set[str]) -> None:
         assert isinstance(triggers, set), "triggers should be a set"
