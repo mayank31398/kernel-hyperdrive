@@ -66,19 +66,19 @@ class _CutoTune:
             self._check_not_cutotune_overrideable(*args, **kwargs)
             output = self.function(*args, **kwargs)
         else:
-            input_key = self._get_input_key(*args, **kwargs)
+            lookup_key = self._get_lookup_key(*args, **kwargs)
 
-            if input_key not in self.best_configs:
+            if lookup_key not in self.best_configs:
                 best_config, best_time = self._cutotune(*args, **kwargs)
 
                 if _DEBUG_CUTOTUNE and (not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0):
-                    print(f"config {best_config} achieved the best time ({best_time} sec) for {input_key}")
+                    print(f"config {best_config} achieved the best time ({best_time} sec) for {lookup_key}")
 
-                self.best_configs[input_key] = best_config
+                self.best_configs[lookup_key] = best_config
 
             output = self.function(
                 **self._get_function_arguments(
-                    config=self.best_configs[input_key], args=args, kwargs=kwargs, override_allowed=True
+                    config=self.best_configs[lookup_key], args=args, kwargs=kwargs, override_allowed=True
                 )
             )
 
@@ -136,8 +136,8 @@ class _CutoTune:
 
         return best_config, best_time
 
-    def _get_input_key(self, *args, **kwargs) -> Any:
-        input_key = []
+    def _get_lookup_key(self, *args, **kwargs) -> Any:
+        lookup_key = []
 
         def _maybe_add_key(variable_name: str, value) -> None:
             if variable_name not in self.variable_name_trigger_map:
@@ -151,14 +151,14 @@ class _CutoTune:
                         assert len(triggers) == 1
                         trigger = lambda tensor: (tensor.dtype, tensor.size(), tensor.stride())
 
-                    input_key.append(f"{variable_name} = {trigger(value)}")
+                    lookup_key.append(f"{variable_name} = {trigger(value)}")
             else:
                 assert len(triggers) == 1
                 assert (
                     triggers[0] is None
                 ), f"trigger ({variable_name}) is not a tensor and shouldn't have a functional trigger"
 
-                input_key.append(f"{variable_name} = {value}")
+                lookup_key.append(f"{variable_name} = {value}")
 
         for i, value in enumerate(args):
             variable_name = self.signature.args[i]
@@ -167,7 +167,7 @@ class _CutoTune:
         for variable_name, value in kwargs.items():
             _maybe_add_key(variable_name, value)
 
-        return tuple(input_key)
+        return tuple(lookup_key)
 
     def _run_benchmark(self, **kwargs: dict) -> float:
         device_synchronize()
@@ -224,6 +224,11 @@ class _CutoTune:
         for variable_name in self.variable_name_trigger_map:
             if None in self.variable_name_trigger_map[variable_name]:
                 self.variable_name_trigger_map[variable_name] = [None]
+
+        for variable_name in self.overrideables:
+            assert (
+                variable_name not in self.variable_name_trigger_map
+            ), "trigger can't be an instance of CutoTuneOverrideable"
 
     def _parse_trigger(self, trigger: str) -> tuple[str, Callable]:
         split_trigger = trigger.split(_SEPARATOR)
