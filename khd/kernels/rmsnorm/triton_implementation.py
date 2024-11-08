@@ -30,8 +30,7 @@ def rmsnorm_forward_triton_kernel(
 
     # when num_iterations_h is 1, we can optimize further
     if num_iterations_h == 1:
-        block_start_h = pid_h * BLOCK_SIZE_H
-        indices_h = block_start_h + tl.arange(0, BLOCK_SIZE_H)
+        indices_h = tl.arange(0, BLOCK_SIZE_H)
         mask_h = indices_h < H
         mask_bh = mask_b[:, None] & mask_h[None, :]
 
