@@ -188,22 +188,10 @@ class _CutoTune:
         return elapsed_time / self.benchmark_iterations
 
     def _check_configs(self) -> None:
-        variable_names = set(self.configs[0].get_key_values().keys())
-
         for config in self.configs:
-            config = config.get_key_values()
-
-            assert set(config.keys()) == variable_names, "cutotune configs have different variable names"
-
-            for variable_name in config:
-                assert (
-                    variable_name in self.signature.args
-                ), f"unexpected variable_name ({variable_name}) found in config"
-
-        for variable_name in self.variable_name_trigger_map:
             assert (
-                variable_name in self.signature.args
-            ), f"unexpected variable_name ({variable_name}) found in triggers"
+                set(config.get_key_values().keys()) == self.overrideables
+            ), "cutotune configs don't match the expected function signature"
 
     def _setup_overrideables(self) -> None:
         self.overrideables = set()
@@ -224,6 +212,10 @@ class _CutoTune:
         for variable_name in self.variable_name_trigger_map:
             if None in self.variable_name_trigger_map[variable_name]:
                 self.variable_name_trigger_map[variable_name] = [None]
+
+            assert (
+                variable_name in self.signature.args
+            ), f"unexpected variable_name ({variable_name}) found in triggers"
 
         for variable_name in self.overrideables:
             assert (
