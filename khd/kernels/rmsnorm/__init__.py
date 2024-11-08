@@ -10,14 +10,14 @@ from .triton_implementation import rmsnorm_forward_triton_kernel
 
 class _RMSNorm_KHD(torch.autograd.Function):
     @staticmethod
-    @cutotune(
-        configs=get_cartesian_product_cutotune_configs(
-            kernel_backend=[KernelBackend.triton],
-            BLOCK_SIZE_B=BLOCK_SIZES_POWERS_OF_2,
-            BLOCK_SIZE_H=BLOCK_SIZES_POWERS_OF_2,
-        ),
-        triggers={"x.dtype"},
-    )
+    # @cutotune(
+    #     configs=get_cartesian_product_cutotune_configs(
+    #         kernel_backend=[KernelBackend.triton],
+    #         BLOCK_SIZE_B=BLOCK_SIZES_POWERS_OF_2,
+    #         BLOCK_SIZE_H=BLOCK_SIZES_POWERS_OF_2,
+    #     ),
+    #     triggers={"x.dtype"},
+    # )
     def forward(
         ctx,
         x: torch.Tensor,
@@ -27,13 +27,14 @@ class _RMSNorm_KHD(torch.autograd.Function):
         BLOCK_SIZE_B: int | CutoTuneParameter,
         BLOCK_SIZE_H: int | CutoTuneParameter,
     ) -> torch.Tensor:
-        assert weight.dim() == 1
-        assert weight.size(-1) == x.size(-1), ""
-
-        weight = weight.contiguous()
-
         if x.stride(-1) != 1:
             x = x.contiguous()
+
+        if weight is not None:
+            assert weight.dim() == 1
+            assert weight.size(-1) == x.size(-1), ""
+
+            weight = weight.contiguous()
 
         hidden_size = x.size(-1)
         num_elements = x.numel() // hidden_size
