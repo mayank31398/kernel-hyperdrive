@@ -8,7 +8,6 @@ def swiglu_forward_triton_kernel(gate_ptr, up_ptr, output_ptr, num_elements, BLO
 
     block_start = pid * BLOCK_SIZE
     indices = block_start + tl.arange(0, BLOCK_SIZE)
-
     mask = indices < num_elements
 
     gate = tl.load(gate_ptr + indices, mask=mask).to(tl.float32)
@@ -27,7 +26,6 @@ def swiglu_backward_triton_kernel(
 
     block_start = pid * BLOCK_SIZE
     indices = block_start + tl.arange(0, BLOCK_SIZE)
-
     mask = indices < num_elements
 
     gate = tl.load(gate_ptr + indices, mask=mask).to(tl.float32)
