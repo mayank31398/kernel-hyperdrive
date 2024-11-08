@@ -9,8 +9,8 @@ template <typename scalar_t, typename vector_t, int vectorized_loop_size>
 __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
                                                 const scalar_t *y,
                                                 scalar_t *output,
-                                                const int num_elements) {
-    const int thread_id = get_global_thread_id();
+                                                const int64_t num_elements) {
+    const int64_t thread_id = get_global_thread_id();
 
     // constexpr avoids error when n == 1 when allocating output_buffer for fp16/bf16
     if constexpr (vectorized_loop_size == 1) {
@@ -20,8 +20,8 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
     } else {
         using dtype = DType<scalar_t>;
 
-        const int start = thread_id * vectorized_loop_size;
-        const int end = (thread_id + 1) * vectorized_loop_size - 1; // inclusive of last element
+        const int64_t start = thread_id * vectorized_loop_size;
+        const int64_t end = (thread_id + 1) * vectorized_loop_size - 1; // inclusive of last element
 
         if (start < num_elements && end < num_elements) {
             if constexpr (std::is_same_v<scalar_t, fp32>) {
@@ -78,7 +78,7 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
             // clang-format off
             #pragma unroll
             // clang-format on
-            for (int i = start; i < num_elements; i++) {
+            for (int64_t i = start; i < num_elements; i++) {
                 output[i] = x[i] + y[i];
             }
         }
@@ -90,7 +90,7 @@ void add_tensor_forward_cuda(const torch::Tensor x,
                              const torch::Tensor output,
                              const int &vectorized_loop_size,
                              const int &BLOCK_SIZE) {
-    const int num_elements = x.numel();
+    const int64_t num_elements = x.numel();
 
     AT_DISPATCH_CUSTOM_FLOAT_TYPES(
         x.scalar_type(), "add_tensor_forward_cuda_kernel", ([&] {

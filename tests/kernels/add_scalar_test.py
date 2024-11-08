@@ -4,7 +4,7 @@ from typing import Callable
 import torch
 from parameterized import parameterized
 
-from khd import add_scalar_cuda, add_scalar_torch, add_scalar_triton
+from khd import KernelBackend, add_scalar_khd, add_scalar_torch
 
 from ..test_commons import TestCommons
 
@@ -16,10 +16,10 @@ class AddTensorTest(TestCommons):
             [torch.device("cuda")],
             TestCommons.get_dtypes(),
             [
-                partial(add_scalar_cuda, BLOCK_SIZE=1024),
-                partial(add_scalar_triton, BLOCK_SIZE=1024),
-                torch.compile(partial(add_scalar_cuda, BLOCK_SIZE=1024)),
-                torch.compile(partial(add_scalar_triton, BLOCK_SIZE=1024)),
+                partial(add_scalar_khd, kernel_backend=KernelBackend.cuda, BLOCK_SIZE=1024),
+                partial(add_scalar_khd, kernel_backend=KernelBackend.triton, BLOCK_SIZE=1024),
+                torch.compile(partial(add_scalar_khd, kernel_backend=KernelBackend.cuda, BLOCK_SIZE=1024)),
+                torch.compile(partial(add_scalar_khd, kernel_backend=KernelBackend.triton, BLOCK_SIZE=1024)),
             ],
         )
     )
