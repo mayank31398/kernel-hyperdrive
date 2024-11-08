@@ -41,7 +41,7 @@ class EmbeddingTest(TestCommons):
         z_expected = embedding_torch(input_ids, wte_expected)
 
         # z_kernel.mean().backward()
-        z_expected.mean().backward()
+        # z_expected.mean().backward()
 
         self.assert_equal_tensors(z_kernel, z_expected, True)
         # self.assert_equal_tensors(x_kernel.grad, x_expected.grad, True)
