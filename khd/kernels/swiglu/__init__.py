@@ -30,7 +30,7 @@ class _Swiglu_KHD(torch.autograd.Function):
         assert gate.size() == up.size(), "tensors gate and up should have same shape"
         assert gate.type() == up.type(), "tensors gate and up should have same dtype"
 
-        gate, up = ensure_same_strides(gate, up, expected_stride=gate.stride())
+        gate, up = ensure_same_strides(gate, up)
 
         ctx.save_for_backward(gate, up)
         ctx.BLOCK_SIZE_backward = BLOCK_SIZE_backward

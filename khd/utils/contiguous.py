@@ -13,15 +13,20 @@ def make_contiguous(*args) -> list[torch.Tensor]:
     return output
 
 
-def ensure_same_strides(*args, expected_stride: tuple[int], force_contiguous: bool = False) -> list[torch.Tensor]:
+def ensure_same_strides(*args, force_contiguous: bool = False) -> list[torch.Tensor]:
     if force_contiguous:
         output = make_contiguous(*args)
     else:
         mismatch = False
+        expected_stride = None
+
         for arg in args:
-            if isinstance(arg, torch.Tensor) and arg.stride() != expected_stride:
-                mismatch = True
-                break
+            if isinstance(arg, torch.Tensor):
+                if expected_stride is None:
+                    expected_stride = arg.stride()
+                elif arg.stride() != expected_stride:
+                    mismatch = True
+                    break
 
         output = make_contiguous(*args) if mismatch else args
 

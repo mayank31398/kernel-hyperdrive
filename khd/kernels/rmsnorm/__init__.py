@@ -3,7 +3,7 @@ import triton
 
 from ...constants import BLOCK_SIZES_POWERS_OF_2
 from ...enums import KernelBackend
-from ...utils import CutoTuneParameter, cutotune, ensure_same_strides, get_cartesian_product_cutotune_configs
+from ...utils import CutoTuneParameter, cutotune, get_cartesian_product_cutotune_configs
 from .torch_implementation import RMSNorm_Torch
 from .triton_implementation import rmsnorm_forward_triton_kernel
 
@@ -25,13 +25,17 @@ class _RMSNorm_KHD(torch.autograd.Function):
         BLOCK_SIZE_B: int | CutoTuneParameter,
         BLOCK_SIZE_H: int | CutoTuneParameter,
     ) -> torch.Tensor:
-        assert x.size() == y.size(), "tensors x and y should have same shape"
-        assert x.type() == y.type(), "tensors x and y should have same dtype"
+        assert weight.dim() == 1
+        assert weight.size(-1) == x.size(-1), ""
+
+        weight = weight.contiguous()
+
+        if x.stride(-1) != 1:
+            x = x.contiguous()
 
         hidden_size = x.size(-1)
         num_elements = x.numel() / hidden_size
 
-        x, y = ensure_same_strides(x, y, expected_stride=x.stride())
         output = torch.empty_like(x)
 
         if kernel_backend == KernelBackend.triton:
