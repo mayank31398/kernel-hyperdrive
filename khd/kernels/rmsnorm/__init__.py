@@ -41,8 +41,10 @@ class _RMSNorm_KHD(torch.autograd.Function):
         hidden_size = x.size(-1)
         num_elements = x.numel() // hidden_size
 
-        output = torch.empty_like(x)
+        original_shape = x.size()
         x = x.view(-1, hidden_size)
+
+        output = torch.empty_like(x)
 
         if kernel_backend == KernelBackend.triton:
             grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE_B"]),)
@@ -64,6 +66,8 @@ class _RMSNorm_KHD(torch.autograd.Function):
                 )
         else:
             raise ValueError(f"unexpected kernel_backend ({kernel_backend})")
+
+        output = output.view(original_shape)
 
         return output
 
