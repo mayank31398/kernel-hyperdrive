@@ -23,16 +23,16 @@ class RMSNormTest(TestCommons):
                     rmsnorm_khd,
                     eps=_EPSILON,
                     kernel_backend=KernelBackend.triton,
-                    BLOCK_SIZE_B=1024,
-                    BLOCK_SIZE_H=1024,
+                    BLOCK_SIZE_B=32,
+                    BLOCK_SIZE_H=32,
                 ),
                 torch.compile(
                     partial(
                         rmsnorm_khd,
                         eps=_EPSILON,
                         kernel_backend=KernelBackend.triton,
-                        BLOCK_SIZE_B=1024,
-                        BLOCK_SIZE_H=1024,
+                        BLOCK_SIZE_B=32,
+                        BLOCK_SIZE_H=32,
                     )
                 ),
             ],
