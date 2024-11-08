@@ -1,5 +1,15 @@
+from .enums import KernelBackend
 from .kernel_registry import KernelRegistry
+from .kernels import (
+    MoE_Torch,
+    MoE_Triton,
+    add_scalar_khd,
+    add_scalar_torch,
+    add_tensor_khd,
+    add_tensor_torch,
+    embedding_khd,
+    embedding_torch,
+    swiglu_khd,
+    swiglu_torch,
+)
 from .rmsnorm import RMSNorm_Torch, RMSNorm_Triton
-from .scattermoe import MoE_Torch, MoE_Triton
-from .swiglu import swiglu_torch, swiglu_triton
-from .vector_addition import vector_addition_cuda, vector_addition_torch, vector_addition_triton
