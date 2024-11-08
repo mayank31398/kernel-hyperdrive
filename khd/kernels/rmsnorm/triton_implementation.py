@@ -30,8 +30,10 @@ def rmsnorm_forward_triton_kernel(
 
     # when num_iterations_h is 1, we can optimize further
     if num_iterations_h == 1:
-        indices_h = tl.arange(0, BLOCK_SIZE_H)
-        mask_bh = mask_b[:, None]
+        block_start_h = pid_h * BLOCK_SIZE_H
+        indices_h = block_start_h + tl.arange(0, BLOCK_SIZE_H)
+        mask_h = indices_h < H
+        mask_bh = mask_b[:, None] & mask_h[None, :]
 
         x_ptrs = x_ptr + indices_b[:, None] * x_stride_b + indices_h[None, :] * x_stride_h
         x = tl.load(x_ptrs, mask=mask_bh).to(tl.float32)
@@ -41,7 +43,7 @@ def rmsnorm_forward_triton_kernel(
         x *= denominator
 
         if has_weight:
-            weight = tl.load(weight_ptr + indices_h)
+            weight = tl.load(weight_ptr + indices_h, mask=mask_h)
             weight = weight[None, :]
             x *= weight
 
