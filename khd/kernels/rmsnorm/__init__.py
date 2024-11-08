@@ -12,7 +12,9 @@ class _RMSNorm_KHD(torch.autograd.Function):
     @staticmethod
     @cutotune(
         configs=get_cartesian_product_cutotune_configs(
-            kernel_backend=[KernelBackend.triton], BLOCK_SIZE=BLOCK_SIZES_POWERS_OF_2
+            kernel_backend=[KernelBackend.triton],
+            BLOCK_SIZE_B=BLOCK_SIZES_POWERS_OF_2,
+            BLOCK_SIZE_H=BLOCK_SIZES_POWERS_OF_2,
         ),
         triggers={"x.dtype"},
     )
