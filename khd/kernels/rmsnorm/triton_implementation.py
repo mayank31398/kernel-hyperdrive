@@ -25,7 +25,6 @@ def rmsnorm_forward_triton_kernel(
     mask_b = indices_b < B
 
     num_iterations_h = tl.cdiv(H, BLOCK_SIZE_H)
-
     denominator = tl.zeros((BLOCK_SIZE_B, 1), dtype=tl.float32)
 
     # when num_iterations_h is 1, we can optimize further
