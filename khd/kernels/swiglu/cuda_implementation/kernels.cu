@@ -20,7 +20,6 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
 
     using dtype = DType<scalar_t>;
     using T = typename dtype::nv_dtype;
-    using T2 = typename dtype::nv_dtype2;
 
     if (start < num_elements && end < num_elements) {
         const fp32 *_gate = (fp32 *)&((fp32_4 *)gate)[thread_id];
