@@ -27,7 +27,7 @@ using bf16_2 = __nv_bfloat162;
 __device__ std::tuple<uint16_t, uint16_t> get_upper_and_lower_16_bits_from_fp32(const fp32 &value) {
     uint32_t int_value = __float_as_int(value);
 
-    uint16_t lower_16 = (int_value << 16) >> 16;
+    uint16_t lower_16 = int_value & 0xFFFF;
     uint16_t upper_16 = int_value >> 16;
 
     return std::make_tuple(lower_16, upper_16);
