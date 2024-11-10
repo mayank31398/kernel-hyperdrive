@@ -2,7 +2,8 @@
 
 #include "./dtypes.h"
 
-template <typename input_T, typename output_T> __device__ output_T sigmoid(const input_T &x) {
+template <typename input_T, typename output_T>
+__device__ output_T sigmoid(const input_T &x) {
     fp32 x_fp32 = DType<input_T>::upcast(x);
 
     if (x >= 0) {

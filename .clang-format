@@ -1,4 +1,4 @@
-BasedOnStyle: LLVM
+BasedOnStyle: Google
 BinPackArguments: false
 BinPackParameters: false
 AccessModifierOffset: -4

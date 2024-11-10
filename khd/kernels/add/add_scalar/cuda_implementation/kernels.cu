@@ -1,9 +1,10 @@
-#include "../../../utils/dtypes.h"
-#include "../../../utils/threads.h"
 #include <cuda.h>
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
 #include <torch/extension.h>
+
+#include "../../../utils/dtypes.h"
+#include "../../../utils/threads.h"
 
 template <typename scalar_t>
 __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
@@ -14,7 +15,7 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
     const int vector_instruction_width = sizeof(fp32_4) / sizeof(scalar_t);
 
     const int64_t start = thread_id * vector_instruction_width;
-    const int64_t end = (thread_id + 1) * vector_instruction_width - 1; // inclusive of last element
+    const int64_t end = (thread_id + 1) * vector_instruction_width - 1;  // inclusive of last element
 
     if (start < num_elements && end < num_elements) {
         const fp32 *_x = (fp32 *)&((fp32_4 *)x)[thread_id];
@@ -47,7 +48,7 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
     }
 }
 
-void add_scalar_forward_cuda(const torch::Tensor x, const float &y, torch::Tensor output, const int &BLOCK_SIZE) {
+void add_scalar_forward_cuda(const torch::Tensor &x, const float &y, torch::Tensor output, const int &BLOCK_SIZE) {
     const int64_t num_elements = x.numel();
 
     AT_DISPATCH_CUSTOM_FLOAT_TYPES(x.scalar_type(), "add_scalar_forward_cuda_kernel", ([&] {
