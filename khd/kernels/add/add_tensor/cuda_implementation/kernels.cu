@@ -11,7 +11,7 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
                                                 scalar_t *output,
                                                 const int64_t num_elements) {
     const int64_t thread_id = get_global_thread_id();
-    const int vector_instruction_width = sizeof(fp32_4) >> sizeof(scalar_t);
+    const int vector_instruction_width = sizeof(fp32_4) / sizeof(scalar_t);
 
     const int64_t start = thread_id * vector_instruction_width;
     const int64_t end = (thread_id + 1) * vector_instruction_width - 1; // inclusive of last element
@@ -54,7 +54,7 @@ void add_tensor_forward_cuda(const torch::Tensor x,
 
     AT_DISPATCH_CUSTOM_FLOAT_TYPES(
         x.scalar_type(), "add_tensor_forward_cuda_kernel", ([&] {
-            const int vector_instruction_width = sizeof(fp32_4) >> sizeof(scalar_t);
+            const int vector_instruction_width = sizeof(fp32_4) / sizeof(scalar_t);
 
             const int num_elements_per_block = BLOCK_SIZE * vector_instruction_width;
             const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
