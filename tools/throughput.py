@@ -12,8 +12,8 @@ n = 100
 headers = ["dtype", "torch", "cuda", "triton"]
 kernels = [
     add_tensor_torch,
-    partial(add_tensor_khd, kernel_backend=KernelBackend.cuda),
-    partial(add_tensor_khd, kernel_backend=KernelBackend.triton),
+    partial(add_tensor_khd, kernel_backend=KernelBackend.cuda, vectorized_loop_size=4, BLOCK_SIZE=1024),
+    partial(add_tensor_khd, kernel_backend=KernelBackend.triton, vectorized_loop_size=None, BLOCK_SIZE=1024),
 ]
 
 table = []
