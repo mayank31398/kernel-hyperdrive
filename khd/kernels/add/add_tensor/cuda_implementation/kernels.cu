@@ -50,7 +50,7 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
                     using T = typename dtype::nv_dtype;
                     using T2 = typename dtype::nv_dtype2;
 
-                    const int n = vector_instruction_width / sizeof(T);
+                    const int n = vector_instruction_width >> sizeof(T);
 
                     const fp32 *_x = (fp32 *)&((vector_t *)x)[thread_id];
                     const fp32 *_y = (fp32 *)&((vector_t *)y)[thread_id];

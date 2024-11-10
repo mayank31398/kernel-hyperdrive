@@ -32,7 +32,7 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
                 #pragma unroll
                 // clang-format on
                 for (int i = 0; i < vector_instruction_width; i++) {
-                    output_buffer[i] = _x[i] + y;
+                    output_buffer[i] = dtype::downcast(dtype::upcast(_x[i]) + y);
                 }
 
                 if constexpr (std::is_same_v<vector_t, fp32_2>) {
@@ -78,7 +78,7 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
             #pragma unroll
             // clang-format on
             for (int64_t i = start; i < num_elements; i++) {
-                output[i] = x[i] + y[i];
+                output[i] = dtype::downcast(dtype::upcast(x[i]) + y);
             }
         }
     }
