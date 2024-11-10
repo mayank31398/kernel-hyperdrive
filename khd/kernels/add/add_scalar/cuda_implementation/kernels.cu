@@ -31,7 +31,7 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
                 using dtype = DType<scalar_t>;
 
                 fp32_2 _x_upcast = dtype::upcast(dtype::reinterpret_32_bits_as_2x16(_x[i]));
-                _x_upcast = dtype::make2(_x_upcast.x + y, _x_upcast.y + y);
+                _x_upcast = DType<fp32>::make2(_x_upcast.x + y, _x_upcast.y + y);
                 output_buffer[i] = dtype::reinterpret_2x16_as_32_bits(dtype::downcast(_x_upcast));
             }
         }
