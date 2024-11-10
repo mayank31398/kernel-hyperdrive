@@ -5,7 +5,7 @@
 #include <cuda_runtime.h>
 #include <torch/extension.h>
 
-template <typename scalar_t, typename vector_t, int vectorized_loop_size>
+template <typename scalar_t, typename vector_t, int vector_instruction_width>
 __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
                                                 const scalar_t *y,
                                                 scalar_t *output,
@@ -13,34 +13,34 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
     const int64_t thread_id = get_global_thread_id();
 
     // constexpr avoids error when n == 1 when allocating output_buffer for fp16/bf16
-    if constexpr (vectorized_loop_size == 1) {
+    if constexpr (vector_instruction_width == 1) {
         if (thread_id < num_elements) {
             output[thread_id] = x[thread_id] + y[thread_id];
         }
     } else {
         using dtype = DType<scalar_t>;
 
-        const int64_t start = thread_id * vectorized_loop_size;
-        const int64_t end = (thread_id + 1) * vectorized_loop_size - 1; // inclusive of last element
+        const int64_t start = thread_id * vector_instruction_width;
+        const int64_t end = (thread_id + 1) * vector_instruction_width - 1; // inclusive of last element
 
         if (start < num_elements && end < num_elements) {
             if constexpr (std::is_same_v<scalar_t, fp32>) {
                 const fp32 *_x = (fp32 *)&((vector_t *)x)[thread_id];
                 const fp32 *_y = (fp32 *)&((vector_t *)y)[thread_id];
-                fp32 output_buffer[vectorized_loop_size];
+                fp32 output_buffer[vector_instruction_width];
 
                 // clang-format off
                 #pragma unroll
                 // clang-format on
-                for (int i = 0; i < vectorized_loop_size; i++) {
+                for (int i = 0; i < vector_instruction_width; i++) {
                     output_buffer[i] = _x[i] + _y[i];
                 }
 
                 if constexpr (std::is_same_v<vector_t, fp32_2>) {
-                    assert(vectorized_loop_size == 2);
+                    assert(vector_instruction_width == 2);
                     ((vector_t *)output)[thread_id] = dtype::make2(output_buffer);
                 } else if constexpr (std::is_same_v<vector_t, fp32_4>) {
-                    assert(vectorized_loop_size == 4);
+                    assert(vector_instruction_width == 4);
                     ((vector_t *)output)[thread_id] = dtype::make4(output_buffer);
                 }
             } else {
@@ -50,7 +50,7 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
                     using T = typename dtype::nv_dtype;
                     using T2 = typename dtype::nv_dtype2;
 
-                    const int n = vectorized_loop_size / sizeof(T);
+                    const int n = vector_instruction_width / sizeof(T);
 
                     const fp32 *_x = (fp32 *)&((vector_t *)x)[thread_id];
                     const fp32 *_y = (fp32 *)&((vector_t *)y)[thread_id];
@@ -66,10 +66,10 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
                     }
 
                     if constexpr (std::is_same_v<vector_t, fp32_2>) {
-                        assert(vectorized_loop_size == 4);
+                        assert(vector_instruction_width == 4);
                         ((vector_t *)output)[thread_id] = DType<fp32>::make2(output_buffer);
                     } else if constexpr (std::is_same_v<vector_t, fp32_4>) {
-                        assert(vectorized_loop_size == 8);
+                        assert(vector_instruction_width == 8);
                         ((vector_t *)output)[thread_id] = DType<fp32>::make4(output_buffer);
                     }
                 }
@@ -88,16 +88,16 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
 void add_tensor_forward_cuda(const torch::Tensor x,
                              const torch::Tensor y,
                              const torch::Tensor output,
-                             const int &vectorized_loop_size,
+                             const int &vector_instruction_width,
                              const int &BLOCK_SIZE) {
     const int64_t num_elements = x.numel();
 
     AT_DISPATCH_CUSTOM_FLOAT_TYPES(
         x.scalar_type(), "add_tensor_forward_cuda_kernel", ([&] {
-            const int num_elements_per_block = BLOCK_SIZE * vectorized_loop_size;
+            const int num_elements_per_block = BLOCK_SIZE * vector_instruction_width;
             const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
 
-            switch (vectorized_loop_size) {
+            switch (vector_instruction_width) {
             case 1:
                 _add_tensor_forward_cuda_kernel<scalar_t, scalar_t, 1><<<NUM_BLOCKS, BLOCK_SIZE>>>(
                     x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
@@ -125,7 +125,7 @@ void add_tensor_forward_cuda(const torch::Tensor x,
                 }
                 break;
             default:
-                throw std::runtime_error("invalid vectorized_loop_size");
+                throw std::runtime_error("invalid vector_instruction_width");
                 break;
             }
         }));
