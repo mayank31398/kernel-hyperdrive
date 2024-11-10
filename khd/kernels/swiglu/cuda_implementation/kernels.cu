@@ -1,10 +1,11 @@
-#include "../../utils/activations.h"
-#include "../../utils/dtypes.h"
-#include "../../utils/threads.h"
 #include <cuda.h>
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
 #include <torch/extension.h>
+
+#include "../../utils/activations.h"
+#include "../../utils/dtypes.h"
+#include "../../utils/threads.h"
 
 template <typename scalar_t>
 __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
@@ -15,7 +16,7 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
     const int num_elements_per_thread = get_num_elements_in_vector_dtype<scalar_t, fp32_4>();
 
     const int start = thread_id * num_elements_per_thread;
-    const int end = (thread_id + 1) * num_elements_per_thread - 1; // inclusive of last element
+    const int end = (thread_id + 1) * num_elements_per_thread - 1;  // inclusive of last element
 
     using dtype = DType<scalar_t>;
     using T = typename dtype::nv_dtype;
@@ -69,7 +70,7 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
     const int num_elements_per_thread = get_num_elements_in_vector_dtype<scalar_t, fp32_4>();
 
     const int start = thread_id * num_elements_per_thread;
-    const int end = (thread_id + 1) * num_elements_per_thread - 1; // inclusive of last element
+    const int end = (thread_id + 1) * num_elements_per_thread - 1;  // inclusive of last element
 
     using dtype = DType<scalar_t>;
     using T = typename dtype::nv_dtype;
