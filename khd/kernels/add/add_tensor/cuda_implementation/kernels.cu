@@ -26,7 +26,7 @@ __global__ void _add_tensor_forward_cuda_kernel_fp32(const fp32 *x,
             output_buffer[i] = _x[i] + _y[i];
         }
 
-        ((vector_t *)output)[thread_id] = DType<fp32>::make4(output_buffer);
+        ((fp32_4 *)output)[thread_id] = DType<fp32>::make4(output_buffer);
     } else if (start < num_elements) {
         // clang-format off
         #pragma unroll
@@ -65,7 +65,7 @@ __global__ void _add_tensor_forward_cuda_kernel_fp16_bf16(const scalar_t *x,
                 __hadd2(dtype::reinterpret_32_bits_as_2x16(_x[i]), dtype::reinterpret_32_bits_as_2x16(_y[i])));
         }
 
-        ((vector_t *)output)[thread_id] = DType<fp32>::make4(output_buffer);
+        ((fp32_4 *)output)[thread_id] = DType<fp32>::make4(output_buffer);
     } else if (start < num_elements) {
         // clang-format off
         #pragma unroll
