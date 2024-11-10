@@ -45,8 +45,6 @@ __global__ void _add_tensor_forward_cuda_kernel_fp16_bf16(const scalar_t *x,
     const int64_t thread_id = get_global_thread_id();
 
     using dtype = DType<scalar_t>;
-    using T = typename dtype::nv_dtype;
-    using T2 = typename dtype::nv_dtype2;
 
     const int64_t start = thread_id * 8;
     const int64_t end = (thread_id + 1) * 8 - 1; // inclusive of last element
