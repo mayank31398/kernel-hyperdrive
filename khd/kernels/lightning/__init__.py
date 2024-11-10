@@ -7,14 +7,20 @@ from .triton_implementation import lightning_transformer_forward_triton_kernel
 
 class _Embedding_KHD(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, input_ids: torch.Tensor, wte: torch.Tensor) -> torch.Tensor:
+    def forward(
+        ctx, input_ids: torch.Tensor, wte: torch.Tensor, BLOCK_SIZE_B: int, BLOCK_SIZE_S: int, BLOCK_SIZE_H: int
+    ) -> torch.Tensor:
         batch_size = input_ids.size(0)
         sequence_length = input_ids.size(1)
         hidden_size = wte.size(-1)
 
         output = torch.empty(batch_size, sequence_length, hidden_size, dtype=wte.dtype, device=input_ids.device)
 
-        grid = lambda meta: (triton.cdiv(batch_size, meta["BLOCK_SIZE_B"]),)
+        grid = lambda meta: (
+            triton.cdiv(batch_size, meta["BLOCK_SIZE_B"]),
+            triton.cdiv(sequence_length, meta["BLOCK_SIZE_S"]),
+            triton.cdiv(hidden_size, meta["BLOCK_SIZE_H"]),
+        )
 
         with torch.device(input_ids.device):
             lightning_transformer_forward_triton_kernel[grid](
@@ -24,10 +30,13 @@ class _Embedding_KHD(torch.autograd.Function):
                 wte_stride_h=wte.stride(1),
                 output_ptr=output,
                 output_stride_b=output.stride(0),
-                output_stride_h=output.stride(1),
+                output_stride_s=output.stride(1),
+                output_stride_h=output.stride(2),
                 B=batch_size,
+                S=sequence_length,
                 H=hidden_size,
                 BLOCK_SIZE_B=BLOCK_SIZE_B,
+                BLOCK_SIZE_S=BLOCK_SIZE_S,
                 BLOCK_SIZE_H=BLOCK_SIZE_H,
             )
 
