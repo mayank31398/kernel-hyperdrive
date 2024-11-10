@@ -29,7 +29,7 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
             if constexpr (std::is_same_v<scalar_t, fp32>) {
                 output_buffer[i] = _x[i] + _y[i];
             } else {
-                using dtype = typename DType<scalar_t>;
+                using dtype = DType<scalar_t>;
                 output_buffer[i] = dtype::reinterpret_2x16_as_32_bits(
                     __hadd2(dtype::reinterpret_32_bits_as_2x16(_x[i]), dtype::reinterpret_32_bits_as_2x16(_y[i])));
             }
