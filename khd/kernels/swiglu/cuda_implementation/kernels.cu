@@ -8,8 +8,10 @@
 #include "../../utils/threads.h"
 
 template <typename scalar_t>
-__global__ void _swiglu_forward_cuda_kernel(
-    const scalar_t *gate, const scalar_t *up, scalar_t *output, const int num_elements) {
+__global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
+                                            const scalar_t *up,
+                                            scalar_t *output,
+                                            const int num_elements) {
     const int thread_id = get_global_thread_id();
     const int num_elements_per_thread = get_num_elements_in_vector_dtype<scalar_t, fp32_4>();
 
@@ -36,8 +38,8 @@ __global__ void _swiglu_forward_cuda_kernel(
                 fp32_2 _up = dtype::upcast(dtype::reinterpret_32_bits_as_2x16(up_vec[i]));
                 fp32_2 _gate = dtype::upcast(dtype::reinterpret_32_bits_as_2x16(gate_vec[i]));
 
-                _gate = DType<fp32>::make2(
-                    _up.x * _gate.x * sigmoid<fp32, fp32>(_gate.x), _up.y * _gate.y * sigmoid<fp32, fp32>(_gate.y));
+                _gate = DType<fp32>::make2(_up.x * _gate.x * sigmoid<fp32, fp32>(_gate.x),
+                                           _up.y * _gate.y * sigmoid<fp32, fp32>(_gate.y));
                 output_buffer[i] = dtype::reinterpret_2x16_as_32_bits(dtype::downcast(_gate));
             } else {
                 assert(false && "Function not implemented");
@@ -59,11 +61,11 @@ __global__ void _swiglu_forward_cuda_kernel(
 
 template <typename scalar_t>
 __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
-    const scalar_t *up,
-    const scalar_t *output_grad,
-    scalar_t *gate_grad,
-    scalar_t *up_grad,
-    const int num_elements) {
+                                             const scalar_t *up,
+                                             const scalar_t *output_grad,
+                                             scalar_t *gate_grad,
+                                             scalar_t *up_grad,
+                                             const int num_elements) {
     const int thread_id = get_global_thread_id();
     const int num_elements_per_thread = get_num_elements_in_vector_dtype<scalar_t, fp32_4>();
 
@@ -142,36 +144,38 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
 void swiglu_forward_cuda(torch::Tensor gate, torch::Tensor up, torch::Tensor output, const int BLOCK_SIZE) {
     const int num_elements = gate.numel();
 
-    AT_DISPATCH_CUSTOM_FLOAT_TYPES(gate.scalar_type(), "swiglu_forward_cuda_kernel", ([&] {
-        const int num_elements_per_thread = get_num_elements_in_vector_dtype<scalar_t, fp32_4>();
+    AT_DISPATCH_CUSTOM_FLOAT_TYPES(
+        gate.scalar_type(), "swiglu_forward_cuda_kernel", ([&] {
+            const int num_elements_per_thread = get_num_elements_in_vector_dtype<scalar_t, fp32_4>();
 
-        const int num_elements_per_block = BLOCK_SIZE * num_elements_per_thread;
-        const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
+            const int num_elements_per_block = BLOCK_SIZE * num_elements_per_thread;
+            const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
 
-        _swiglu_forward_cuda_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(
-            gate.data_ptr<scalar_t>(), up.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
-    }));
+            _swiglu_forward_cuda_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(
+                gate.data_ptr<scalar_t>(), up.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
+        }));
 }
 
 void swiglu_backward_cuda(torch::Tensor gate,
-    torch::Tensor up,
-    torch::Tensor output_grad,
-    torch::Tensor gate_grad,
-    torch::Tensor up_grad,
-    const int BLOCK_SIZE) {
+                          torch::Tensor up,
+                          torch::Tensor output_grad,
+                          torch::Tensor gate_grad,
+                          torch::Tensor up_grad,
+                          const int BLOCK_SIZE) {
     const int num_elements = gate.numel();
 
-    AT_DISPATCH_CUSTOM_FLOAT_TYPES(gate.scalar_type(), "swiglu_backward_cuda_kernel", ([&] {
-        const int num_elements_per_thread = get_num_elements_in_vector_dtype<scalar_t, fp32_4>();
+    AT_DISPATCH_CUSTOM_FLOAT_TYPES(
+        gate.scalar_type(), "swiglu_backward_cuda_kernel", ([&] {
+            const int num_elements_per_thread = get_num_elements_in_vector_dtype<scalar_t, fp32_4>();
 
-        const int num_elements_per_block = BLOCK_SIZE * num_elements_per_thread;
-        const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
+            const int num_elements_per_block = BLOCK_SIZE * num_elements_per_thread;
+            const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
 
-        _swiglu_backward_cuda_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(gate.data_ptr<scalar_t>(),
-            up.data_ptr<scalar_t>(),
-            output_grad.data_ptr<scalar_t>(),
-            gate_grad.data_ptr<scalar_t>(),
-            up_grad.data_ptr<scalar_t>(),
-            num_elements);
-    }));
+            _swiglu_backward_cuda_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(gate.data_ptr<scalar_t>(),
+                                                                               up.data_ptr<scalar_t>(),
+                                                                               output_grad.data_ptr<scalar_t>(),
+                                                                               gate_grad.data_ptr<scalar_t>(),
+                                                                               up_grad.data_ptr<scalar_t>(),
+                                                                               num_elements);
+        }));
 }

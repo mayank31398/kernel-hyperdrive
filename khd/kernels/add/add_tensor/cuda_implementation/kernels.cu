@@ -7,8 +7,10 @@
 #include "../../../utils/threads.h"
 
 template <typename scalar_t>
-__global__ void _add_tensor_forward_cuda_kernel(
-    const scalar_t *x, const scalar_t *y, scalar_t *output, const int64_t num_elements) {
+__global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
+                                                const scalar_t *y,
+                                                scalar_t *output,
+                                                const int64_t num_elements) {
     const int64_t thread_id = get_global_thread_id();
     const int vector_instruction_width = sizeof(fp32_4) / sizeof(scalar_t);
 
@@ -45,17 +47,20 @@ __global__ void _add_tensor_forward_cuda_kernel(
     }
 }
 
-void add_tensor_forward_cuda(
-    const torch::Tensor x, const torch::Tensor y, torch::Tensor output, const int &BLOCK_SIZE) {
+void add_tensor_forward_cuda(const torch::Tensor x,
+                             const torch::Tensor y,
+                             torch::Tensor output,
+                             const int &BLOCK_SIZE) {
     const int64_t num_elements = x.numel();
 
-    AT_DISPATCH_CUSTOM_FLOAT_TYPES(x.scalar_type(), "add_tensor_forward_cuda_kernel", ([&] {
-        const int vector_instruction_width = sizeof(fp32_4) / sizeof(scalar_t);
+    AT_DISPATCH_CUSTOM_FLOAT_TYPES(
+        x.scalar_type(), "add_tensor_forward_cuda_kernel", ([&] {
+            const int vector_instruction_width = sizeof(fp32_4) / sizeof(scalar_t);
 
-        const int num_elements_per_block = BLOCK_SIZE * vector_instruction_width;
-        const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
+            const int num_elements_per_block = BLOCK_SIZE * vector_instruction_width;
+            const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
 
-        _add_tensor_forward_cuda_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(
-            x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
-    }));
+            _add_tensor_forward_cuda_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(
+                x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
+        }));
 }
