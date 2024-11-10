@@ -138,7 +138,7 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
 }
 
 void swiglu_forward_cuda(torch::Tensor gate, torch::Tensor up, torch::Tensor output, const int BLOCK_SIZE) {
-    const int64_t num_elements = x.numel();
+    const int64_t num_elements = gate.numel();
 
     AT_DISPATCH_CUSTOM_FLOAT_TYPES(
         gate.scalar_type(), "swiglu_forward_cuda_kernel", ([&] {
