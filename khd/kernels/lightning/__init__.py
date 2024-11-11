@@ -20,7 +20,7 @@ class _LightningTransformer_KHD(torch.autograd.Function):
         batch_size, sequence_length = input_ids.size()
         vocab_size, hidden_size = word_embeddings.size()
 
-        output = torch.empty_like(
+        output = torch.empty(
             batch_size, sequence_length, vocab_size, device=torch.cuda.current_device(), dtype=word_embeddings.dtype
         )
 
