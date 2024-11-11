@@ -1,9 +1,10 @@
-#include "../../../utils/dtypes.h"
-#include "../../../utils/threads.h"
 #include <cuda.h>
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
 #include <torch/extension.h>
+
+#include "../../../utils/dtypes.h"
+#include "../../../utils/threads.h"
 
 template <typename scalar_t, typename vector_t, int vector_instruction_width>
 __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
@@ -21,7 +22,7 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
         using dtype = DType<scalar_t>;
 
         const int64_t start = thread_id * vector_instruction_width;
-        const int64_t end = (thread_id + 1) * vector_instruction_width - 1; // inclusive of last element
+        const int64_t end = (thread_id + 1) * vector_instruction_width - 1;  // inclusive of last element
 
         if (start < num_elements && end < num_elements) {
             if constexpr (std::is_same_v<scalar_t, fp32>) {
@@ -98,35 +99,35 @@ void add_tensor_forward_cuda(const torch::Tensor x,
             const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
 
             switch (vector_instruction_width) {
-            case 1:
-                _add_tensor_forward_cuda_kernel<scalar_t, scalar_t, 1><<<NUM_BLOCKS, BLOCK_SIZE>>>(
-                    x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
-                break;
-            case 2:
-                using vector_t = typename DType<scalar_t>::nv_dtype2;
-                _add_tensor_forward_cuda_kernel<scalar_t, vector_t, 2><<<NUM_BLOCKS, BLOCK_SIZE>>>(
-                    x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
-                break;
-            case 4:
-                if constexpr (std::is_same_v<scalar_t, fp32>) {
-                    _add_tensor_forward_cuda_kernel<scalar_t, fp32_4, 4><<<NUM_BLOCKS, BLOCK_SIZE>>>(
+                case 1:
+                    _add_tensor_forward_cuda_kernel<scalar_t, scalar_t, 1><<<NUM_BLOCKS, BLOCK_SIZE>>>(
                         x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
-                } else {
-                    _add_tensor_forward_cuda_kernel<scalar_t, fp32_2, 4><<<NUM_BLOCKS, BLOCK_SIZE>>>(
+                    break;
+                case 2:
+                    using vector_t = typename DType<scalar_t>::nv_dtype2;
+                    _add_tensor_forward_cuda_kernel<scalar_t, vector_t, 2><<<NUM_BLOCKS, BLOCK_SIZE>>>(
                         x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
-                }
-                break;
-            case 8:
-                if constexpr (std::is_same_v<scalar_t, fp32>) {
-                    assert(false);
-                } else {
-                    _add_tensor_forward_cuda_kernel<scalar_t, fp32_4, 8><<<NUM_BLOCKS, BLOCK_SIZE>>>(
-                        x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
-                }
-                break;
-            default:
-                throw std::runtime_error("invalid vector_instruction_width");
-                break;
+                    break;
+                case 4:
+                    if constexpr (std::is_same_v<scalar_t, fp32>) {
+                        _add_tensor_forward_cuda_kernel<scalar_t, fp32_4, 4><<<NUM_BLOCKS, BLOCK_SIZE>>>(
+                            x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
+                    } else {
+                        _add_tensor_forward_cuda_kernel<scalar_t, fp32_2, 4><<<NUM_BLOCKS, BLOCK_SIZE>>>(
+                            x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
+                    }
+                    break;
+                case 8:
+                    if constexpr (std::is_same_v<scalar_t, fp32>) {
+                        assert(false);
+                    } else {
+                        _add_tensor_forward_cuda_kernel<scalar_t, fp32_4, 8><<<NUM_BLOCKS, BLOCK_SIZE>>>(
+                            x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
+                    }
+                    break;
+                default:
+                    throw std::runtime_error("invalid vector_instruction_width");
+                    break;
             }
         }));
 }

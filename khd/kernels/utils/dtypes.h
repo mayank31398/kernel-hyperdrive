@@ -38,17 +38,15 @@ __device__ fp32 get_fp32_from_upper_and_lower_16_bits(const uint16_t &upper_16, 
     return __int_as_float(int_value);
 }
 
-template <typename T, typename vecT> __host__ __device__ int get_num_elements_in_vector_dtype() {
-    return sizeof(vecT) / sizeof(T);
-}
-
 // base struct for converting torch ScalarType to NVIDIA's dtype
-template <typename scalar_t> struct DType {
+template <typename scalar_t>
+struct DType {
     using c10_dtype = scalar_t;
 };
 
 // struct for c10::Float
-template <> struct DType<fp32> {
+template <>
+struct DType<fp32> {
     using c10_dtype = fp32;
     using nv_dtype = fp32;
     using nv_dtype2 = fp32_2;
@@ -74,7 +72,8 @@ template <> struct DType<fp32> {
 };
 
 // struct for c10::Half
-template <> struct DType<c10::Half> {
+template <>
+struct DType<c10::Half> {
     using c10_dtype = c10::Half;
     using nv_dtype = fp16;
     using nv_dtype2 = fp16_2;
@@ -115,10 +114,12 @@ template <> struct DType<c10::Half> {
 };
 
 // struct for half (basically another alias for the above)
-template <> struct DType<fp16> : public DType<c10::Half> {};
+template <>
+struct DType<fp16> : public DType<c10::Half> {};
 
 // struct for c10::BFloat16
-template <> struct DType<c10::BFloat16> {
+template <>
+struct DType<c10::BFloat16> {
     using c10_dtype = c10::BFloat16;
     using nv_dtype = bf16;
     using nv_dtype2 = bf16_2;
@@ -159,4 +160,5 @@ template <> struct DType<c10::BFloat16> {
 };
 
 // struct for bf16 (basically another alias for the above)
-template <> struct DType<bf16> : public DType<c10::BFloat16> {};
+template <>
+struct DType<bf16> : public DType<c10::BFloat16> {};
