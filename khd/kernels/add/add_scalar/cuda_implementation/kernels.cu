@@ -48,7 +48,7 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
                     output_vec[thread_id] = dtype::make4(output_buffer);
                 }
             } else {
-                using T2 = dtype::nv_dtype2;
+                using T2 = typename dtype::nv_dtype2;
 
                 if constexpr (std::is_same_v<vector_t, fp16_2> || std::is_same_v<vector_t, bf16_2>) {
                     T2 _x = ((vector_t *)x)[thread_id];
