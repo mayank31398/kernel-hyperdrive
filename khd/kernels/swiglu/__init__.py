@@ -160,7 +160,7 @@ class _Swiglu_KHD(torch.autograd.Function):
         else:
             raise ValueError(f"unexpected kernel_backend_backward ({kernel_backend_backward})")
 
-        return gate_grad, up_grad, None, None, None, None
+        return gate_grad, up_grad, None, None, None, None, None, None
 
 
 def swiglu_khd(
