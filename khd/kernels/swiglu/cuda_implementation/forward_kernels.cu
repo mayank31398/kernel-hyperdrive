@@ -47,7 +47,6 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
                 if constexpr (vector_instruction_width == 2) {
                     output_vec[thread_id] = dtype::make2(output_buffer);
                 } else if constexpr (std::is_same_v<vector_t, fp32_4>) {
-                    static_assert(vector_instruction_width == 4);
                     output_vec[thread_id] = dtype::make4(output_buffer);
                 }
             } else {
