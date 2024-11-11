@@ -16,10 +16,56 @@ class AddTensorTest(TestCommons):
             [torch.device("cuda")],
             TestCommons.get_dtypes(),
             [
-                partial(add_scalar_khd, kernel_backend=KernelBackend.cuda, BLOCK_SIZE=1024),
-                partial(add_scalar_khd, kernel_backend=KernelBackend.triton, BLOCK_SIZE=1024),
-                torch.compile(partial(add_scalar_khd, kernel_backend=KernelBackend.cuda, BLOCK_SIZE=1024)),
-                torch.compile(partial(add_scalar_khd, kernel_backend=KernelBackend.triton, BLOCK_SIZE=1024)),
+                partial(
+                    add_scalar_khd, kernel_backend=KernelBackend.cuda, vector_instruction_width=1, BLOCK_SIZE=1024
+                ),
+                partial(
+                    add_scalar_khd, kernel_backend=KernelBackend.cuda, vector_instruction_width=2, BLOCK_SIZE=1024
+                ),
+                partial(
+                    add_scalar_khd, kernel_backend=KernelBackend.cuda, vector_instruction_width=4, BLOCK_SIZE=1024
+                ),
+                torch.compile(
+                    partial(
+                        add_scalar_khd, kernel_backend=KernelBackend.cuda, vector_instruction_width=1, BLOCK_SIZE=1024
+                    )
+                ),
+                torch.compile(
+                    partial(
+                        add_scalar_khd, kernel_backend=KernelBackend.cuda, vector_instruction_width=2, BLOCK_SIZE=1024
+                    )
+                ),
+                torch.compile(
+                    partial(
+                        add_scalar_khd, kernel_backend=KernelBackend.cuda, vector_instruction_width=4, BLOCK_SIZE=1024
+                    )
+                ),
+                partial(
+                    add_scalar_khd, kernel_backend=KernelBackend.triton, vector_instruction_width=None, BLOCK_SIZE=1024
+                ),
+                torch.compile(
+                    partial(
+                        add_scalar_khd,
+                        kernel_backend=KernelBackend.triton,
+                        vector_instruction_width=None,
+                        BLOCK_SIZE=1024,
+                    )
+                ),
+            ],
+        )
+        + TestCommons.make_args_matrix(
+            TestCommons.get_2d_tensor_sizes(),
+            [torch.device("cuda")],
+            [torch.float16, torch.bfloat16],
+            [
+                partial(
+                    add_scalar_khd, kernel_backend=KernelBackend.cuda, vector_instruction_width=8, BLOCK_SIZE=1024
+                ),
+                torch.compile(
+                    partial(
+                        add_scalar_khd, kernel_backend=KernelBackend.cuda, vector_instruction_width=8, BLOCK_SIZE=1024
+                    )
+                ),
             ],
         )
     )
