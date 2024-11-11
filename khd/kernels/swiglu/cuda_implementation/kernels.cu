@@ -154,6 +154,8 @@ void swiglu_backward_cuda(torch::Tensor gate,
                           torch::Tensor gate_grad,
                           torch::Tensor up_grad,
                           const int BLOCK_SIZE) {
+    const int64_t num_elements = gate.numel();
+
     AT_DISPATCH_CUSTOM_FLOAT_TYPES(
         gate.scalar_type(), "swiglu_backward_cuda_kernel", ([&] {
             const int vector_instruction_width = sizeof(fp32_4) / sizeof(scalar_t);
