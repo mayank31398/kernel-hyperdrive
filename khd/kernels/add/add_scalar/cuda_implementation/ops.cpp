@@ -1,6 +1,6 @@
 #include <torch/extension.h>
 
-void add_tensor_forward_cuda(const torch::Tensor &x,
+void add_scalar_forward_cuda(const torch::Tensor &x,
                              const float &y,
                              torch::Tensor output,
                              const int &vector_instruction_width,
