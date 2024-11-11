@@ -6,11 +6,12 @@
 #include "../../../utils/dtypes.h"
 #include "../../../utils/threads.h"
 
-template <typename scalar_t, typename vector_t, int vector_instruction_width>
+template <typename scalar_t, typename vector_t>
 __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
                                                 const scalar_t *y,
                                                 scalar_t *output,
                                                 const int64_t num_elements) {
+    const int vector_instruction_width = sizeof(vector_t) / sizeof(scalar_t);
     const int64_t thread_id = get_global_thread_id();
 
     // constexpr avoids error when n == 1 when allocating output_buffer for fp16/bf16
@@ -38,20 +39,17 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
                 }
 
                 if constexpr (std::is_same_v<vector_t, fp32_2>) {
-                    assert(vector_instruction_width == 2);
+                    static_assert(vector_instruction_width == 2);
                     ((vector_t *)output)[thread_id] = dtype::make2(output_buffer);
                 } else if constexpr (std::is_same_v<vector_t, fp32_4>) {
-                    assert(vector_instruction_width == 4);
+                    static_assert(vector_instruction_width == 4);
                     ((vector_t *)output)[thread_id] = dtype::make4(output_buffer);
                 }
             } else {
                 if constexpr (std::is_same_v<vector_t, fp16_2> || std::is_same_v<vector_t, bf16_2>) {
                     ((vector_t *)output)[thread_id] = __hadd2(((vector_t *)x)[thread_id], ((vector_t *)y)[thread_id]);
                 } else {
-                    using T = typename dtype::nv_dtype;
-                    using T2 = typename dtype::nv_dtype2;
-
-                    const int n = vector_instruction_width / sizeof(T);
+                    const int n = vector_instruction_width >> 1;
 
                     const fp32 *_x = (fp32 *)&((vector_t *)x)[thread_id];
                     const fp32 *_y = (fp32 *)&((vector_t *)y)[thread_id];
