@@ -29,9 +29,12 @@ def swiglu_backward_cuda_kernel(
     output_grad: torch.Tensor,
     gate_grad: torch.Tensor,
     up_grad: torch.Tensor,
+    vector_instruction_width: int,
     BLOCK_SIZE: int,
 ) -> None:
-    KernelRegistry.get_kernel(_BACKWARD_KERNEL_NAME)(gate, up, output_grad, gate_grad, up_grad, BLOCK_SIZE)
+    KernelRegistry.get_kernel(_BACKWARD_KERNEL_NAME)(
+        gate, up, output_grad, gate_grad, up_grad, vector_instruction_width, BLOCK_SIZE
+    )
 
 
 @torch.library.custom_op(f"{LIBRARY_NAME}::{_BACKWARD_KERNEL_NAME}", mutates_args={"gate_grad", "up_grad"})
@@ -41,8 +44,15 @@ def swiglu_backward_cuda_kernel_compileable(
     output_grad: torch.Tensor,
     gate_grad: torch.Tensor,
     up_grad: torch.Tensor,
+    vector_instruction_width: int,
     BLOCK_SIZE: int,
 ) -> None:
     swiglu_backward_cuda_kernel(
-        gate=gate, up=up, output_grad=output_grad, gate_grad=gate_grad, up_grad=up_grad, BLOCK_SIZE=BLOCK_SIZE
+        gate=gate,
+        up=up,
+        output_grad=output_grad,
+        gate_grad=gate_grad,
+        up_grad=up_grad,
+        vector_instruction_width=vector_instruction_width,
+        BLOCK_SIZE=BLOCK_SIZE,
     )

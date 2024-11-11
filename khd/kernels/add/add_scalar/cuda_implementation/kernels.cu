@@ -49,7 +49,7 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
                 using T2 = typename dtype::nv_dtype2;
 
                 if constexpr (vector_instruction_width == 2) {
-                    T2 _x = ((vector_t *)x)[thread_id];
+                    const T2 _x = ((vector_t *)x)[thread_id];
                     fp32_2 _x_upcast = dtype::upcast(_x);
 
                     _x_upcast = DType<fp32>::make2(_x_upcast.x + y, _x_upcast.y + y);

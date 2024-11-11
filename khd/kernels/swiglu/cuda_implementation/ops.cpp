@@ -11,6 +11,7 @@ void swiglu_backward_cuda(torch::Tensor gate,
                           torch::Tensor output_grad,
                           torch::Tensor gate_grad,
                           torch::Tensor up_grad,
+                          const int vector_instruction_width,
                           const int BLOCK_SIZE);
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
