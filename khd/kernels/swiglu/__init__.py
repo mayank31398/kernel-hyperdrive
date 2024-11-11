@@ -1,8 +1,9 @@
 import torch
 import triton
 
+from ...constants import BLOCK_SIZES_POWERS_OF_2
 from ...enums import KernelBackend
-from ...utils import ensure_same_strides
+from ...utils import CutoTuneParameter, cutotune, ensure_same_strides, get_cartesian_product_cutotune_configs
 from .cuda_implementation import (
     swiglu_backward_cuda_kernel,
     swiglu_backward_cuda_kernel_compileable,
@@ -15,14 +16,52 @@ from .triton_implementation import swiglu_backward_triton_kernel, swiglu_forward
 
 class _Swiglu_KHD(torch.autograd.Function):
     @staticmethod
+    @cutotune(
+        configs=(
+            get_cartesian_product_cutotune_configs(
+                kernel_backend_forward=[KernelBackend.cuda],
+                kernel_backend_backward=[KernelBackend.cuda],
+                vector_instruction_width_forward=[1, 2, 4],
+                vector_instruction_width_backward=[1, 2, 4],
+                BLOCK_SIZE_forward=BLOCK_SIZES_POWERS_OF_2,
+                BLOCK_SIZE_backward=BLOCK_SIZES_POWERS_OF_2,
+            )
+            if torch.cuda.is_available()
+            else []
+        )
+        + (
+            get_cartesian_product_cutotune_configs(
+                kernel_backend_forward=[KernelBackend.cuda],
+                kernel_backend_backward=[KernelBackend.cuda],
+                vector_instruction_width_forward=[8],
+                vector_instruction_width_backward=[8],
+                BLOCK_SIZE_forward=BLOCK_SIZES_POWERS_OF_2,
+                BLOCK_SIZE_backward=BLOCK_SIZES_POWERS_OF_2,
+                condition=lambda **kwargs: kwargs["x"].dtype in [torch.float16, torch.bfloat16],
+            )
+            if torch.cuda.is_available()
+            else []
+        )
+        + get_cartesian_product_cutotune_configs(
+            kernel_backend_forward=[KernelBackend.triton],
+            kernel_backend_backward=[KernelBackend.triton],
+            vector_instruction_width_forward=[None],
+            vector_instruction_width_backward=[None],
+            BLOCK_SIZE_forward=BLOCK_SIZES_POWERS_OF_2,
+            BLOCK_SIZE_backward=BLOCK_SIZES_POWERS_OF_2,
+        ),
+        triggers={"x.dtype"},
+    )
     def forward(
         ctx,
         gate: torch.Tensor,
         up: torch.Tensor,
-        kernel_backend_forward: KernelBackend,
-        kernel_backend_backward: KernelBackend,
-        BLOCK_SIZE_forward: int,
-        BLOCK_SIZE_backward: int,
+        kernel_backend_forward: KernelBackend | CutoTuneParameter,
+        kernel_backend_backward: KernelBackend | CutoTuneParameter,
+        vector_instruction_width_forward: int | CutoTuneParameter,
+        vector_instruction_width_backward: int | CutoTuneParameter,
+        BLOCK_SIZE_forward: int | CutoTuneParameter,
+        BLOCK_SIZE_backward: int | CutoTuneParameter,
     ) -> torch.Tensor:
         assert gate.size() == up.size(), "tensors gate and up should have same shape"
         assert gate.type() == up.type(), "tensors gate and up should have same dtype"
@@ -30,8 +69,10 @@ class _Swiglu_KHD(torch.autograd.Function):
         gate, up = ensure_same_strides(gate, up)
 
         ctx.save_for_backward(gate, up)
-        ctx.BLOCK_SIZE_backward = BLOCK_SIZE_backward
+
+        ctx.vector_instruction_width_backward = vector_instruction_width_backward
         ctx.kernel_backend_backward = kernel_backend_backward
+        ctx.BLOCK_SIZE_backward = BLOCK_SIZE_backward
 
         output = torch.empty_like(gate)
 
@@ -40,9 +81,21 @@ class _Swiglu_KHD(torch.autograd.Function):
             assert up.is_cuda, "tensor up is not on GPU"
 
             if torch.compiler.is_compiling():
-                swiglu_forward_cuda_kernel_compileable(gate=gate, up=up, output=output, BLOCK_SIZE=BLOCK_SIZE_forward)
+                swiglu_forward_cuda_kernel_compileable(
+                    gate=gate,
+                    up=up,
+                    output=output,
+                    vector_instruction_width=vector_instruction_width_forward,
+                    BLOCK_SIZE=BLOCK_SIZE_forward,
+                )
             else:
-                swiglu_forward_cuda_kernel(gate=gate, up=up, output=output, BLOCK_SIZE=BLOCK_SIZE_forward)
+                swiglu_forward_cuda_kernel(
+                    gate=gate,
+                    up=up,
+                    output=output,
+                    vector_instruction_width=vector_instruction_width_forward,
+                    BLOCK_SIZE=BLOCK_SIZE_forward,
+                )
         elif kernel_backend_forward == KernelBackend.triton:
             num_elements = gate.numel()
             grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE"]),)
@@ -63,8 +116,10 @@ class _Swiglu_KHD(torch.autograd.Function):
     @staticmethod
     def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor | None]:
         gate, up = ctx.saved_tensors
-        BLOCK_SIZE_backward = ctx.BLOCK_SIZE_backward
+
         kernel_backend_backward = ctx.kernel_backend_backward
+        vector_instruction_width_backward = ctx.vector_instruction_width_backward
+        BLOCK_SIZE_backward = ctx.BLOCK_SIZE_backward
 
         gate_grad = torch.empty_like(gate)
         up_grad = torch.empty_like(up)
@@ -111,11 +166,20 @@ class _Swiglu_KHD(torch.autograd.Function):
 def swiglu_khd(
     gate: torch.Tensor,
     up: torch.Tensor,
-    kernel_backend_forward: KernelBackend,
-    kernel_backend_backward: KernelBackend,
-    BLOCK_SIZE_forward: int,
-    BLOCK_SIZE_backward: int,
+    kernel_backend_forward: KernelBackend | CutoTuneParameter = CutoTuneParameter(),
+    kernel_backend_backward: KernelBackend | CutoTuneParameter = CutoTuneParameter(),
+    vector_instruction_width_forward: int | CutoTuneParameter = CutoTuneParameter(),
+    vector_instruction_width_backward: int | CutoTuneParameter = CutoTuneParameter(),
+    BLOCK_SIZE_forward: int | CutoTuneParameter = CutoTuneParameter(),
+    BLOCK_SIZE_backward: int | CutoTuneParameter = CutoTuneParameter(),
 ) -> torch.Tensor:
     return _Swiglu_KHD.apply(
-        gate, up, kernel_backend_forward, kernel_backend_backward, BLOCK_SIZE_forward, BLOCK_SIZE_backward
+        gate,
+        up,
+        kernel_backend_forward,
+        kernel_backend_backward,
+        vector_instruction_width_forward,
+        vector_instruction_width_backward,
+        BLOCK_SIZE_forward,
+        BLOCK_SIZE_backward,
     )
