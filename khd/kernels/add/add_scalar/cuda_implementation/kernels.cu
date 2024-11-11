@@ -38,17 +38,17 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
                     output_buffer[i] = x_vec[i] + y;
                 }
 
-                if constexpr (std::is_same_v<vector_t, fp32_2>) {
-                    static_assert(vector_instruction_width == 2);
+                if constexpr (vector_instruction_width == 2) {
                     output_vec[thread_id] = dtype::make2(output_buffer);
-                } else if constexpr (std::is_same_v<vector_t, fp32_4>) {
-                    static_assert(vector_instruction_width == 4);
+                } else if constexpr (vector_instruction_width == 4) {
                     output_vec[thread_id] = dtype::make4(output_buffer);
+                } else {
+                    static_assert("vector_instruction_width is invalid for fp32");
                 }
             } else {
                 using T2 = typename dtype::nv_dtype2;
 
-                if constexpr (std::is_same_v<vector_t, fp16_2> || std::is_same_v<vector_t, bf16_2>) {
+                if constexpr (vector_instruction_width == 2) {
                     T2 _x = ((vector_t *)x)[thread_id];
                     fp32_2 _x_upcast = dtype::upcast(_x);
 
@@ -69,12 +69,12 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
                         output_buffer[i] = dtype::reinterpret_2x16_as_32_bits(dtype::downcast(_x_upcast));
                     }
 
-                    if constexpr (std::is_same_v<vector_t, fp32_2>) {
-                        assert(vector_instruction_width == 4);
+                    if constexpr (vector_instruction_width == 4) {
                         output_vec[thread_id] = DType<fp32>::make2(output_buffer);
-                    } else if constexpr (std::is_same_v<vector_t, fp32_4>) {
-                        assert(vector_instruction_width == 8);
+                    } else if constexpr (vector_instruction_width == 8) {
                         output_vec[thread_id] = DType<fp32>::make4(output_buffer);
+                    } else {
+                        static_assert("vector_instruction_width is invalid for fp16 & bf16");
                     }
                 }
             }
