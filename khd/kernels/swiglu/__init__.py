@@ -37,7 +37,7 @@ class _Swiglu_KHD(torch.autograd.Function):
                 vector_instruction_width_backward=[8],
                 BLOCK_SIZE_forward=BLOCK_SIZES_POWERS_OF_2,
                 BLOCK_SIZE_backward=BLOCK_SIZES_POWERS_OF_2,
-                condition=lambda **kwargs: kwargs["x"].dtype in [torch.float16, torch.bfloat16],
+                condition=lambda **kwargs: kwargs["gate"].dtype in [torch.float16, torch.bfloat16],
             )
             if torch.cuda.is_available()
             else []
