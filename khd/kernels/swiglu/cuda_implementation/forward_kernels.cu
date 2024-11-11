@@ -19,10 +19,10 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
 
     if constexpr (vector_instruction_width == 1) {
         if (thread_id < num_elements) {
-            fp32 _gate_upcast = dtype::upcast(gate[i]);
+            fp32 _gate_upcast = dtype::upcast(gate[thread_id]);
 
             // up is upcasted automatically
-            _gate_upcast = up[i] * _gate_upcast * sigmoid<fp32, fp32>(_gate_upcast);
+            _gate_upcast = up[thread_id] * _gate_upcast * sigmoid<fp32, fp32>(_gate_upcast);
             output[thread_id] = dtype::downcast(_gate_upcast);
         }
     } else {
