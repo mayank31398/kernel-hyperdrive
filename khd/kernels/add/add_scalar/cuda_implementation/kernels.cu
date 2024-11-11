@@ -106,20 +106,20 @@ void add_scalar_forward_cuda(const torch::Tensor &x,
             switch (vector_instruction_width) {
                 case 1:
                     _add_scalar_forward_cuda_kernel<scalar_t, scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(
-                        x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
+                        x.data_ptr<scalar_t>(), y, output.data_ptr<scalar_t>(), num_elements);
                     break;
                 case 2:
                     using vector_t = typename DType<scalar_t>::nv_dtype2;
                     _add_scalar_forward_cuda_kernel<scalar_t, vector_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(
-                        x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
+                        x.data_ptr<scalar_t>(), y, output.data_ptr<scalar_t>(), num_elements);
                     break;
                 case 4:
                     if constexpr (std::is_same_v<scalar_t, fp32>) {
                         _add_scalar_forward_cuda_kernel<scalar_t, fp32_4><<<NUM_BLOCKS, BLOCK_SIZE>>>(
-                            x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
+                            x.data_ptr<scalar_t>(), y, output.data_ptr<scalar_t>(), num_elements);
                     } else {
                         _add_scalar_forward_cuda_kernel<scalar_t, fp32_2><<<NUM_BLOCKS, BLOCK_SIZE>>>(
-                            x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
+                            x.data_ptr<scalar_t>(), y, output.data_ptr<scalar_t>(), num_elements);
                     }
                     break;
                 case 8:
@@ -127,7 +127,7 @@ void add_scalar_forward_cuda(const torch::Tensor &x,
                         throw std::runtime_error("fp32 doesn't support vector_instruction_width = 8");
                     } else {
                         _add_scalar_forward_cuda_kernel<scalar_t, fp32_4><<<NUM_BLOCKS, BLOCK_SIZE>>>(
-                            x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
+                            x.data_ptr<scalar_t>(), y, output.data_ptr<scalar_t>(), num_elements);
                     }
                     break;
                 default:
