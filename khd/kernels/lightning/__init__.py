@@ -21,7 +21,7 @@ class _LightningTransformer_KHD(torch.autograd.Function):
         vocab_size, hidden_size = word_embeddings.size()
 
         output = torch.empty(
-            batch_size, sequence_length, vocab_size, device=torch.cuda.current_device(), dtype=word_embeddings.dtype
+            batch_size, sequence_length, hidden_size, device=torch.cuda.current_device(), dtype=word_embeddings.dtype
         )
 
         if kernel_backend == KernelBackend.triton:
