@@ -54,7 +54,7 @@ class _LightningTransformer_KHD(torch.autograd.Function):
         return output
 
 
-def rmsnorm_khd(
+def lightning_transformer_khd(
     input_ids: torch.Tensor,
     word_embeddings: torch.Tensor,
     kernel_backend: KernelBackend | CutoTuneParameter = CutoTuneParameter(),

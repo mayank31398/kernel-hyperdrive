@@ -9,6 +9,7 @@ from .kernels import (
     add_tensor_torch,
     embedding_khd,
     embedding_torch,
+    lightning_transformer_khd,
     rmsnorm_khd,
     rmsnorm_torch,
     swiglu_khd,
