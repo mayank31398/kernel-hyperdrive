@@ -1,7 +1,9 @@
 import torch
 import triton
 
+from ....constants import BLOCK_SIZES_POWERS_OF_2
 from ....enums import KernelBackend
+from ....utils import CutoTuneParameter, cutotune, get_cartesian_product_cutotune_configs
 from .cuda_implementation import add_scalar_forward_cuda_kernel, add_scalar_forward_cuda_kernel_compileable
 from .torch_implementation import add_scalar_torch
 from .triton_implementation import add_scalar_forward_triton_kernel
@@ -9,8 +11,38 @@ from .triton_implementation import add_scalar_forward_triton_kernel
 
 class _AddScalar_KHD(torch.autograd.Function):
     @staticmethod
+    @cutotune(
+        configs=(
+            get_cartesian_product_cutotune_configs(
+                kernel_backend=[KernelBackend.cuda],
+                vector_instruction_width=[1, 2, 4],
+                BLOCK_SIZE=BLOCK_SIZES_POWERS_OF_2,
+            )
+            if torch.cuda.is_available()
+            else []
+        )
+        + (
+            get_cartesian_product_cutotune_configs(
+                kernel_backend=[KernelBackend.cuda],
+                vector_instruction_width=[8],
+                BLOCK_SIZE=BLOCK_SIZES_POWERS_OF_2,
+                condition=lambda **kwargs: kwargs["x"].dtype in [torch.float16, torch.bfloat16],
+            )
+            if torch.cuda.is_available()
+            else []
+        )
+        + get_cartesian_product_cutotune_configs(
+            kernel_backend=[KernelBackend.triton], vector_instruction_width=[None], BLOCK_SIZE=BLOCK_SIZES_POWERS_OF_2
+        ),
+        triggers={"x.dtype"},
+    )
     def forward(
-        ctx, x: torch.Tensor, y: float, kernel_backend: KernelBackend, BLOCK_SIZE: int | None = None
+        ctx,
+        x: torch.Tensor,
+        y: float,
+        kernel_backend: KernelBackend | CutoTuneParameter,
+        vector_instruction_width: int | CutoTuneParameter,
+        BLOCK_SIZE: int | CutoTuneParameter,
     ) -> torch.Tensor:
         if y == 0:
             return x
@@ -21,10 +53,16 @@ class _AddScalar_KHD(torch.autograd.Function):
             assert x.is_cuda, "tensor x is not on GPU"
 
             if torch.compiler.is_compiling():
-                add_scalar_forward_cuda_kernel_compileable(x=x, y=y, output=output, BLOCK_SIZE=BLOCK_SIZE)
+                add_scalar_forward_cuda_kernel_compileable(
+                    x=x, y=y, output=output, vector_instruction_width=vector_instruction_width, BLOCK_SIZE=BLOCK_SIZE
+                )
             else:
-                add_scalar_forward_cuda_kernel(x=x, y=y, output=output, BLOCK_SIZE=BLOCK_SIZE)
+                add_scalar_forward_cuda_kernel(
+                    x=x, y=y, output=output, vector_instruction_width=vector_instruction_width, BLOCK_SIZE=BLOCK_SIZE
+                )
         elif kernel_backend == KernelBackend.triton:
+            assert vector_instruction_width is None
+
             num_elements = x.numel()
             grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE"]),)
 
@@ -39,10 +77,14 @@ class _AddScalar_KHD(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor | None]:
-        return output_grad, None, None, None
+        return output_grad, None, None, None, None
 
 
 def add_scalar_khd(
-    x: torch.Tensor, y: float, kernel_backend: KernelBackend, BLOCK_SIZE: int | None = None
+    x: torch.Tensor,
+    y: torch.Tensor,
+    kernel_backend: KernelBackend | CutoTuneParameter = CutoTuneParameter(),
+    vector_instruction_width: int | CutoTuneParameter = CutoTuneParameter(),
+    BLOCK_SIZE: int | CutoTuneParameter = CutoTuneParameter(),
 ) -> torch.Tensor:
-    return _AddScalar_KHD.apply(x, y, kernel_backend, BLOCK_SIZE)
+    return _AddScalar_KHD.apply(x, y, kernel_backend, vector_instruction_width, BLOCK_SIZE)
