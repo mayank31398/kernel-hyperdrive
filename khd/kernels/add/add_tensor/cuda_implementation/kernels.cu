@@ -14,12 +14,13 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
     const int vector_instruction_width = sizeof(vector_t) / sizeof(scalar_t);
     const int64_t thread_id = get_global_thread_id();
 
-    // constexpr avoids error when n == 1 when allocating output_buffer for fp16/bf16
+    // no vector instructions
     if constexpr (vector_instruction_width == 1) {
         if (thread_id < num_elements) {
             output[thread_id] = x[thread_id] + y[thread_id];
         }
     } else {
+        // no vector instructions
         using dtype = DType<scalar_t>;
 
         const int64_t start = thread_id * vector_instruction_width;
