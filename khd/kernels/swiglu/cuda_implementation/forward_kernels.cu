@@ -23,7 +23,7 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
 
             // up is upcasted automatically
             _gate_upcast = up[i] * _gate_upcast * sigmoid<fp32, fp32>(_gate_upcast);
-            output[i] = dtype::downcast(_gate_upcast);
+            output[thread_id] = dtype::downcast(_gate_upcast);
         }
     } else {
         const int64_t start = thread_id * vector_instruction_width;
@@ -83,7 +83,7 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
                             DType<fp32>::make2(_up_upcast.x * _gate_upcast.x * sigmoid<fp32, fp32>(_gate_upcast.x),
                                                _up_upcast.y * _gate_upcast.y * sigmoid<fp32, fp32>(_gate_upcast.y));
 
-                        output_buffer[i] = dtype::reinterpret_2x16_as_32_bits(dtype::downcast(_x_upcast));
+                        output_buffer[i] = dtype::reinterpret_2x16_as_32_bits(dtype::downcast(_gate_upcast));
                     }
 
                     if constexpr (vector_instruction_width == 4) {
@@ -116,7 +116,7 @@ void swiglu_forward_cuda(torch::Tensor gate,
     const int64_t num_elements = gate.numel();
 
     AT_DISPATCH_CUSTOM_FLOAT_TYPES(
-        x.scalar_type(), "swiglu_forward_cuda_kernel", ([&] {
+        gate.scalar_type(), "swiglu_forward_cuda_kernel", ([&] {
             const int num_elements_per_block = BLOCK_SIZE * vector_instruction_width;
             const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
 
