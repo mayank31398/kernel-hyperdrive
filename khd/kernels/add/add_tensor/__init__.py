@@ -51,6 +51,9 @@ class _AddTensor_KHD(torch.autograd.Function):
         output = torch.empty_like(x)
 
         if kernel_backend == KernelBackend.cuda:
+            assert x.is_cuda, "tensor x is not on GPU"
+            assert y.is_cuda, "tensor y is not on GPU"
+
             if torch.compiler.is_compiling():
                 add_tensor_forward_cuda_kernel_compileable(
                     x=x, y=y, output=output, vector_instruction_width=vector_instruction_width, BLOCK_SIZE=BLOCK_SIZE
