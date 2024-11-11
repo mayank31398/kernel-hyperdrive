@@ -66,7 +66,8 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
 
                     output_vec[thread_id] = dtype::downcast(_gate_upcast);
                 } else {
-                    const fp32 *x_vec = (fp32 *)&((vector_t *)x)[thread_id];
+                    const fp32 *gate_vec = (fp32 *)&((vector_t *)gate)[thread_id];
+                    const fp32 *up_vec = (fp32 *)&((vector_t *)up)[thread_id];
 
                     const int n = vector_instruction_width >> 1;
                     fp32 output_buffer[n];
@@ -75,8 +76,13 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
                     #pragma unroll
                     // clang-format on
                     for (int i = 0; i < n; i++) {
-                        fp32_2 _x_upcast = dtype::upcast(dtype::reinterpret_32_bits_as_2x16(x_vec[i]));
-                        _x_upcast = DType<fp32>::make2(_x_upcast.x + y, _x_upcast.y + y);
+                        fp32_2 _gate_upcast = dtype::upcast(dtype::reinterpret_32_bits_as_2x16(gate_vec[i]));
+                        fp32_2 _up_upcast = dtype::upcast(dtype::reinterpret_32_bits_as_2x16(up_vec[i]));
+
+                        _gate_upcast =
+                            DType<fp32>::make2(_up_upcast.x * _gate_upcast.x * sigmoid<fp32, fp32>(_gate_upcast.x),
+                                               _up_upcast.y * _gate_upcast.y * sigmoid<fp32, fp32>(_gate_upcast.y));
+
                         output_buffer[i] = dtype::reinterpret_2x16_as_32_bits(dtype::downcast(_x_upcast));
                     }
 
@@ -99,27 +105,6 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
                 output[i] = dtype::downcast(_gate_upcast);
             }
         }
-    }
-
-    if (start < num_elements && end < num_elements) {
-        const fp32 *_gate = (fp32 *)&((fp32_4 *)gate)[thread_id];
-        const fp32 *_up = (fp32 *)&((fp32_4 *)up)[thread_id];
-
-        fp32 output_buffer[4];
-
-        // clang-format off
-        #pragma unroll
-        // clang-format on
-        for (int i = 0; i < 4; i++) {
-            fp32_2 _up_upcast = dtype::upcast(dtype::reinterpret_32_bits_as_2x16(_up[i]));
-            fp32_2 _gate_upcast = dtype::upcast(dtype::reinterpret_32_bits_as_2x16(_gate[i]));
-
-            _gate_upcast = DType<fp32>::make2(_up_upcast.x * _gate_upcast.x * sigmoid<fp32, fp32>(_gate_upcast.x),
-                                              _up_upcast.y * _gate_upcast.y * sigmoid<fp32, fp32>(_gate_upcast.y));
-            output_buffer[i] = dtype::reinterpret_2x16_as_32_bits(dtype::downcast(_gate_upcast));
-        }
-
-        ((fp32_4 *)output)[thread_id] = DType<fp32>::make4(output_buffer);
     }
 }
 
