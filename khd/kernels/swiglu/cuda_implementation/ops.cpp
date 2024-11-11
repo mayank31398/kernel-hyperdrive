@@ -1,6 +1,10 @@
 #include <torch/extension.h>
 
-void swiglu_forward_cuda(torch::Tensor gate, torch::Tensor up, torch::Tensor output, const int BLOCK_SIZE);
+void swiglu_forward_cuda(torch::Tensor gate,
+                         torch::Tensor up,
+                         torch::Tensor output,
+                         const int &vector_instruction_width,
+                         const int BLOCK_SIZE);
 
 void swiglu_backward_cuda(torch::Tensor gate,
                           torch::Tensor up,

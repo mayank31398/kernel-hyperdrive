@@ -12,16 +12,14 @@ from ..test_commons import TestCommons
 class EmbeddingTest(TestCommons):
     @parameterized.expand(
         TestCommons.make_args_matrix(
-            [(51, 17), (19, 239), (7, 7537), (9, 1749)],
-            [(7153, 937), (27153, 1937), (97153, 2937), (17153, 31937)],
-            [torch.device("cuda")],
-            TestCommons.get_dtypes(),
-            [
-                partial(embedding_khd, kernel_backend=KernelBackend.triton, BLOCK_SIZE_B=64, BLOCK_SIZE_H=64),
-                torch.compile(
-                    partial(embedding_khd, kernel_backend=KernelBackend.triton, BLOCK_SIZE_B=64, BLOCK_SIZE_H=64)
-                ),
-            ],
+            [(51, 17), (19, 239), (7, 7537), (9, 1749)],  # input_ids_size
+            [(7153, 937), (27153, 1937), (97153, 2937), (17153, 31937)],  # wte_size
+            [torch.device("cuda")],  # device
+            TestCommons.get_dtypes(),  # dtype
+            [KernelBackend.triton],  # kernel_backend
+            [64],  # BLOCK_SIZE_B
+            [64],  # BLOCK_SIZE_H
+            [embedding_khd, torch.compile(embedding_khd)],  # function
         )
     )
     def test_embedding(
@@ -30,6 +28,9 @@ class EmbeddingTest(TestCommons):
         wte_size: tuple[int],
         device: torch.device,
         dtype: torch.dtype,
+        kernel_backend: KernelBackend,
+        BLOCK_SIZE_B: int,
+        BLOCK_SIZE_H: int,
         function: Callable,
     ) -> None:
         vocab_size = wte_size[0] - 1
@@ -37,7 +38,9 @@ class EmbeddingTest(TestCommons):
 
         wte_kernel, wte_expected = self.get_random_duplicated_tensors(wte_size, device=device, dtype=dtype)
 
-        z_kernel = function(input_ids, wte_kernel)
+        z_kernel = function(
+            input_ids, wte_kernel, kernel_backend=kernel_backend, BLOCK_SIZE_B=BLOCK_SIZE_B, BLOCK_SIZE_H=BLOCK_SIZE_H
+        )
         z_expected = embedding_torch(input_ids, wte_expected)
 
         # z_kernel.mean().backward()
