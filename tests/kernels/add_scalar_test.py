@@ -1,4 +1,3 @@
-from functools import partial
 from typing import Callable
 
 import torch
@@ -15,65 +14,50 @@ class AddTensorTest(TestCommons):
             TestCommons.get_2d_tensor_sizes(),
             [torch.device("cuda")],
             TestCommons.get_dtypes(),
-            [
-                partial(
-                    add_scalar_khd, kernel_backend=KernelBackend.cuda, vector_instruction_width=1, BLOCK_SIZE=1024
-                ),
-                partial(
-                    add_scalar_khd, kernel_backend=KernelBackend.cuda, vector_instruction_width=2, BLOCK_SIZE=1024
-                ),
-                partial(
-                    add_scalar_khd, kernel_backend=KernelBackend.cuda, vector_instruction_width=4, BLOCK_SIZE=1024
-                ),
-                torch.compile(
-                    partial(
-                        add_scalar_khd, kernel_backend=KernelBackend.cuda, vector_instruction_width=1, BLOCK_SIZE=1024
-                    )
-                ),
-                torch.compile(
-                    partial(
-                        add_scalar_khd, kernel_backend=KernelBackend.cuda, vector_instruction_width=2, BLOCK_SIZE=1024
-                    )
-                ),
-                torch.compile(
-                    partial(
-                        add_scalar_khd, kernel_backend=KernelBackend.cuda, vector_instruction_width=4, BLOCK_SIZE=1024
-                    )
-                ),
-                partial(
-                    add_scalar_khd, kernel_backend=KernelBackend.triton, vector_instruction_width=None, BLOCK_SIZE=1024
-                ),
-                torch.compile(
-                    partial(
-                        add_scalar_khd,
-                        kernel_backend=KernelBackend.triton,
-                        vector_instruction_width=None,
-                        BLOCK_SIZE=1024,
-                    )
-                ),
-            ],
+            [KernelBackend.cuda],
+            [1, 2, 4],
+            [1024],
+            [add_scalar_khd, torch.compile(add_scalar_khd)],
         )
         + TestCommons.make_args_matrix(
             TestCommons.get_2d_tensor_sizes(),
             [torch.device("cuda")],
-            [torch.float16, torch.bfloat16],
-            [
-                partial(
-                    add_scalar_khd, kernel_backend=KernelBackend.cuda, vector_instruction_width=8, BLOCK_SIZE=1024
-                ),
-                torch.compile(
-                    partial(
-                        add_scalar_khd, kernel_backend=KernelBackend.cuda, vector_instruction_width=8, BLOCK_SIZE=1024
-                    )
-                ),
-            ],
+            [torch.bfloat16, torch.float16],
+            [KernelBackend.cuda],
+            [8],
+            [1024],
+            [add_scalar_khd, torch.compile(add_scalar_khd)],
+        )
+        + TestCommons.make_args_matrix(
+            TestCommons.get_2d_tensor_sizes(),
+            [torch.device("cuda")],
+            TestCommons.get_dtypes(),
+            [KernelBackend.triton],
+            [None],
+            [1024],
+            [add_scalar_khd, torch.compile(add_scalar_khd)],
         )
     )
-    def test_add_scalar(self, size: tuple[int], device: torch.device, dtype: torch.dtype, function: Callable) -> None:
+    def test_add_tensor(
+        self,
+        size: tuple[int],
+        device: torch.device,
+        dtype: torch.dtype,
+        kernel_backend: KernelBackend,
+        vector_instruction_width: int,
+        BLOCK_SIZE: int,
+        function: Callable,
+    ) -> None:
         x_kernel, x_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
         y = 0.42
 
-        z_kernel = function(x_kernel, y)
+        z_kernel = function(
+            x_kernel,
+            y,
+            kernel_backend=kernel_backend,
+            vector_instruction_width=vector_instruction_width,
+            BLOCK_SIZE=BLOCK_SIZE,
+        )
         z_expected = add_scalar_torch(x_expected, y)
 
         z_kernel.mean().backward()
