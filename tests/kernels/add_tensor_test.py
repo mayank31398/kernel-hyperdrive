@@ -50,9 +50,21 @@ class AddTensorTest(TestCommons):
         y_kernel, y_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
 
         if torch_compile:
-            z_kernel = torch.compile(add_tensor_khd)(x_kernel, y_kernel)
+            z_kernel = torch.compile(add_tensor_khd)(
+                x_kernel,
+                y_kernel,
+                kernel_backend=kernel_backend,
+                vector_instruction_width=vector_instruction_width,
+                BLOCK_SIZE=BLOCK_SIZE,
+            )
         else:
-            z_kernel = add_tensor_khd(x_kernel, y_kernel)
+            z_kernel = add_tensor_khd(
+                x_kernel,
+                y_kernel,
+                kernel_backend=kernel_backend,
+                vector_instruction_width=vector_instruction_width,
+                BLOCK_SIZE=BLOCK_SIZE,
+            )
 
         z_expected = add_tensor_torch(x_expected, y_expected)
 
