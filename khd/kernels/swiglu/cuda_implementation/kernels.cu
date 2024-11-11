@@ -84,7 +84,7 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
         #pragma unroll
         // clang-format on
         for (int i = 0; i < 4; i++) {
-            if (std::is_same_v<scalar_t, fp32>) {
+            if constexpr (std::is_same_v<scalar_t, fp32>) {
                 fp32 gate_sigmoid = sigmoid<fp32, fp32>(_gate[i]);
                 fp32 gate_silu = _gate[i] * gate_sigmoid;
 
