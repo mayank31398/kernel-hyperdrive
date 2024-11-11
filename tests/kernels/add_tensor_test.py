@@ -1,3 +1,5 @@
+from typing import Callable
+
 import torch
 from parameterized import parameterized
 
@@ -15,7 +17,7 @@ class AddTensorTest(TestCommons):
             [KernelBackend.cuda],
             [1, 2, 4],
             [1024],
-            [False, True],
+            [add_tensor_khd, torch.compile(add_tensor_khd)],
         )
         + TestCommons.make_args_matrix(
             TestCommons.get_2d_tensor_sizes(),
@@ -24,7 +26,7 @@ class AddTensorTest(TestCommons):
             [KernelBackend.cuda],
             [8],
             [1024],
-            [False, True],
+            [add_tensor_khd, torch.compile(add_tensor_khd)],
         )
         + TestCommons.make_args_matrix(
             TestCommons.get_2d_tensor_sizes(),
@@ -33,7 +35,7 @@ class AddTensorTest(TestCommons):
             [KernelBackend.triton],
             [None],
             [1024],
-            [False, True],
+            [add_tensor_khd, torch.compile(add_tensor_khd)],
         )
     )
     def test_add_tensor(
@@ -44,27 +46,18 @@ class AddTensorTest(TestCommons):
         kernel_backend: KernelBackend,
         vector_instruction_width: int,
         BLOCK_SIZE: int,
-        torch_compile: bool,
+        function: Callable,
     ) -> None:
         x_kernel, x_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
         y_kernel, y_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
 
-        if torch_compile:
-            z_kernel = torch.compile(add_tensor_khd)(
-                x_kernel,
-                y_kernel,
-                kernel_backend=kernel_backend,
-                vector_instruction_width=vector_instruction_width,
-                BLOCK_SIZE=BLOCK_SIZE,
-            )
-        else:
-            z_kernel = add_tensor_khd(
-                x_kernel,
-                y_kernel,
-                kernel_backend=kernel_backend,
-                vector_instruction_width=vector_instruction_width,
-                BLOCK_SIZE=BLOCK_SIZE,
-            )
+        z_kernel = function(
+            x_kernel,
+            y_kernel,
+            kernel_backend=kernel_backend,
+            vector_instruction_width=vector_instruction_width,
+            BLOCK_SIZE=BLOCK_SIZE,
+        )
 
         z_expected = add_tensor_torch(x_expected, y_expected)
 
