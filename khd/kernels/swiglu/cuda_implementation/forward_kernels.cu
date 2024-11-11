@@ -113,7 +113,7 @@ void swiglu_forward_cuda(torch::Tensor gate,
                          torch::Tensor output,
                          const int &vector_instruction_width,
                          const int BLOCK_SIZE) {
-    const int64_t num_elements = x.numel();
+    const int64_t num_elements = gate.numel();
 
     AT_DISPATCH_CUSTOM_FLOAT_TYPES(
         x.scalar_type(), "swiglu_forward_cuda_kernel", ([&] {
