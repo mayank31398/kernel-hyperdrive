@@ -11,31 +11,31 @@ from ..test_commons import TestCommons
 class AddTensorTest(TestCommons):
     @parameterized.expand(
         TestCommons.make_args_matrix(
-            TestCommons.get_2d_tensor_sizes(),
-            [torch.device("cuda")],
-            TestCommons.get_dtypes(),
-            [KernelBackend.cuda],
-            [1, 2, 4],
-            [1024],
-            [add_scalar_khd, torch.compile(add_scalar_khd)],
+            TestCommons.get_2d_tensor_sizes(),  # size
+            [torch.device("cuda")],  # device
+            TestCommons.get_dtypes(),  # dtype
+            [KernelBackend.cuda],  # kernel_backend
+            [1, 2, 4],  # vector_instruction_width
+            [1024],  # BLOCK_SIZE
+            [add_scalar_khd, torch.compile(add_scalar_khd)],  # function
         )
         + TestCommons.make_args_matrix(
-            TestCommons.get_2d_tensor_sizes(),
-            [torch.device("cuda")],
-            [torch.bfloat16, torch.float16],
-            [KernelBackend.cuda],
-            [8],
-            [1024],
-            [add_scalar_khd, torch.compile(add_scalar_khd)],
+            TestCommons.get_2d_tensor_sizes(),  # size
+            [torch.device("cuda")],  # device
+            [torch.bfloat16, torch.float16],  # dtype
+            [KernelBackend.cuda],  # kernel_backend
+            [8],  # vector_instruction_width
+            [1024],  # BLOCK_SIZE
+            [add_scalar_khd, torch.compile(add_scalar_khd)],  # function
         )
         + TestCommons.make_args_matrix(
-            TestCommons.get_2d_tensor_sizes(),
-            [torch.device("cuda")],
-            TestCommons.get_dtypes(),
-            [KernelBackend.triton],
-            [None],
-            [1024],
-            [add_scalar_khd, torch.compile(add_scalar_khd)],
+            TestCommons.get_2d_tensor_sizes(),  # size
+            [torch.device("cuda")],  # device
+            TestCommons.get_dtypes(),  # dtype
+            [KernelBackend.triton],  # kernel_backend
+            [None],  # vector_instruction_width
+            [1024],  # BLOCK_SIZE
+            [add_scalar_khd, torch.compile(add_scalar_khd)],  # function
         )
     )
     def test_add_tensor(
