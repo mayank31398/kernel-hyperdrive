@@ -39,19 +39,19 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
                     output_buffer[i] = x_vec[i] + y_vec[i];
                 }
 
-                if constexpr (std::is_same_v<vector_t, fp32_2>) {
-                    static_assert(vector_instruction_width == 2);
+                if constexpr (vector_instruction_width == 2) {
                     output_vec[thread_id] = dtype::make2(output_buffer);
-                } else if constexpr (std::is_same_v<vector_t, fp32_4>) {
-                    static_assert(vector_instruction_width == 4);
+                } else if constexpr (vector_instruction_width == 4) {
                     output_vec[thread_id] = dtype::make4(output_buffer);
+                } else {
+                    static_assert("vector_instruction_width is invalid for fp32");
                 }
             } else {
                 using T2 = typename dtype::nv_dtype2;
 
-                if constexpr (std::is_same_v<vector_t, fp16_2> || std::is_same_v<vector_t, bf16_2>) {
-                    T2 _x = ((vector_t *)x)[thread_id];
-                    T2 _y = ((vector_t *)y)[thread_id];
+                if constexpr (vector_instruction_width == 2) {
+                    const T2 _x = ((vector_t *)x)[thread_id];
+                    const T2 _y = ((vector_t *)y)[thread_id];
 
                     output_vec[thread_id] = __hadd2(_x, _y);
                 } else {
@@ -72,12 +72,12 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
                         output_buffer[i] = dtype::reinterpret_2x16_as_32_bits(_x);
                     }
 
-                    if constexpr (std::is_same_v<vector_t, fp32_2>) {
-                        assert(vector_instruction_width == 4);
+                    if constexpr (vector_instruction_width == 4) {
                         output_vec[thread_id] = DType<fp32>::make2(output_buffer);
-                    } else if constexpr (std::is_same_v<vector_t, fp32_4>) {
-                        assert(vector_instruction_width == 8);
+                    } else if constexpr (vector_instruction_width == 8) {
                         output_vec[thread_id] = DType<fp32>::make4(output_buffer);
+                    } else {
+                        static_assert("vector_instruction_width is invalid for fp16 & bf16");
                     }
                 }
             }
@@ -92,8 +92,8 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
     }
 }
 
-void add_tensor_forward_cuda(const torch::Tensor x,
-                             const torch::Tensor y,
+void add_tensor_forward_cuda(const torch::Tensor &x,
+                             const torch::Tensor &y,
                              torch::Tensor output,
                              const int &vector_instruction_width,
                              const int &BLOCK_SIZE) {

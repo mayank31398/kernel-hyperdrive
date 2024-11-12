@@ -70,8 +70,8 @@ class _Swiglu_KHD(torch.autograd.Function):
 
         ctx.save_for_backward(gate, up)
 
-        ctx.vector_instruction_width_backward = vector_instruction_width_backward
         ctx.kernel_backend_backward = kernel_backend_backward
+        ctx.vector_instruction_width_backward = vector_instruction_width_backward
         ctx.BLOCK_SIZE_backward = BLOCK_SIZE_backward
 
         output = torch.empty_like(gate)
@@ -132,6 +132,7 @@ class _Swiglu_KHD(torch.autograd.Function):
                     output_grad=output_grad,
                     gate_grad=gate_grad,
                     up_grad=up_grad,
+                    vector_instruction_width=vector_instruction_width_backward,
                     BLOCK_SIZE=BLOCK_SIZE_backward,
                 )
             else:
@@ -141,6 +142,7 @@ class _Swiglu_KHD(torch.autograd.Function):
                     output_grad=output_grad,
                     gate_grad=gate_grad,
                     up_grad=up_grad,
+                    vector_instruction_width=vector_instruction_width_backward,
                     BLOCK_SIZE=BLOCK_SIZE_backward,
                 )
         elif kernel_backend_backward == KernelBackend.triton:

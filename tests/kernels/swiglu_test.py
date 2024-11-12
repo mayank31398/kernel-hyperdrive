@@ -77,8 +77,8 @@ class SwigluTest(TestCommons):
             [torch.float32],  # dtype
             [KernelBackend.triton],  # kernel_backend_forward
             [KernelBackend.cuda],  # kernel_backend_backward
-            [1, 2, 4],  # vector_instruction_width_forward
-            [None],  # vector_instruction_width_backward
+            [None],  # vector_instruction_width_forward
+            [1, 2, 4],  # vector_instruction_width_backward
             [1024],  # BLOCK_SIZE_forward
             [1024],  # BLOCK_SIZE_backward
             [swiglu_khd, torch.compile(swiglu_khd)],  # function
@@ -89,8 +89,8 @@ class SwigluTest(TestCommons):
             [torch.bfloat16, torch.float16],  # dtype
             [KernelBackend.triton],  # kernel_backend_forward
             [KernelBackend.cuda],  # kernel_backend_backward
-            [1, 2, 4, 8],  # vector_instruction_width_forward
-            [None],  # vector_instruction_width_backward
+            [None],  # vector_instruction_width_forward
+            [1, 2, 4, 8],  # vector_instruction_width_backward
             [1024],  # BLOCK_SIZE_forward
             [1024],  # BLOCK_SIZE_backward
             [swiglu_khd, torch.compile(swiglu_khd)],  # function

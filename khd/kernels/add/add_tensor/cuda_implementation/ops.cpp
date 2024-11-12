@@ -1,7 +1,7 @@
 #include <torch/extension.h>
 
-void add_tensor_forward_cuda(const torch::Tensor x,
-                             const torch::Tensor y,
+void add_tensor_forward_cuda(const torch::Tensor &x,
+                             const torch::Tensor &y,
                              torch::Tensor output,
                              const int &vector_instruction_width,
                              const int &BLOCK_SIZE);

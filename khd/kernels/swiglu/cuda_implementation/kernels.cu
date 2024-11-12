@@ -46,7 +46,7 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
 
                 if constexpr (vector_instruction_width == 2) {
                     output_vec[thread_id] = dtype::make2(output_buffer);
-                } else if constexpr (std::is_same_v<vector_t, fp32_4>) {
+                } else if constexpr (vector_instruction_width == 4) {
                     output_vec[thread_id] = dtype::make4(output_buffer);
                 }
             } else {
@@ -107,89 +107,164 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
     }
 }
 
-template <typename scalar_t>
+template <typename scalar_t, typename vector_t>
 __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
                                              const scalar_t *up,
                                              const scalar_t *output_grad,
                                              scalar_t *gate_grad,
                                              scalar_t *up_grad,
                                              const int64_t num_elements) {
+    const int vector_instruction_width = sizeof(vector_t) / sizeof(scalar_t);
     const int64_t thread_id = get_global_thread_id();
-    const int vector_instruction_width = sizeof(fp32_4) / sizeof(scalar_t);
-
-    const int64_t start = thread_id * vector_instruction_width;
-    const int64_t end = (thread_id + 1) * vector_instruction_width - 1;  // inclusive of last element
 
     using dtype = DType<scalar_t>;
-    using T = typename dtype::nv_dtype;
-    using T2 = typename dtype::nv_dtype2;
 
-    if (start < num_elements && end < num_elements) {
-        const fp32 *_gate = (fp32 *)&((const fp32_4 *)gate)[thread_id];
-        const fp32 *_up = (fp32 *)&((const fp32_4 *)up)[thread_id];
-        const fp32 *_output_grad = (fp32 *)&((const fp32_4 *)output_grad)[thread_id];
+    if constexpr (vector_instruction_width == 1) {
+        if (thread_id < num_elements) {
+            fp32 _gate_upcast = dtype::upcast(gate[thread_id]);
 
-        fp32 gate_grad_buffer[4];
-        fp32 up_grad_buffer[4];
+            fp32 _gate_sigmoid = sigmoid<fp32, fp32>(_gate_upcast);
+            fp32 _gate_silu = _gate_upcast * _gate_sigmoid;
 
-        // clang-format off
-        #pragma unroll
-        // clang-format on
-        for (int i = 0; i < 4; i++) {
-            if constexpr (std::is_same_v<scalar_t, fp32>) {
-                fp32 gate_sigmoid = sigmoid<fp32, fp32>(_gate[i]);
-                fp32 gate_silu = _gate[i] * gate_sigmoid;
-
-                up_grad_buffer[i] = _output_grad[i] * gate_silu;
-                gate_grad_buffer[i] = _output_grad[i] * _up[i] * (gate_sigmoid + gate_silu * (1 - gate_sigmoid));
-            } else {
-                fp32_2 _up_upcast = dtype::upcast(dtype::reinterpret_32_bits_as_2x16(_up[i]));
-                fp32_2 _gate_upcast = dtype::upcast(dtype::reinterpret_32_bits_as_2x16(_gate[i]));
-                fp32_2 _output_grad_upcast = dtype::upcast(dtype::reinterpret_32_bits_as_2x16(_output_grad[i]));
-
-                fp32_2 _gate_grad;
-                fp32_2 _up_grad;
-
-                fp32 gate_sigmoid = sigmoid<fp32, fp32>(_gate_upcast.x);
-                fp32 gate_silu = _gate_upcast.x * gate_sigmoid;
-                _up_grad.x = _output_grad_upcast.x * gate_silu;
-                _gate_grad.x = _output_grad_upcast.x * _up_upcast.x * (gate_sigmoid + gate_silu * (1 - gate_sigmoid));
-
-                gate_sigmoid = sigmoid<fp32, fp32>(_gate_upcast.y);
-                gate_silu = _gate_upcast.y * gate_sigmoid;
-                _up_grad.y = _output_grad_upcast.y * gate_silu;
-                _gate_grad.y = _output_grad_upcast.y * _up_upcast.y * (gate_sigmoid + gate_silu * (1 - gate_sigmoid));
-
-                up_grad_buffer[i] = dtype::reinterpret_2x16_as_32_bits(dtype::downcast(_up_grad));
-                gate_grad_buffer[i] = dtype::reinterpret_2x16_as_32_bits(dtype::downcast(_gate_grad));
-            }
+            gate_grad[thread_id] = dtype::downcast(output_grad[thread_id] * up[thread_id] *
+                                                   (_gate_sigmoid + _gate_silu * (1 - _gate_sigmoid)));
+            up_grad[thread_id] = dtype::downcast(output_grad[thread_id] * _gate_silu);
         }
+    } else {
+        using T = typename dtype::nv_dtype;
+        using T2 = typename dtype::nv_dtype2;
 
-        ((fp32_4 *)gate_grad)[thread_id] = DType<fp32>::make4(gate_grad_buffer);
-        ((fp32_4 *)up_grad)[thread_id] = DType<fp32>::make4(up_grad_buffer);
-    } else if (start < num_elements) {
-        // clang-format off
-        #pragma unroll
-        // clang-format on
-        for (int i = start; i < num_elements; i++) {
-            fp32 _up = dtype::upcast(static_cast<T>(up[i]));
-            fp32 _gate = dtype::upcast(static_cast<T>(gate[i]));
-            fp32 _output_grad = dtype::upcast(static_cast<T>(output_grad[i]));
+        const int64_t start = thread_id * vector_instruction_width;
+        const int64_t end = (thread_id + 1) * vector_instruction_width - 1;  // inclusive of last element
 
-            fp32 gate_sigmoid = sigmoid<fp32, fp32>(_gate);
-            fp32 gate_silu = _gate * gate_sigmoid;
+        if (start < num_elements && end < num_elements) {
+            vector_t *gate_grad_vec = (vector_t *)gate_grad;
+            vector_t *up_grad_vec = (vector_t *)up_grad;
 
-            up_grad[i] = _output_grad * gate_silu;
-            gate_grad[i] = _output_grad * _up * (gate_sigmoid + gate_silu * (1 - gate_sigmoid));
+            if constexpr (std::is_same_v<scalar_t, fp32>) {
+                const fp32 *gate_vec = (fp32 *)&((vector_t *)gate)[thread_id];
+                const fp32 *up_vec = (fp32 *)&((vector_t *)up)[thread_id];
+                const fp32 *output_grad_vec = (fp32 *)&((vector_t *)output_grad)[thread_id];
+
+                fp32 gate_grad_buffer[vector_instruction_width];
+                fp32 up_grad_buffer[vector_instruction_width];
+
+                // clang-format off
+                #pragma unroll
+                // clang-format on
+                for (int i = 0; i < vector_instruction_width; i++) {
+                    fp32 _gate_sigmoid = sigmoid<fp32, fp32>(gate_vec[i]);
+                    fp32 _gate_silu = gate_vec[i] * _gate_sigmoid;
+
+                    gate_grad_buffer[i] =
+                        output_grad_vec[i] * up_vec[i] * (_gate_sigmoid + _gate_silu * (1 - _gate_sigmoid));
+                    up_grad_buffer[i] = output_grad_vec[i] * _gate_silu;
+                }
+
+                if constexpr (vector_instruction_width == 2) {
+                    gate_grad_vec[thread_id] = dtype::make2(gate_grad_buffer);
+                    up_grad_vec[thread_id] = dtype::make2(up_grad_buffer);
+                } else if constexpr (vector_instruction_width == 4) {
+                    gate_grad_vec[thread_id] = dtype::make4(gate_grad_buffer);
+                    up_grad_vec[thread_id] = dtype::make4(up_grad_buffer);
+                }
+            } else {
+                using T2 = typename dtype::nv_dtype2;
+
+                if constexpr (vector_instruction_width == 2) {
+                    T2 _gate = ((vector_t *)gate)[thread_id];
+                    T2 _up = ((vector_t *)up)[thread_id];
+                    T2 _output_grad = ((vector_t *)output_grad)[thread_id];
+
+                    fp32_2 _gate_upcast = dtype::upcast(_gate);
+                    fp32_2 _up_upcast = dtype::upcast(_up);
+                    fp32_2 _output_grad_upcast = dtype::upcast(_output_grad);
+
+                    fp32 _gate_sigmoid_x = sigmoid<fp32, fp32>(_gate_upcast.x);
+                    fp32 _gate_sigmoid_y = sigmoid<fp32, fp32>(_gate_upcast.y);
+
+                    fp32 _gate_silu_x = _gate_upcast.x * _gate_sigmoid_x;
+                    fp32 _gate_silu_y = _gate_upcast.y * _gate_sigmoid_y;
+
+                    _gate_upcast = DType<fp32>::make2(_output_grad_upcast.x * _up_upcast.x *
+                                                          (_gate_sigmoid_x + _gate_silu_x * (1 - _gate_sigmoid_x)),
+                                                      _output_grad_upcast.y * _up_upcast.y *
+                                                          (_gate_sigmoid_y + _gate_silu_y * (1 - _gate_sigmoid_y)));
+
+                    _up_upcast =
+                        DType<fp32>::make2(_output_grad_upcast.x * _gate_silu_x, _output_grad_upcast.y * _gate_silu_y);
+
+                    gate_grad_vec[thread_id] = dtype::downcast(_gate_upcast);
+                    up_grad_vec[thread_id] = dtype::downcast(_up_upcast);
+                } else {
+                    const fp32 *gate_vec = (fp32 *)&((vector_t *)gate)[thread_id];
+                    const fp32 *up_vec = (fp32 *)&((vector_t *)up)[thread_id];
+                    const fp32 *output_grad_vec = (fp32 *)&((vector_t *)output_grad)[thread_id];
+
+                    const int n = vector_instruction_width >> 1;
+                    fp32 gate_grad_buffer[n];
+                    fp32 up_grad_buffer[n];
+
+                    // clang-format off
+                    #pragma unroll
+                    // clang-format on
+                    for (int i = 0; i < n; i++) {
+                        fp32_2 _gate_upcast = dtype::upcast(dtype::reinterpret_32_bits_as_2x16(gate_vec[i]));
+                        fp32_2 _up_upcast = dtype::upcast(dtype::reinterpret_32_bits_as_2x16(up_vec[i]));
+                        fp32_2 _output_grad_upcast =
+                            dtype::upcast(dtype::reinterpret_32_bits_as_2x16(output_grad_vec[i]));
+
+                        fp32 _gate_sigmoid_x = sigmoid<fp32, fp32>(_gate_upcast.x);
+                        fp32 _gate_sigmoid_y = sigmoid<fp32, fp32>(_gate_upcast.y);
+
+                        fp32 _gate_silu_x = _gate_upcast.x * _gate_sigmoid_x;
+                        fp32 _gate_silu_y = _gate_upcast.y * _gate_sigmoid_y;
+
+                        _gate_upcast =
+                            DType<fp32>::make2(_output_grad_upcast.x * _up_upcast.x *
+                                                   (_gate_sigmoid_x + _gate_silu_x * (1 - _gate_sigmoid_x)),
+                                               _output_grad_upcast.y * _up_upcast.y *
+                                                   (_gate_sigmoid_y + _gate_silu_y * (1 - _gate_sigmoid_y)));
+
+                        _up_upcast = DType<fp32>::make2(_output_grad_upcast.x * _gate_silu_x,
+                                                        _output_grad_upcast.y * _gate_silu_y);
+
+                        gate_grad_buffer[i] = dtype::reinterpret_2x16_as_32_bits(dtype::downcast(_gate_upcast));
+                        up_grad_buffer[i] = dtype::reinterpret_2x16_as_32_bits(dtype::downcast(_up_upcast));
+                    }
+
+                    if constexpr (vector_instruction_width == 4) {
+                        gate_grad_vec[thread_id] = DType<fp32>::make2(gate_grad_buffer);
+                        up_grad_vec[thread_id] = DType<fp32>::make2(up_grad_buffer);
+                    } else if constexpr (vector_instruction_width == 8) {
+                        gate_grad_vec[thread_id] = DType<fp32>::make4(gate_grad_buffer);
+                        up_grad_vec[thread_id] = DType<fp32>::make4(up_grad_buffer);
+                    }
+                }
+            }
+        } else if (start < num_elements) {
+            // clang-format off
+            #pragma unroll
+            // clang-format on
+            for (int i = start; i < num_elements; i++) {
+                fp32 _gate_upcast = dtype::upcast(gate[i]);
+
+                fp32 _gate_sigmoid = sigmoid<fp32, fp32>(_gate_upcast);
+                fp32 _gate_silu = _gate_upcast * _gate_sigmoid;
+
+                gate_grad[i] =
+                    dtype::downcast(output_grad[i] * up[i] * (_gate_sigmoid + _gate_silu * (1 - _gate_sigmoid)));
+                up_grad[i] = dtype::downcast(output_grad[i] * _gate_silu);
+            }
         }
     }
 }
 
-void swiglu_forward_cuda(torch::Tensor gate,
-                         torch::Tensor up,
+void swiglu_forward_cuda(const torch::Tensor &gate,
+                         const torch::Tensor &up,
                          torch::Tensor output,
                          const int &vector_instruction_width,
-                         const int BLOCK_SIZE) {
+                         const int &BLOCK_SIZE) {
     const int64_t num_elements = gate.numel();
 
     AT_DISPATCH_CUSTOM_FLOAT_TYPES(
@@ -240,26 +315,75 @@ void swiglu_forward_cuda(torch::Tensor gate,
         }));
 }
 
-void swiglu_backward_cuda(torch::Tensor gate,
-                          torch::Tensor up,
-                          torch::Tensor output_grad,
+void swiglu_backward_cuda(const torch::Tensor &gate,
+                          const torch::Tensor &up,
+                          const torch::Tensor &output_grad,
                           torch::Tensor gate_grad,
                           torch::Tensor up_grad,
-                          const int BLOCK_SIZE) {
+                          const int &vector_instruction_width,
+                          const int &BLOCK_SIZE) {
     const int64_t num_elements = gate.numel();
 
     AT_DISPATCH_CUSTOM_FLOAT_TYPES(
         gate.scalar_type(), "swiglu_backward_cuda_kernel", ([&] {
-            const int vector_instruction_width = sizeof(fp32_4) / sizeof(scalar_t);
-
             const int num_elements_per_block = BLOCK_SIZE * vector_instruction_width;
             const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
 
-            _swiglu_backward_cuda_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(gate.data_ptr<scalar_t>(),
-                                                                               up.data_ptr<scalar_t>(),
-                                                                               output_grad.data_ptr<scalar_t>(),
-                                                                               gate_grad.data_ptr<scalar_t>(),
-                                                                               up_grad.data_ptr<scalar_t>(),
-                                                                               num_elements);
+            switch (vector_instruction_width) {
+                case 1:
+                    _swiglu_backward_cuda_kernel<scalar_t, scalar_t>
+                        <<<NUM_BLOCKS, BLOCK_SIZE>>>(gate.data_ptr<scalar_t>(),
+                                                     up.data_ptr<scalar_t>(),
+                                                     output_grad.data_ptr<scalar_t>(),
+                                                     gate_grad.data_ptr<scalar_t>(),
+                                                     up_grad.data_ptr<scalar_t>(),
+                                                     num_elements);
+                    break;
+                case 2:
+                    using vector_t = typename DType<scalar_t>::nv_dtype2;
+                    _swiglu_backward_cuda_kernel<scalar_t, vector_t>
+                        <<<NUM_BLOCKS, BLOCK_SIZE>>>(gate.data_ptr<scalar_t>(),
+                                                     up.data_ptr<scalar_t>(),
+                                                     output_grad.data_ptr<scalar_t>(),
+                                                     gate_grad.data_ptr<scalar_t>(),
+                                                     up_grad.data_ptr<scalar_t>(),
+                                                     num_elements);
+                    break;
+                case 4:
+                    if constexpr (std::is_same_v<scalar_t, fp32>) {
+                        _swiglu_backward_cuda_kernel<scalar_t, fp32_4>
+                            <<<NUM_BLOCKS, BLOCK_SIZE>>>(gate.data_ptr<scalar_t>(),
+                                                         up.data_ptr<scalar_t>(),
+                                                         output_grad.data_ptr<scalar_t>(),
+                                                         gate_grad.data_ptr<scalar_t>(),
+                                                         up_grad.data_ptr<scalar_t>(),
+                                                         num_elements);
+                    } else {
+                        _swiglu_backward_cuda_kernel<scalar_t, fp32_2>
+                            <<<NUM_BLOCKS, BLOCK_SIZE>>>(gate.data_ptr<scalar_t>(),
+                                                         up.data_ptr<scalar_t>(),
+                                                         output_grad.data_ptr<scalar_t>(),
+                                                         gate_grad.data_ptr<scalar_t>(),
+                                                         up_grad.data_ptr<scalar_t>(),
+                                                         num_elements);
+                    }
+                    break;
+                case 8:
+                    if constexpr (std::is_same_v<scalar_t, fp32>) {
+                        throw std::runtime_error("fp32 doesn't support vector_instruction_width = 8");
+                    } else {
+                        _swiglu_backward_cuda_kernel<scalar_t, fp32_4>
+                            <<<NUM_BLOCKS, BLOCK_SIZE>>>(gate.data_ptr<scalar_t>(),
+                                                         up.data_ptr<scalar_t>(),
+                                                         output_grad.data_ptr<scalar_t>(),
+                                                         gate_grad.data_ptr<scalar_t>(),
+                                                         up_grad.data_ptr<scalar_t>(),
+                                                         num_elements);
+                    }
+                    break;
+                default:
+                    throw std::runtime_error("invalid vector_instruction_width");
+                    break;
+            }
         }));
 }
