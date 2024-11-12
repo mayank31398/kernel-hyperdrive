@@ -122,15 +122,13 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
     if constexpr (vector_instruction_width == 1) {
         if (thread_id < num_elements) {
             fp32 _gate_upcast = dtype::upcast(gate[thread_id]);
-            fp32 _up_upcast = dtype::upcast(up[thread_id]);
-            fp32 _output_grad_upcast = dtype::upcast(output_grad[thread_id]);
 
             fp32 _gate_sigmoid = sigmoid<fp32, fp32>(_gate_upcast);
             fp32 _gate_silu = _gate_upcast * _gate_sigmoid;
 
-            gate_grad[thread_id] =
-                dtype::downcast(_output_grad_upcast * _up_upcast * (_gate_sigmoid + _gate_silu * (1 - _gate_sigmoid)));
-            up_grad[thread_id] = dtype::downcast(_output_grad_upcast * _gate_silu);
+            gate_grad[thread_id] = dtype::downcast(output_grad[thread_id] * up[thread_id] *
+                                                   (_gate_sigmoid + _gate_silu * (1 - _gate_sigmoid)));
+            up_grad[thread_id] = dtype::downcast(output_grad[thread_id] * _gate_silu);
         }
     } else {
         using T = typename dtype::nv_dtype;
