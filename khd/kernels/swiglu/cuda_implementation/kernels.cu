@@ -107,7 +107,11 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
     }
 }
 
-__device__ void _swiglu_backward_helper_bf16_fp16_vectorized(fp32_2 &_gate_upcast, fp32_2 &_up_upcast) {
+__device__ void _swiglu_backward_helper_bf16_fp16_vectorized(fp32_2 &_gate_upcast,
+                                                             fp32_2 &_up_upcast,
+                                                             fp32_2 &_output_grad_upcast) {
+    // NOTE all variables are passed by reference, be careful
+
     fp32 _gate_sigmoid_x = sigmoid<fp32, fp32>(_gate_upcast.x);
     fp32 _gate_sigmoid_y = sigmoid<fp32, fp32>(_gate_upcast.y);
 
