@@ -108,7 +108,7 @@ class _RMSNorm_KHD(torch.autograd.Function):
         num_elements = x.numel() // hidden_size
 
         x_grad = torch.empty_like(x)
-        weight_grad = torch.empty(hidden_size, x.dtype, device=x.device)
+        weight_grad = torch.empty(hidden_size, device=x.device, dtype=x.dtype)
 
         x_view = x.view(-1, hidden_size)
         output_grad_view = output_grad.view(-1, hidden_size)
