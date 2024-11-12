@@ -1,4 +1,3 @@
-from functools import partial
 from typing import Callable
 
 import torch
@@ -18,9 +17,13 @@ class RMSNormTest(TestCommons):
             TestCommons.get_2d_tensor_sizes(),  # size
             [torch.device("cuda")],  # device
             TestCommons.get_dtypes(),  # dtype
-            [KernelBackend.triton],  # kernel_backend
-            [32],  # BLOCK_SIZE_B
-            [32],  # BLOCK_SIZE_H
+            [False, True],  # memory_efficient
+            [KernelBackend.triton],  # kernel_backend_forward
+            [KernelBackend.triton],  # kernel_backend_backward
+            [32],  # BLOCK_SIZE_B_forward
+            [32],  # BLOCK_SIZE_B_backward
+            [32],  # BLOCK_SIZE_H_forward
+            [32],  # BLOCK_SIZE_H_backward
             [rmsnorm_khd, torch.compile(rmsnorm_khd)],  # function
         )
     )
@@ -29,9 +32,13 @@ class RMSNormTest(TestCommons):
         size: tuple[int],
         device: torch.device,
         dtype: torch.dtype,
-        kernel_backend: KernelBackend,
-        BLOCK_SIZE_B: int,
-        BLOCK_SIZE_H: int,
+        memory_efficient: bool,
+        kernel_backend_forward: KernelBackend,
+        kernel_backend_backward: KernelBackend,
+        BLOCK_SIZE_B_forward: int,
+        BLOCK_SIZE_B_backward: int,
+        BLOCK_SIZE_H_forward: int,
+        BLOCK_SIZE_H_backward: int,
         function: Callable,
     ) -> None:
         x_kernel, x_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
@@ -41,15 +48,19 @@ class RMSNormTest(TestCommons):
             x=x_kernel,
             weight=weight_kernel,
             eps=_EPSILON,
-            kernel_backend=kernel_backend,
-            BLOCK_SIZE_B=BLOCK_SIZE_B,
-            BLOCK_SIZE_H=BLOCK_SIZE_H,
+            memory_efficient=memory_efficient,
+            kernel_backend_forward=kernel_backend_forward,
+            kernel_backend_backward=kernel_backend_backward,
+            BLOCK_SIZE_B_forward=BLOCK_SIZE_B_forward,
+            BLOCK_SIZE_B_backward=BLOCK_SIZE_B_backward,
+            BLOCK_SIZE_H_forward=BLOCK_SIZE_H_forward,
+            BLOCK_SIZE_H_backward=BLOCK_SIZE_H_backward,
         )
         z_expected = rmsnorm_torch(x=x_expected, weight=weight_expected, eps=_EPSILON)
 
-        # z_kernel.mean().backward()
-        # z_expected.mean().backward()
+        z_kernel.mean().backward()
+        z_expected.mean().backward()
 
         self.assert_equal_tensors(z_kernel, z_expected, False)
-        # self.assert_equal_tensors(x_kernel.grad, x_expected.grad, True)
-        # self.assert_equal_tensors(weight_kernel.grad, weight_expected.grad, True)
+        self.assert_equal_tensors(x_kernel.grad, x_expected.grad, True)
+        self.assert_equal_tensors(weight_kernel.grad, weight_expected.grad, True)
