@@ -114,7 +114,7 @@ def rmsnorm_backward_triton_kernel(
     num_iterations_h = tl.cdiv(H, BLOCK_SIZE_H)
 
     if has_weight:
-        weight_grad = tl.zeros((H, 1), dtype=tl.float32)
+        weight_grad = tl.zeros((BLOCK_SIZE_B, 1), dtype=tl.float32)
 
     for pid_b in range(BLOCK_SIZE_B):
         block_start_b = pid_b * BLOCK_SIZE_B
