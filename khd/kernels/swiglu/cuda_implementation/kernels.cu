@@ -129,7 +129,7 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
             fp32 _gate_silu = _gate_upcast * _gate_sigmoid;
 
             gate_grad[thread_id] =
-                dtype::downcast(_output_grad_upcast * _up_upcast * (_gate_sigmoid * _gate_silu * (1 - _gate_sigmoid)));
+                dtype::downcast(_output_grad_upcast * _up_upcast * (_gate_sigmoid + _gate_silu * (1 - _gate_sigmoid)));
             up_grad[thread_id] = dtype::downcast(_output_grad_upcast * _gate_silu);
         }
     } else {
@@ -159,7 +159,7 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
                     fp32 _gate_silu = gate_vec[i] * _gate_sigmoid;
 
                     gate_grad_buffer[i] =
-                        output_grad_vec[i] * up_vec[i] * (_gate_sigmoid * _gate_silu * (1 - _gate_sigmoid));
+                        output_grad_vec[i] * up_vec[i] * (_gate_sigmoid + _gate_silu * (1 - _gate_sigmoid));
                     up_grad_buffer[i] = output_grad_vec[i] * _gate_silu;
                 }
 
@@ -189,9 +189,9 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
                     fp32 _gate_silu_y = _gate_upcast.y * _gate_sigmoid_y;
 
                     _gate_upcast = DType<fp32>::make2(_output_grad_upcast.x * _up_upcast.x *
-                                                          (_gate_sigmoid_x * _gate_silu_x * (1 - _gate_sigmoid_x)),
+                                                          (_gate_sigmoid_x + _gate_silu_x * (1 - _gate_sigmoid_x)),
                                                       _output_grad_upcast.y * _up_upcast.y *
-                                                          (_gate_sigmoid_y * _gate_silu_y * (1 - _gate_sigmoid_y)));
+                                                          (_gate_sigmoid_y + _gate_silu_y * (1 - _gate_sigmoid_y)));
 
                     _up_upcast =
                         DType<fp32>::make2(_output_grad_upcast.x * _gate_silu_x, _output_grad_upcast.y * _gate_silu_y);
@@ -224,9 +224,9 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
 
                         _gate_upcast =
                             DType<fp32>::make2(_output_grad_upcast.x * _up_upcast.x *
-                                                   (_gate_sigmoid_x * _gate_silu_x * (1 - _gate_sigmoid_x)),
+                                                   (_gate_sigmoid_x + _gate_silu_x * (1 - _gate_sigmoid_x)),
                                                _output_grad_upcast.y * _up_upcast.y *
-                                                   (_gate_sigmoid_y * _gate_silu_y * (1 - _gate_sigmoid_y)));
+                                                   (_gate_sigmoid_y + _gate_silu_y * (1 - _gate_sigmoid_y)));
 
                         _up_upcast = DType<fp32>::make2(_output_grad_upcast.x * _gate_silu_x,
                                                         _output_grad_upcast.y * _gate_silu_y);
