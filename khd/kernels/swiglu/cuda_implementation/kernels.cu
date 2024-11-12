@@ -107,6 +107,23 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
     }
 }
 
+__device__ std::tuple<fp32_2, fp32_2> _swiglu_backward_helper_bf16_fp16_vectorized(fp32_2 &_gate_upcast,
+                                                                                   fp32_2 &_up_upcast) {
+    fp32 _gate_sigmoid_x = sigmoid<fp32, fp32>(_gate_upcast.x);
+    fp32 _gate_sigmoid_y = sigmoid<fp32, fp32>(_gate_upcast.y);
+
+    fp32 _gate_silu_x = _gate_upcast.x * _gate_sigmoid_x;
+    fp32 _gate_silu_y = _gate_upcast.y * _gate_sigmoid_y;
+
+    _gate_upcast = DType<fp32>::make2(
+        _output_grad_upcast.x * _up_upcast.x * (_gate_sigmoid_x + _gate_silu_x * (1 - _gate_sigmoid_x)),
+        _output_grad_upcast.y * _up_upcast.y * (_gate_sigmoid_y + _gate_silu_y * (1 - _gate_sigmoid_y)));
+
+    _up_upcast = DType<fp32>::make2(_output_grad_upcast.x * _gate_silu_x, _output_grad_upcast.y * _gate_silu_y);
+
+    return std::make_tuple(_gate_upcast, _up_upcast);
+}
+
 template <typename scalar_t, typename vector_t>
 __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
                                              const scalar_t *up,
@@ -180,19 +197,8 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
                     fp32_2 _up_upcast = dtype::upcast(_up);
                     fp32_2 _output_grad_upcast = dtype::upcast(_output_grad);
 
-                    fp32 _gate_sigmoid_x = sigmoid<fp32, fp32>(_gate_upcast.x);
-                    fp32 _gate_sigmoid_y = sigmoid<fp32, fp32>(_gate_upcast.y);
-
-                    fp32 _gate_silu_x = _gate_upcast.x * _gate_sigmoid_x;
-                    fp32 _gate_silu_y = _gate_upcast.y * _gate_sigmoid_y;
-
-                    _gate_upcast = DType<fp32>::make2(_output_grad_upcast.x * _up_upcast.x *
-                                                          (_gate_sigmoid_x + _gate_silu_x * (1 - _gate_sigmoid_x)),
-                                                      _output_grad_upcast.y * _up_upcast.y *
-                                                          (_gate_sigmoid_y + _gate_silu_y * (1 - _gate_sigmoid_y)));
-
-                    _up_upcast =
-                        DType<fp32>::make2(_output_grad_upcast.x * _gate_silu_x, _output_grad_upcast.y * _gate_silu_y);
+                    fp32_2[_gate_upcast, _up_upcast] =
+                        _swiglu_backward_helper_bf16_fp16_vectorized(_gate_upcast, _up_upcast);
 
                     gate_grad_vec[thread_id] = dtype::downcast(_gate_upcast);
                     up_grad_vec[thread_id] = dtype::downcast(_up_upcast);
@@ -214,20 +220,8 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
                         fp32_2 _output_grad_upcast =
                             dtype::upcast(dtype::reinterpret_32_bits_as_2x16(output_grad_vec[i]));
 
-                        fp32 _gate_sigmoid_x = sigmoid<fp32, fp32>(_gate_upcast.x);
-                        fp32 _gate_sigmoid_y = sigmoid<fp32, fp32>(_gate_upcast.y);
-
-                        fp32 _gate_silu_x = _gate_upcast.x * _gate_sigmoid_x;
-                        fp32 _gate_silu_y = _gate_upcast.y * _gate_sigmoid_y;
-
-                        _gate_upcast =
-                            DType<fp32>::make2(_output_grad_upcast.x * _up_upcast.x *
-                                                   (_gate_sigmoid_x + _gate_silu_x * (1 - _gate_sigmoid_x)),
-                                               _output_grad_upcast.y * _up_upcast.y *
-                                                   (_gate_sigmoid_y + _gate_silu_y * (1 - _gate_sigmoid_y)));
-
-                        _up_upcast = DType<fp32>::make2(_output_grad_upcast.x * _gate_silu_x,
-                                                        _output_grad_upcast.y * _gate_silu_y);
+                        fp32_2[_gate_upcast, _up_upcast] =
+                            _swiglu_backward_helper_bf16_fp16_vectorized(_gate_upcast, _up_upcast);
 
                         gate_grad_buffer[i] = dtype::reinterpret_2x16_as_32_bits(dtype::downcast(_gate_upcast));
                         up_grad_buffer[i] = dtype::reinterpret_2x16_as_32_bits(dtype::downcast(_up_upcast));
