@@ -33,7 +33,9 @@ class _RMSNorm_KHD(torch.autograd.Function):
 
         assert x.dim() > 1, "x should have more than 1 dimensions"
 
-        if weight is not None:
+        has_weight = weight is not None
+
+        if has_weight:
             assert weight.dim() == 1, "weight should be 1D"
             assert weight.size(-1) == x.size(-1), "hidden size for x and weight tensor is different"
             assert weight.type() == x.type(), "tensors weight and y should have same dtype"
@@ -58,7 +60,7 @@ class _RMSNorm_KHD(torch.autograd.Function):
                     x_ptr=x,
                     x_stride_b=x_view.stride(0),
                     x_stride_h=x_view.stride(1),
-                    has_weight=weight is not None,
+                    has_weight=has_weight,
                     weight_ptr=weight,
                     output_ptr=output,
                     output_stride_b=output.stride(0),
@@ -75,12 +77,19 @@ class _RMSNorm_KHD(torch.autograd.Function):
             raise ValueError(f"unexpected kernel_backend ({kernel_backend})")
 
         ctx.memory_efficient = memory_efficient
-        ctx.has_weight = weight is not None
+        ctx.kernel_backend_backward = kernel_backend
+        ctx.has_weight = has_weight
+        ctx.eps = eps
+        ctx.BLOCK_SIZE_B = BLOCK_SIZE_B
+        ctx.BLOCK_SIZE_H = BLOCK_SIZE_H
 
+        tensors_to_save = [x]
+        if has_weight:
+            tensors_to_save.append(weight)
         if memory_efficient:
-            ctx.save_for_backward(x)
-        else:
-            ctx.save_for_backward(x, rmsnorm_denominator)
+            tensors_to_save.append(rmsnorm_denominator)
+
+        ctx.save_for_backward(*tensors_to_save)
 
         return output
 
@@ -89,22 +98,26 @@ class _RMSNorm_KHD(torch.autograd.Function):
         memory_efficient = ctx.memory_efficient
         kernel_backend = ctx.kernel_backend_backward
         has_weight = ctx.has_weight
+        eps = ctx.eps
+        BLOCK_SIZE_B = ctx.BLOCK_SIZE_B
+        BLOCK_SIZE_H = ctx.BLOCK_SIZE_H
 
-        if memory_efficient:
-            (x,) = ctx.saved_tensors
-        else:
-            x, rmsnorm_denominator = ctx.saved_tensors
+        saved_tensors = ctx.saved_tensors
+
+        x = saved_tensors[0]
+        weight = saved_tensors[1] if has_weight else None
+        rmsnorm_denominator = saved_tensors[2] if memory_efficient else None
 
         x, output_grad = ensure_same_strides(x, output_grad)
 
         hidden_size = x.size(-1)
         num_elements = x.numel() // hidden_size
 
-        x_view = x.view(-1, hidden_size)
-        output_grad_view = output_grad.view(-1, hidden_size)
-
         x_grad = torch.empty_like(x)
         weight_grad = torch.empty(hidden_size, x.dtype, device=x.device)
+
+        x_view = x.view(-1, hidden_size)
+        output_grad_view = output_grad.view(-1, hidden_size)
 
         if kernel_backend == KernelBackend.triton:
             grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE_B"]),)
@@ -115,9 +128,12 @@ class _RMSNorm_KHD(torch.autograd.Function):
                     x_stride_b=x_view.stride(0),
                     x_stride_h=x_view.stride(1),
                     has_weight=has_weight,
-                    output_grad_ptr=output_grad_view,
+                    weight_ptr=weight,
+                    output_grad_ptr=output_grad,
                     output_grad_stride_b=output_grad_view.stride(0),
                     output_grad_stride_h=output_grad_view.stride(1),
+                    x_grad_ptr=x_grad,
+                    weight_grad_ptr=weight_grad,
                     eps=eps,
                     memory_efficient=memory_efficient,
                     rmsnorm_denominator_ptr=rmsnorm_denominator,
