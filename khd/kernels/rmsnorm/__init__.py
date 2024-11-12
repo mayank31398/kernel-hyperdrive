@@ -46,7 +46,7 @@ class _RMSNorm_KHD(torch.autograd.Function):
 
         output = torch.empty_like(x)
         rmsnorm_denominator = (
-            None if memory_efficient else torch.empty(num_elements, device=x.device, dtype=torch.float32)
+            None if memory_efficient else torch.empty(num_elements, 1, device=x.device, dtype=torch.float32)
         )
 
         if kernel_backend == KernelBackend.triton:

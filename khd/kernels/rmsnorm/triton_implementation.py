@@ -41,7 +41,7 @@ def rmsnorm_forward_triton_kernel(
         denominator = tl.rsqrt((denominator / H) + eps)
 
         if not memory_efficient:
-            tl.store(rmsnorm_denominator_ptr + indices_b, denominator.view(-1), mask=mask_b)
+            tl.store(rmsnorm_denominator_ptr + indices_b[:, None], denominator, mask=mask_b[:, None])
 
         x *= denominator
 
@@ -69,7 +69,7 @@ def rmsnorm_forward_triton_kernel(
         denominator = tl.rsqrt((denominator / H) + eps)
 
         if not memory_efficient:
-            tl.store(rmsnorm_denominator_ptr + indices_b, denominator.view(-1), mask=mask_b)
+            tl.store(rmsnorm_denominator_ptr + indices_b[:, None], denominator, mask=mask_b[:, None])
 
         for pid_h in range(num_iterations_h):
             block_start_h = pid_h * BLOCK_SIZE_H
