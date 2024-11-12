@@ -24,6 +24,7 @@ class _RMSNorm_KHD(torch.autograd.Function):
         weight: torch.Tensor,
         eps: float,
         kernel_backend: KernelBackend | CutoTuneParameter,
+        memory_efficient: bool,
         BLOCK_SIZE_B: int | CutoTuneParameter,
         BLOCK_SIZE_H: int | CutoTuneParameter,
     ) -> torch.Tensor:
@@ -41,10 +42,12 @@ class _RMSNorm_KHD(torch.autograd.Function):
         hidden_size = x.size(-1)
         num_elements = x.numel() // hidden_size
 
-        original_shape = x.size()
-        x = x.view(-1, hidden_size)
+        x_view = x.view(-1, hidden_size)
 
         output = torch.empty_like(x)
+        rmsnorm_denominator = (
+            None if memory_efficient else torch.empty(num_elements, device=x.device, dtype=torch.float32)
+        )
 
         if kernel_backend == KernelBackend.triton:
             grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE_B"]),)
@@ -52,14 +55,16 @@ class _RMSNorm_KHD(torch.autograd.Function):
             with torch.device(x.device):
                 rmsnorm_forward_triton_kernel[grid](
                     x_ptr=x,
-                    x_stride_b=x.stride(0),
-                    x_stride_h=x.stride(1),
+                    x_stride_b=x_view.stride(0),
+                    x_stride_h=x_view.stride(1),
                     has_weight=weight is not None,
                     weight_ptr=weight,
                     output_ptr=output,
                     output_stride_b=output.stride(0),
                     output_stride_h=output.stride(1),
                     eps=eps,
+                    memory_efficient=memory_efficient,
+                    rmsnorm_denominator_ptr=rmsnorm_denominator,
                     B=num_elements,
                     H=hidden_size,
                     BLOCK_SIZE_B=BLOCK_SIZE_B,
@@ -68,7 +73,7 @@ class _RMSNorm_KHD(torch.autograd.Function):
         else:
             raise ValueError(f"unexpected kernel_backend ({kernel_backend})")
 
-        output = output.view(original_shape)
+        ctx.save_for_backward(rmsnorm_denominator)
 
         return output
 
@@ -78,7 +83,8 @@ def rmsnorm_khd(
     weight: torch.Tensor,
     eps: float,
     kernel_backend: KernelBackend | CutoTuneParameter = CutoTuneParameter(),
+    memory_efficient: bool = False,
     BLOCK_SIZE_B: int | CutoTuneParameter = CutoTuneParameter(),
     BLOCK_SIZE_H: int | CutoTuneParameter = CutoTuneParameter(),
 ) -> torch.Tensor:
-    return _RMSNorm_KHD.apply(x, weight, eps, kernel_backend, BLOCK_SIZE_B, BLOCK_SIZE_H)
+    return _RMSNorm_KHD.apply(x, weight, eps, kernel_backend, memory_efficient, BLOCK_SIZE_B, BLOCK_SIZE_H)
