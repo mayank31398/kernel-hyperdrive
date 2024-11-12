@@ -140,7 +140,7 @@ struct DType<c10::BFloat16> {
         return get_fp32_from_upper_and_lower_16_bits(upper_16, lower_16);
     }
 
-    __device__ static fp32 reinterpret_2x16_as_32_bits(nv_dtype2 value) {
+    __device__ static fp32 reinterpret_2x16_as_32_bits(const nv_dtype2 &value) {
         nv_dtype lower_half = __low2bfloat16(value);
         nv_dtype upper_half = __high2bfloat16(value);
 
