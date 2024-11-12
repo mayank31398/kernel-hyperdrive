@@ -351,8 +351,8 @@ void swiglu_backward_cuda(const torch::Tensor &gate,
                                                      num_elements);
                     break;
                 case 4:
-                    if constexpr (std::is_same_v<scalar_t, fp32_4>) {
-                        _swiglu_backward_cuda_kernel<scalar_t, scalar_t>
+                    if constexpr (std::is_same_v<scalar_t, fp32>) {
+                        _swiglu_backward_cuda_kernel<scalar_t, fp32_4>
                             <<<NUM_BLOCKS, BLOCK_SIZE>>>(gate.data_ptr<scalar_t>(),
                                                          up.data_ptr<scalar_t>(),
                                                          output_grad.data_ptr<scalar_t>(),
