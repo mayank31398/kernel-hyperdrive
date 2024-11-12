@@ -28,22 +28,24 @@ def rmsnorm_forward_triton_kernel(
 
     # when num_iterations_h is 1, we can optimize further
     if num_iterations_h == 1:
-        indices_h = tl.arange(0, H)
+        indices_h = tl.arange(0, BLOCK_SIZE_H)
+        mask_h = indices_h < H
+        mask_bh = mask_b[:, None] & mask_h[None, :]
 
         x_ptrs = x_ptr + indices_b[:, None] * x_stride_b + indices_h[None, :] * x_stride_h
-        x = tl.load(x_ptrs, mask=mask_b[:, None]).to(tl.float32)
+        x = tl.load(x_ptrs, mask=mask_bh).to(tl.float32)
 
         denominator = tl.sum(x * x, axis=1, keep_dims=True)
         denominator = tl.rsqrt((denominator / H) + eps)
         x *= denominator
 
         if has_weight:
-            weight = tl.load(weight_ptr + indices_h)
+            weight = tl.load(weight_ptr + indices_h, mask=mask_h)
             weight = weight[None, :]
             x *= weight
 
         output_ptrs = output_ptr + indices_b[:, None] * output_stride_b + indices_h[None, :] * output_stride_h
-        tl.store(output_ptrs, x, mask=mask_b[:, None])
+        tl.store(output_ptrs, x, mask=mask_bh)
     else:
         denominator = tl.zeros((BLOCK_SIZE_B, 1), dtype=tl.float32)
 
@@ -124,7 +126,11 @@ def rmsnorm_backward_triton_kernel(
 
             if has_weight:
                 weight_grad += tl.sum(y * output_grad, axis=0)
+        else:
+            pass
 
     if num_iterations_h == 1:
         weight_grad_ptrs = weight_grad_ptr + tl.arange(0, H)
         tl.store(weight_grad_ptrs, weight_grad)
+    else:
+        pass
