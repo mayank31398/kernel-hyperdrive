@@ -229,9 +229,8 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
                         _up_upcast = DType<fp32>::make2(_output_grad_upcast.x * _gate_silu_x,
                                                         _output_grad_upcast.y * _gate_silu_y);
 
-                        gate_grad_buffer[thread_id] =
-                            dtype::reinterpret_2x16_as_32_bits(dtype::downcast(_gate_upcast));
-                        up_grad_buffer[thread_id] = dtype::reinterpret_2x16_as_32_bits(dtype::downcast(_up_upcast));
+                        gate_grad_buffer[i] = dtype::reinterpret_2x16_as_32_bits(dtype::downcast(_gate_upcast));
+                        up_grad_buffer[i] = dtype::reinterpret_2x16_as_32_bits(dtype::downcast(_up_upcast));
                     }
 
                     if constexpr (vector_instruction_width == 4) {
