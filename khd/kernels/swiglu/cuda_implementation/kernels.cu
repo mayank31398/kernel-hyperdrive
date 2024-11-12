@@ -12,7 +12,7 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
                                             const scalar_t *up,
                                             scalar_t *output,
                                             const int64_t num_elements) {
-    const int vector_instruction_width = sizeof(vector_t) / sizeof(scalar_t);
+    constexpr int vector_instruction_width = sizeof(vector_t) / sizeof(scalar_t);
     const int64_t thread_id = get_global_thread_id();
 
     using dtype = DType<scalar_t>;
@@ -114,7 +114,7 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
                                              scalar_t *gate_grad,
                                              scalar_t *up_grad,
                                              const int64_t num_elements) {
-    const int vector_instruction_width = sizeof(vector_t) / sizeof(scalar_t);
+    constexpr int vector_instruction_width = sizeof(vector_t) / sizeof(scalar_t);
     const int64_t thread_id = get_global_thread_id();
 
     using dtype = DType<scalar_t>;

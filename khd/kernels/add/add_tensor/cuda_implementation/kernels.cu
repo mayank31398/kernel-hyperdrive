@@ -11,7 +11,7 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
                                                 const scalar_t *y,
                                                 scalar_t *output,
                                                 const int64_t num_elements) {
-    const int vector_instruction_width = sizeof(vector_t) / sizeof(scalar_t);
+    constexpr int vector_instruction_width = sizeof(vector_t) / sizeof(scalar_t);
     const int64_t thread_id = get_global_thread_id();
 
     if constexpr (vector_instruction_width == 1) {
