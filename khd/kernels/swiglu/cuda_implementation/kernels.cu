@@ -198,7 +198,7 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
                     fp32_2 _up_upcast = dtype::upcast(_up);
                     fp32_2 _output_grad_upcast = dtype::upcast(_output_grad);
 
-                    _swiglu_backward_helper_bf16_fp16_vectorized(_gate_upcast, _up_upcast);
+                    _swiglu_backward_helper_bf16_fp16_vectorized(_gate_upcast, _up_upcast, _output_grad_upcast);
 
                     gate_grad_vec[thread_id] = dtype::downcast(_gate_upcast);
                     up_grad_vec[thread_id] = dtype::downcast(_up_upcast);
@@ -220,7 +220,7 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
                         fp32_2 _output_grad_upcast =
                             dtype::upcast(dtype::reinterpret_32_bits_as_2x16(output_grad_vec[i]));
 
-                        _swiglu_backward_helper_bf16_fp16_vectorized(_gate_upcast, _up_upcast);
+                        _swiglu_backward_helper_bf16_fp16_vectorized(_gate_upcast, _up_upcast, _output_grad_upcast);
 
                         gate_grad_buffer[i] = dtype::reinterpret_2x16_as_32_bits(dtype::downcast(_gate_upcast));
                         up_grad_buffer[i] = dtype::reinterpret_2x16_as_32_bits(dtype::downcast(_up_upcast));
