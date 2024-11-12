@@ -85,6 +85,8 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
                 } else if constexpr (vector_instruction_width == 4) {
                     gate_grad_vec[thread_id] = dtype::make4(gate_grad_buffer);
                     up_grad_vec[thread_id] = dtype::make4(up_grad_buffer);
+                } else {
+                    static_assert("vector_instruction_width is invalid for fp32");
                 }
             } else {
                 using T2 = typename dtype::nv_dtype2;
@@ -132,6 +134,8 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
                     } else if constexpr (vector_instruction_width == 8) {
                         gate_grad_vec[thread_id] = DType<fp32>::make4(gate_grad_buffer);
                         up_grad_vec[thread_id] = DType<fp32>::make4(up_grad_buffer);
+                    } else {
+                        static_assert("vector_instruction_width is invalid for fp16 & bf16");
                     }
                 }
             }
