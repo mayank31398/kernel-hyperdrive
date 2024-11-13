@@ -2,6 +2,7 @@ import triton
 import triton.language as tl
 
 
+@triton.jit
 def _swiglu_forward(gate_ptr, up_ptr, output_ptr, indices, mask):
     gate = tl.load(gate_ptr + indices, mask=mask).to(tl.float32)
     up = tl.load(up_ptr + indices, mask=mask)
