@@ -80,7 +80,7 @@ class _RMSNorm_KHD(torch.autograd.Function):
         tensors_to_save = [x]
         if has_weight:
             tensors_to_save.append(weight)
-        if memory_efficient:
+        if not memory_efficient:
             tensors_to_save.append(rmsnorm_denominator)
 
         ctx.save_for_backward(*tensors_to_save)
@@ -100,7 +100,7 @@ class _RMSNorm_KHD(torch.autograd.Function):
 
         x = saved_tensors[0]
         weight = saved_tensors[1] if has_weight else None
-        rmsnorm_denominator = saved_tensors[2] if memory_efficient else None
+        rmsnorm_denominator = None if memory_efficient else saved_tensors[2]
 
         x, output_grad = ensure_same_strides(x, output_grad)
 
