@@ -12,13 +12,9 @@ def add_scalar_forward_triton_kernel(x_ptr, y, output_ptr, num_elements, BLOCK_S
 
     if is_last_block:
         mask = indices < num_elements
+
         x = tl.load(x_ptr + indices, mask=mask)
+        tl.store(output_ptr + indices, x + y, mask=mask)
     else:
         x = tl.load(x_ptr + indices)
-
-    output = x + y
-
-    if is_last_block:
-        tl.store(output_ptr + indices, output, mask=mask)
-    else:
-        tl.store(output_ptr + indices, output)
+        tl.store(output_ptr + indices, x + y)
