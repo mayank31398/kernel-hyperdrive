@@ -14,7 +14,9 @@ class _AddTensor_KHD(torch.autograd.Function):
     @cutotune(
         configs=(
             get_cartesian_product_cutotune_configs(
-                kernel_backend=[KernelBackend.cuda], vectorized_loop_size=[1, 2, 4], BLOCK_SIZE=BLOCK_SIZES_POWERS_OF_2
+                kernel_backend=[KernelBackend.cuda],
+                vector_instruction_width=[1, 2, 4],
+                BLOCK_SIZE=BLOCK_SIZES_POWERS_OF_2,
             )
             if torch.cuda.is_available()
             else []
@@ -22,7 +24,7 @@ class _AddTensor_KHD(torch.autograd.Function):
         + (
             get_cartesian_product_cutotune_configs(
                 kernel_backend=[KernelBackend.cuda],
-                vectorized_loop_size=[8],
+                vector_instruction_width=[8],
                 BLOCK_SIZE=BLOCK_SIZES_POWERS_OF_2,
                 condition=lambda **kwargs: kwargs["x"].dtype in [torch.float16, torch.bfloat16],
             )
@@ -30,7 +32,7 @@ class _AddTensor_KHD(torch.autograd.Function):
             else []
         )
         + get_cartesian_product_cutotune_configs(
-            kernel_backend=[KernelBackend.triton], vectorized_loop_size=[None], BLOCK_SIZE=BLOCK_SIZES_POWERS_OF_2
+            kernel_backend=[KernelBackend.triton], vector_instruction_width=[None], BLOCK_SIZE=BLOCK_SIZES_POWERS_OF_2
         ),
         triggers={"x.dtype"},
     )
@@ -39,7 +41,7 @@ class _AddTensor_KHD(torch.autograd.Function):
         x: torch.Tensor,
         y: torch.Tensor,
         kernel_backend: KernelBackend | CutoTuneParameter,
-        vectorized_loop_size: int | CutoTuneParameter,
+        vector_instruction_width: int | CutoTuneParameter,
         BLOCK_SIZE: int | CutoTuneParameter,
     ) -> torch.Tensor:
         assert x.size() == y.size(), "tensors x and y should have same shape"
@@ -49,16 +51,19 @@ class _AddTensor_KHD(torch.autograd.Function):
         output = torch.empty_like(x)
 
         if kernel_backend == KernelBackend.cuda:
+            assert x.is_cuda, "tensor x is not on GPU"
+            assert y.is_cuda, "tensor y is not on GPU"
+
             if torch.compiler.is_compiling():
                 add_tensor_forward_cuda_kernel_compileable(
-                    x=x, y=y, output=output, vectorized_loop_size=vectorized_loop_size, BLOCK_SIZE=BLOCK_SIZE
+                    x=x, y=y, output=output, vector_instruction_width=vector_instruction_width, BLOCK_SIZE=BLOCK_SIZE
                 )
             else:
                 add_tensor_forward_cuda_kernel(
-                    x=x, y=y, output=output, vectorized_loop_size=vectorized_loop_size, BLOCK_SIZE=BLOCK_SIZE
+                    x=x, y=y, output=output, vector_instruction_width=vector_instruction_width, BLOCK_SIZE=BLOCK_SIZE
                 )
         elif kernel_backend == KernelBackend.triton:
-            assert vectorized_loop_size is None
+            assert vector_instruction_width is None
 
             num_elements = x.numel()
             grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE"]),)
@@ -81,7 +86,7 @@ def add_tensor_khd(
     x: torch.Tensor,
     y: torch.Tensor,
     kernel_backend: KernelBackend | CutoTuneParameter = CutoTuneParameter(),
-    vectorized_loop_size: int | CutoTuneParameter = CutoTuneParameter(),
+    vector_instruction_width: int | CutoTuneParameter = CutoTuneParameter(),
     BLOCK_SIZE: int | CutoTuneParameter = CutoTuneParameter(),
 ) -> torch.Tensor:
-    return _AddTensor_KHD.apply(x, y, kernel_backend, vectorized_loop_size, BLOCK_SIZE)
+    return _AddTensor_KHD.apply(x, y, kernel_backend, vector_instruction_width, BLOCK_SIZE)

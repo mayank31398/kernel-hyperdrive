@@ -12,50 +12,116 @@ from ..test_commons import TestCommons
 class SwigluTest(TestCommons):
     @parameterized.expand(
         TestCommons.make_args_matrix(
-            TestCommons.get_2d_tensor_sizes(),
-            [torch.device("cuda")],
-            TestCommons.get_dtypes(),
-            [
-                partial(
-                    swiglu_khd,
-                    kernel_backend_forward=KernelBackend.cuda,
-                    kernel_backend_backward=KernelBackend.cuda,
-                    BLOCK_SIZE_forward=1024,
-                    BLOCK_SIZE_backward=1024,
-                ),
-                partial(
-                    swiglu_khd,
-                    kernel_backend_forward=KernelBackend.triton,
-                    kernel_backend_backward=KernelBackend.triton,
-                    BLOCK_SIZE_forward=1024,
-                    BLOCK_SIZE_backward=1024,
-                ),
-                torch.compile(
-                    partial(
-                        swiglu_khd,
-                        kernel_backend_forward=KernelBackend.cuda,
-                        kernel_backend_backward=KernelBackend.cuda,
-                        BLOCK_SIZE_forward=1024,
-                        BLOCK_SIZE_backward=1024,
-                    )
-                ),
-                torch.compile(
-                    partial(
-                        swiglu_khd,
-                        kernel_backend_forward=KernelBackend.triton,
-                        kernel_backend_backward=KernelBackend.triton,
-                        BLOCK_SIZE_forward=1024,
-                        BLOCK_SIZE_backward=1024,
-                    )
-                ),
-            ],
+            TestCommons.get_2d_tensor_sizes(),  # size
+            [torch.device("cuda")],  # device
+            [torch.float32],  # dtype
+            [KernelBackend.cuda],  # kernel_backend_forward
+            [KernelBackend.cuda],  # kernel_backend_backward
+            [1, 2, 4],  # vector_instruction_width_forward
+            [1, 2, 4],  # vector_instruction_width_backward
+            [1024],  # BLOCK_SIZE_forward
+            [1024],  # BLOCK_SIZE_backward
+            [swiglu_khd, torch.compile(swiglu_khd)],  # function
+        )
+        + TestCommons.make_args_matrix(
+            TestCommons.get_2d_tensor_sizes(),  # size
+            [torch.device("cuda")],  # device
+            [torch.bfloat16, torch.float16],  # dtype
+            [KernelBackend.cuda],  # kernel_backend_forward
+            [KernelBackend.cuda],  # kernel_backend_backward
+            [1, 2, 4, 8],  # vector_instruction_width_forward
+            [1, 2, 4, 8],  # vector_instruction_width_backward
+            [1024],  # BLOCK_SIZE_forward
+            [1024],  # BLOCK_SIZE_backward
+            [swiglu_khd, torch.compile(swiglu_khd)],  # function
+        )
+        + TestCommons.make_args_matrix(
+            TestCommons.get_2d_tensor_sizes(),  # size
+            [torch.device("cuda")],  # device
+            TestCommons.get_dtypes(),  # dtype
+            [KernelBackend.triton],  # kernel_backend_forward
+            [KernelBackend.triton],  # kernel_backend_backward
+            [None],  # vector_instruction_width_forward
+            [None],  # vector_instruction_width_backward
+            [1024],  # BLOCK_SIZE_forward
+            [1024],  # BLOCK_SIZE_backward
+            [swiglu_khd, torch.compile(swiglu_khd)],  # function
+        )
+        + TestCommons.make_args_matrix(
+            TestCommons.get_2d_tensor_sizes(),  # size
+            [torch.device("cuda")],  # device
+            [torch.float32],  # dtype
+            [KernelBackend.cuda],  # kernel_backend_forward
+            [KernelBackend.triton],  # kernel_backend_backward
+            [1, 2, 4],  # vector_instruction_width_forward
+            [None],  # vector_instruction_width_backward
+            [1024],  # BLOCK_SIZE_forward
+            [1024],  # BLOCK_SIZE_backward
+            [swiglu_khd, torch.compile(swiglu_khd)],  # function
+        )
+        + TestCommons.make_args_matrix(
+            TestCommons.get_2d_tensor_sizes(),  # size
+            [torch.device("cuda")],  # device
+            [torch.bfloat16, torch.float16],  # dtype
+            [KernelBackend.cuda],  # kernel_backend_forward
+            [KernelBackend.triton],  # kernel_backend_backward
+            [1, 2, 4, 8],  # vector_instruction_width_forward
+            [None],  # vector_instruction_width_backward
+            [1024],  # BLOCK_SIZE_forward
+            [1024],  # BLOCK_SIZE_backward
+            [swiglu_khd, torch.compile(swiglu_khd)],  # function
+        )
+        + TestCommons.make_args_matrix(
+            TestCommons.get_2d_tensor_sizes(),  # size
+            [torch.device("cuda")],  # device
+            [torch.float32],  # dtype
+            [KernelBackend.triton],  # kernel_backend_forward
+            [KernelBackend.cuda],  # kernel_backend_backward
+            [None],  # vector_instruction_width_forward
+            [1, 2, 4],  # vector_instruction_width_backward
+            [1024],  # BLOCK_SIZE_forward
+            [1024],  # BLOCK_SIZE_backward
+            [swiglu_khd, torch.compile(swiglu_khd)],  # function
+        )
+        + TestCommons.make_args_matrix(
+            TestCommons.get_2d_tensor_sizes(),  # size
+            [torch.device("cuda")],  # device
+            [torch.bfloat16, torch.float16],  # dtype
+            [KernelBackend.triton],  # kernel_backend_forward
+            [KernelBackend.cuda],  # kernel_backend_backward
+            [None],  # vector_instruction_width_forward
+            [1, 2, 4, 8],  # vector_instruction_width_backward
+            [1024],  # BLOCK_SIZE_forward
+            [1024],  # BLOCK_SIZE_backward
+            [swiglu_khd, torch.compile(swiglu_khd)],  # function
         )
     )
-    def test_swiglu(self, size: tuple[int], device: torch.device, dtype: torch.dtype, function: Callable) -> None:
+    def test_swiglu(
+        self,
+        size: tuple[int],
+        device: torch.device,
+        dtype: torch.dtype,
+        kernel_backend_forward: KernelBackend,
+        kernel_backend_backward: KernelBackend,
+        vector_instruction_width_forward: int,
+        vector_instruction_width_backward: int,
+        BLOCK_SIZE_forward: int,
+        BLOCK_SIZE_backward: int,
+        function: Callable,
+    ) -> None:
         x_kernel, x_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
         y_kernel, y_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
 
-        z_kernel = function(x_kernel, y_kernel)
+        z_kernel = function(
+            x_kernel,
+            y_kernel,
+            kernel_backend_forward=kernel_backend_forward,
+            kernel_backend_backward=kernel_backend_backward,
+            vector_instruction_width_forward=vector_instruction_width_forward,
+            vector_instruction_width_backward=vector_instruction_width_backward,
+            BLOCK_SIZE_forward=BLOCK_SIZE_forward,
+            BLOCK_SIZE_backward=BLOCK_SIZE_backward,
+        )
         z_expected = swiglu_torch(x_expected, y_expected)
 
         z_kernel.mean().backward()
