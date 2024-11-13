@@ -3,6 +3,13 @@ import triton.language as tl
 
 
 @triton.jit
+def _add(x_ptr, y_ptr, output_ptr, indices, mask):
+    x = tl.load(x_ptr + indices, mask=mask)
+    y = tl.load(y_ptr + indices, mask=mask)
+    tl.store(output_ptr + indices, x + y, mask=mask)
+
+
+@triton.jit
 def add_tensor_forward_triton_kernel(x_ptr, y_ptr, output_ptr, num_elements, BLOCK_SIZE: tl.constexpr):
     pid = tl.program_id(axis=0)
     num_blocks = tl.num_programs(axis=0)
@@ -12,11 +19,6 @@ def add_tensor_forward_triton_kernel(x_ptr, y_ptr, output_ptr, num_elements, BLO
 
     if is_last_block:
         mask = indices < num_elements
-
-        x = tl.load(x_ptr + indices, mask=mask)
-        y = tl.load(y_ptr + indices, mask=mask)
-        tl.store(output_ptr + indices, x + y, mask=mask)
+        _add(x_ptr=x_ptr, y_ptr=y_ptr, output_ptr=output_ptr, indices=indices, mask=mask)
     else:
-        x = tl.load(x_ptr + indices)
-        y = tl.load(y_ptr + indices)
-        tl.store(output_ptr + indices, x + y)
+        _add(x_ptr=x_ptr, y_ptr=y_ptr, output_ptr=output_ptr, indices=indices, mask=None)
