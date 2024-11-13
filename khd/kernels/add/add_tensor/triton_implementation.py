@@ -12,15 +12,11 @@ def add_tensor_forward_triton_kernel(x_ptr, y_ptr, output_ptr, num_elements, BLO
 
     if is_last_block:
         mask = indices < num_elements
+
         x = tl.load(x_ptr + indices, mask=mask)
         y = tl.load(y_ptr + indices, mask=mask)
+        tl.store(output_ptr + indices, x + y, mask=mask)
     else:
         x = tl.load(x_ptr + indices)
         y = tl.load(y_ptr + indices)
-
-    output = x + y
-
-    if is_last_block:
-        tl.store(output_ptr + indices, output, mask=mask)
-    else:
-        tl.store(output_ptr + indices, output)
+        tl.store(output_ptr + indices, x + y)
