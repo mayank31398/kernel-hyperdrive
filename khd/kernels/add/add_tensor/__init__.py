@@ -10,7 +10,6 @@ from .triton_implementation import add_tensor_forward_triton_kernel
 
 
 class _AddTensor_KHD(torch.autograd.Function):
-    @staticmethod
     @cutotune(
         configs=(
             get_cartesian_product_cutotune_configs(
@@ -36,7 +35,7 @@ class _AddTensor_KHD(torch.autograd.Function):
         ),
         triggers={"x.dtype"},
     )
-    def forward(
+    def _forward(
         ctx,
         x: torch.Tensor,
         y: torch.Tensor,
@@ -76,6 +75,24 @@ class _AddTensor_KHD(torch.autograd.Function):
             raise ValueError(f"unexpected kernel_backend ({kernel_backend})")
 
         return output
+
+    @staticmethod
+    def forward(
+        ctx,
+        x: torch.Tensor,
+        y: torch.Tensor,
+        kernel_backend: KernelBackend | CutoTuneParameter,
+        vector_instruction_width: int | CutoTuneParameter,
+        BLOCK_SIZE: int | CutoTuneParameter,
+    ) -> torch.Tensor:
+        return _AddTensor_KHD._forward(
+            ctx=ctx,
+            x=x,
+            y=y,
+            kernel_backend=kernel_backend,
+            vector_instruction_width=vector_instruction_width,
+            BLOCK_SIZE=BLOCK_SIZE,
+        )
 
     @staticmethod
     def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor | None]:
