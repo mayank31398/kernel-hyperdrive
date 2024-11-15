@@ -118,4 +118,4 @@ def rmsnorm_backward_triton_kernel(
             indices_h = pid_h * BLOCK_SIZE_H + tl.arange(0, BLOCK_SIZE_H)
             mask_h = indices_h < H
 
-            tl.store(weight_grad_ptr + indices_h, weight_grad[0, :], mask=mask_h)
+            tl.store(weight_grad_ptr + indices_h, weight_grad.view(H), mask=mask_h)
