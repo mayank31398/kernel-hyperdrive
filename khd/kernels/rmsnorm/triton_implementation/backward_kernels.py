@@ -81,6 +81,8 @@ def rmsnorm_backward_triton_kernel(
 
             if memory_efficient:
                 denominator = tl.rsqrt((denominator / H) + eps)
+            else:
+                denominator = tl.load(rmsnorm_denominator_ptr + indices_b, mask=mask_b)
 
             for pid_h in range(BLOCK_SIZE_H):
                 indices_h = pid_h * BLOCK_SIZE_H + tl.arange(0, BLOCK_SIZE_H)
