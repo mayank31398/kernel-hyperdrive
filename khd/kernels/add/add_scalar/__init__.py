@@ -3,6 +3,7 @@ import torch
 from ....enums import KernelBackend
 from ....utils import CutoTuneParameter
 from .forward import _forward
+from .torch_implementation import add_scalar_torch
 
 
 class _AddScalar_KHD(torch.autograd.Function):
