@@ -5,7 +5,7 @@ from parameterized import parameterized
 
 from khd import KernelBackend, add_scalar_khd, add_scalar_torch
 
-from ..test_commons import TestCommons
+from ...test_commons import TestCommons
 
 
 class AddTensorTest(TestCommons):
