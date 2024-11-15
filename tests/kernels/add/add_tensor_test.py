@@ -3,9 +3,9 @@ from typing import Callable
 import torch
 from parameterized import parameterized
 
-from khd import KernelBackend, add_scalar_khd, add_scalar_torch
+from khd import KernelBackend, add_tensor_khd, add_tensor_torch
 
-from ..test_commons import TestCommons
+from ...test_commons import TestCommons
 
 
 class AddTensorTest(TestCommons):
@@ -17,7 +17,7 @@ class AddTensorTest(TestCommons):
             [KernelBackend.cuda],  # kernel_backend
             [1, 2, 4],  # vector_instruction_width
             [1024],  # BLOCK_SIZE
-            [add_scalar_khd, torch.compile(add_scalar_khd)],  # function
+            [add_tensor_khd, torch.compile(add_tensor_khd)],  # function
         )
         + TestCommons.make_args_matrix(
             TestCommons.get_2d_tensor_sizes(),  # size
@@ -26,7 +26,7 @@ class AddTensorTest(TestCommons):
             [KernelBackend.cuda],  # kernel_backend
             [8],  # vector_instruction_width
             [1024],  # BLOCK_SIZE
-            [add_scalar_khd, torch.compile(add_scalar_khd)],  # function
+            [add_tensor_khd, torch.compile(add_tensor_khd)],  # function
         )
         + TestCommons.make_args_matrix(
             TestCommons.get_2d_tensor_sizes(),  # size
@@ -35,7 +35,7 @@ class AddTensorTest(TestCommons):
             [KernelBackend.triton],  # kernel_backend
             [None],  # vector_instruction_width
             [1024],  # BLOCK_SIZE
-            [add_scalar_khd, torch.compile(add_scalar_khd)],  # function
+            [add_tensor_khd, torch.compile(add_tensor_khd)],  # function
         )
     )
     def test_add_tensor(
@@ -49,19 +49,21 @@ class AddTensorTest(TestCommons):
         function: Callable,
     ) -> None:
         x_kernel, x_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
-        y = 0.42
+        y_kernel, y_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
 
         z_kernel = function(
             x_kernel,
-            y,
+            y_kernel,
             kernel_backend=kernel_backend,
             vector_instruction_width=vector_instruction_width,
             BLOCK_SIZE=BLOCK_SIZE,
         )
-        z_expected = add_scalar_torch(x_expected, y)
+
+        z_expected = add_tensor_torch(x_expected, y_expected)
 
         z_kernel.mean().backward()
         z_expected.mean().backward()
 
         self.assert_equal_tensors(z_kernel, z_expected, True)
         self.assert_equal_tensors(x_kernel.grad, x_expected.grad, True)
+        self.assert_equal_tensors(y_kernel.grad, y_expected.grad, True)
