@@ -22,8 +22,7 @@ def rmsnorm_forward_triton_kernel(
 ):
     pid_b = tl.program_id(axis=0)
 
-    block_start_b = pid_b * BLOCK_SIZE_B
-    indices_b = block_start_b + tl.arange(0, BLOCK_SIZE_B)
+    indices_b = pid_b * BLOCK_SIZE_B + tl.arange(0, BLOCK_SIZE_B)
     mask_b = indices_b < B
 
     num_iterations_h = tl.cdiv(H, BLOCK_SIZE_H)
@@ -56,8 +55,7 @@ def rmsnorm_forward_triton_kernel(
         denominator = tl.zeros((BLOCK_SIZE_B, 1), dtype=tl.float32)
 
         for pid_h in range(num_iterations_h):
-            block_start_h = pid_h * BLOCK_SIZE_H
-            indices_h = block_start_h + tl.arange(0, BLOCK_SIZE_H)
+            indices_h = pid_h * BLOCK_SIZE_H + tl.arange(0, BLOCK_SIZE_H)
             mask_h = indices_h < H
             mask_bh = mask_b[:, None] & mask_h[None, :]
 
@@ -72,8 +70,7 @@ def rmsnorm_forward_triton_kernel(
             tl.store(rmsnorm_denominator_ptr + indices_b[:, None], denominator, mask=mask_b[:, None])
 
         for pid_h in range(num_iterations_h):
-            block_start_h = pid_h * BLOCK_SIZE_H
-            indices_h = block_start_h + tl.arange(0, BLOCK_SIZE_H)
+            indices_h = pid_h * BLOCK_SIZE_H + tl.arange(0, BLOCK_SIZE_H)
             mask_h = indices_h < H
             mask_bh = mask_b[:, None] & mask_h[None, :]
 

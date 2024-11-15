@@ -6,8 +6,7 @@ import triton.language as tl
 def add_tensor_forward_triton_kernel(x_ptr, y_ptr, output_ptr, num_elements, BLOCK_SIZE: tl.constexpr):
     pid = tl.program_id(axis=0)
 
-    block_start = pid * BLOCK_SIZE
-    indices = block_start + tl.arange(0, BLOCK_SIZE)
+    indices = pid * BLOCK_SIZE + tl.arange(0, BLOCK_SIZE)
     mask = indices < num_elements
 
     x = tl.load(x_ptr + indices, mask=mask)
