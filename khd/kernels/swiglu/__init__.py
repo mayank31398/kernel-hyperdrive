@@ -4,6 +4,7 @@ from ...enums import KernelBackend
 from ...utils import CutoTuneParameter
 from .backward import _backward
 from .forward import _forward
+from .torch_implementation import swiglu_torch
 
 
 class _Swiglu_KHD(torch.autograd.Function):

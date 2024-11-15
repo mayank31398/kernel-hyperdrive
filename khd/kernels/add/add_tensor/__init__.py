@@ -27,7 +27,7 @@ class _AddTensor_KHD(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor | None]:
-        return output_grad, output_grad, None, None, None
+        return output_grad, output_grad, *[None] * 3
 
 
 def add_tensor_khd(
