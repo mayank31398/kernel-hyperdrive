@@ -43,7 +43,7 @@ class _RMSNorm_KHD(torch.autograd.Function):
 
         output = torch.empty_like(x)
         rmsnorm_denominator = (
-            None if memory_efficient else torch.empty(num_elements, 1, device=x.device, dtype=torch.float32)
+            None if memory_efficient else torch.empty(num_elements, device=x.device, dtype=torch.float32)
         )
 
         if kernel_backend_forward == KernelBackend.triton:
@@ -114,8 +114,10 @@ class _RMSNorm_KHD(torch.autograd.Function):
         output_grad_view = output_grad.view(-1, hidden_size)
 
         if kernel_backend_backward == KernelBackend.triton:
+            grid = (1,)
+
             with torch.device(x.device):
-                rmsnorm_backward_triton_kernel[1](
+                rmsnorm_backward_triton_kernel[grid](
                     x_ptr=x,
                     x_stride_b=x_view.stride(0),
                     x_stride_h=x_view.stride(1),
