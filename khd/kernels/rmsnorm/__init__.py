@@ -4,12 +4,7 @@ import triton
 from ...enums import KernelBackend
 from ...utils import CutoTuneParameter, ensure_same_strides
 from .torch_implementation import rmsnorm_torch
-from .triton_implementation import (
-    rmsnorm_backward_chunkwise_triton_kernel,
-    rmsnorm_backward_full_block_triton_kernel,
-    rmsnorm_forward_chunkwise_triton_kernel,
-    rmsnorm_forward_full_block_triton_kernel,
-)
+from .triton_implementation import rmsnorm_backward_triton_kernel, rmsnorm_forward_triton_kernel
 
 
 class _RMSNorm_KHD(torch.autograd.Function):
@@ -52,15 +47,13 @@ class _RMSNorm_KHD(torch.autograd.Function):
         )
 
         if kernel_backend_forward == KernelBackend.triton:
+            if BLOCK_SIZE_H_forward < hidden_size:
+                raise ValueError(f"hidden_size should be more than the BLOCK_SIZE_H_forward")
+
             grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE_B"]),)
-            kernel = (
-                rmsnorm_forward_full_block_triton_kernel
-                if BLOCK_SIZE_H_forward >= hidden_size
-                else rmsnorm_forward_chunkwise_triton_kernel
-            )
 
             with torch.device(x.device):
-                kernel[grid](
+                rmsnorm_forward_triton_kernel[grid](
                     x_ptr=x,
                     x_stride_b=x_view.stride(0),
                     x_stride_h=x_view.stride(1),
@@ -124,15 +117,13 @@ class _RMSNorm_KHD(torch.autograd.Function):
         output_grad_view = output_grad.view(-1, hidden_size)
 
         if kernel_backend_backward == KernelBackend.triton:
+            if BLOCK_SIZE_H_backward < hidden_size:
+                raise ValueError(f"hidden_size should be more than the BLOCK_SIZE_H_backward")
+
             grid = (1,)
-            kernel = (
-                rmsnorm_backward_full_block_triton_kernel
-                if BLOCK_SIZE_H_backward >= hidden_size
-                else rmsnorm_backward_chunkwise_triton_kernel
-            )
 
             with torch.device(x.device):
-                kernel[grid](
+                rmsnorm_backward_triton_kernel[grid](
                     x_ptr=x,
                     x_stride_b=x_view.stride(0),
                     x_stride_h=x_view.stride(1),

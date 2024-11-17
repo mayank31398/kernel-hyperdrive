@@ -3,7 +3,7 @@ import triton.language as tl
 
 
 @triton.jit
-def rmsnorm_forward_full_block_triton_kernel(
+def rmsnorm_forward_triton_kernel(
     x_ptr,
     x_stride_b,
     x_stride_h,
