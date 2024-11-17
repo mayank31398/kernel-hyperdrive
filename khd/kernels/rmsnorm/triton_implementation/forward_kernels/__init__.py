@@ -1,2 +1,2 @@
-from .blockwise_kernel import rmsnorm_forward_full_block_triton_kernel
-from .iterative_kernel import rmsnorm_forward_chunkwise_triton_kernel
+from .chunkwise_kernel import rmsnorm_forward_chunkwise_triton_kernel
+from .full_block_kernel import rmsnorm_forward_full_block_triton_kernel

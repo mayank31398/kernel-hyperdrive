@@ -25,10 +25,11 @@ def rmsnorm_forward_full_block_triton_kernel(
     pid_b = tl.program_id(axis=0)
 
     indices_b = pid_b * BLOCK_SIZE_B + tl.arange(0, BLOCK_SIZE_B)
-    mask_b = indices_b < B
-
     indices_h = tl.arange(0, BLOCK_SIZE_H)
+
+    mask_b = indices_b < B
     mask_h = indices_h < H
+
     mask_bh = mask_b[:, None] & mask_h[None, :]
 
     x_ptrs = x_ptr + indices_b[:, None] * x_stride_b + indices_h[None, :] * x_stride_h
