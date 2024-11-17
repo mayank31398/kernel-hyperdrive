@@ -7,6 +7,7 @@ def rmsnorm_backward_triton_kernel(
     x_ptr,
     x_stride_b,
     x_stride_h,
+    x_dtype: tl.constexpr,
     has_weight: tl.constexpr,
     weight_ptr,
     output_grad_ptr,

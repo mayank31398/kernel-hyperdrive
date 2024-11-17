@@ -1,5 +1,6 @@
 import torch
 
+from ...constants import TORCH_TO_TRITON_DTYPE
 from ...enums import KernelBackend
 from ...utils import CutoTuneParameter, cutotune, ensure_same_strides
 from .configs import _get_cutotune_configs
@@ -42,6 +43,7 @@ def _backward(
                 x_ptr=x,
                 x_stride_b=x_view.stride(0),
                 x_stride_h=x_view.stride(1),
+                x_dtype=TORCH_TO_TRITON_DTYPE[x.dtype],
                 has_weight=has_weight,
                 weight_ptr=weight,
                 output_grad_ptr=output_grad,
