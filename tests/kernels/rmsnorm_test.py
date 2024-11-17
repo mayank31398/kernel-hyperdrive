@@ -20,8 +20,6 @@ class RMSNormTest(TestCommons):
             [torch.device("cuda")],  # device
             TestCommons.get_dtypes(),  # dtype
             [True],  # memory_efficient
-            [KernelBackend.triton],  # kernel_backend_forward
-            [KernelBackend.triton],  # kernel_backend_backward
             [rmsnorm_khd, rmsnorm_khd],  # function
         )
     )
@@ -31,8 +29,6 @@ class RMSNormTest(TestCommons):
         device: torch.device,
         dtype: torch.dtype,
         memory_efficient: bool,
-        kernel_backend_forward: KernelBackend,
-        kernel_backend_backward: KernelBackend,
         function: Callable,
     ) -> None:
         set_seed(_SEED)
@@ -40,14 +36,7 @@ class RMSNormTest(TestCommons):
         x_kernel, x_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
         weight_kernel, weight_expected = self.get_random_duplicated_tensors(size[-1], device=device, dtype=dtype)
 
-        z_kernel = function(
-            x=x_kernel,
-            weight=weight_kernel,
-            eps=_EPSILON,
-            memory_efficient=memory_efficient,
-            kernel_backend_forward=kernel_backend_forward,
-            kernel_backend_backward=kernel_backend_backward,
-        )
+        z_kernel = function(x=x_kernel, weight=weight_kernel, eps=_EPSILON, memory_efficient=memory_efficient)
         z_expected = rmsnorm_torch(x=x_expected, weight=weight_expected, eps=_EPSILON)
 
         z_kernel.sum().backward()
