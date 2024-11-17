@@ -144,7 +144,9 @@ class _CutoTune:
         best_config = None
         best_time = float("inf")
 
-        for config in tqdm(self.configs):
+        configs = tqdm(self.configs) if _DEBUG_CUTOTUNE else self.configs
+
+        for config in configs:
             if not config.is_condition_valid(
                 **self._get_function_arguments(
                     config=CutoTuneConfig({}), args=args, kwargs=kwargs, override_allowed=False

@@ -3,22 +3,27 @@ import triton
 
 from ...constants import BLOCK_SIZES_POWERS_OF_2
 from ...enums import KernelBackend
-from ...utils import CutoTuneConfig, CutoTuneParameter, cutotune, get_cartesian_product_cutotune_configs
+from ...utils import CutoTuneConfig, CutoTuneParameter, cutotune
 from .triton_implementation import rmsnorm_forward_triton_kernel
 
 
 def _get_cutotune_configs() -> list[CutoTuneConfig]:
-    all_configs = []
+    configs = []
     for BLOCK_SIZE_H in BLOCK_SIZES_POWERS_OF_2:
-        configs = get_cartesian_product_cutotune_configs(
-            kernel_backend=[KernelBackend.triton],
-            BLOCK_SIZE_B=BLOCK_SIZES_POWERS_OF_2,
-            BLOCK_SIZE_H=[BLOCK_SIZE_H],
-            condition=lambda **kwargs: kwargs["x"].size(-1) < BLOCK_SIZE_H,
-        )
-        all_configs.extend(configs)
+        for BLOCK_SIZE_B in [1, 2, 4, 8, 16, 32] + BLOCK_SIZES_POWERS_OF_2:
+            if 64 < BLOCK_SIZE_B * BLOCK_SIZE_H <= 65536:
+                configs.extend(
+                    CutoTuneConfig(
+                        config={
+                            "kernel_backend": KernelBackend.triton,
+                            "BLOCK_SIZE_B": BLOCK_SIZE_B,
+                            "BLOCK_SIZE_H": BLOCK_SIZE_H,
+                        },
+                        condition=lambda **kwargs: kwargs["x"].size(-1) < BLOCK_SIZE_H,
+                    )
+                )
 
-    return all_configs
+    return configs
 
 
 @cutotune(configs=_get_cutotune_configs(), triggers={"x.dtype", "x.size(-1)"})
