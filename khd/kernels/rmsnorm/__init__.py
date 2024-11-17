@@ -1,10 +1,10 @@
 import torch
 
 from ...enums import KernelBackend
-from ...utils import CutoTuneParameter, ensure_same_strides
+from ...utils import CutoTuneParameter
+from .backward import _backward
 from .forward import _forward
 from .torch_implementation import rmsnorm_torch
-from .triton_implementation import rmsnorm_backward_triton_kernel
 
 
 class _RMSNorm_KHD(torch.autograd.Function):
@@ -70,45 +70,17 @@ class _RMSNorm_KHD(torch.autograd.Function):
         weight = saved_tensors[1] if has_weight else None
         rmsnorm_denominator = None if memory_efficient else saved_tensors[2]
 
-        x, output_grad = ensure_same_strides(x, output_grad)
-
-        hidden_size = x.size(-1)
-        num_elements = x.numel() // hidden_size
-
-        x_grad = torch.empty_like(x)
-        weight_grad = torch.empty(hidden_size, device=x.device, dtype=x.dtype)
-
-        x_view = x.view(-1, hidden_size)
-        output_grad_view = output_grad.view(-1, hidden_size)
-
-        if kernel_backend_backward == KernelBackend.triton:
-            if BLOCK_SIZE_H_backward < hidden_size:
-                raise ValueError(f"hidden_size should be more than the BLOCK_SIZE_H_backward")
-
-            grid = (1,)
-
-            with torch.device(x.device):
-                rmsnorm_backward_triton_kernel[grid](
-                    x_ptr=x,
-                    x_stride_b=x_view.stride(0),
-                    x_stride_h=x_view.stride(1),
-                    has_weight=has_weight,
-                    weight_ptr=weight,
-                    output_grad_ptr=output_grad,
-                    output_grad_stride_b=output_grad_view.stride(0),
-                    output_grad_stride_h=output_grad_view.stride(1),
-                    x_grad_ptr=x_grad,
-                    weight_grad_ptr=weight_grad,
-                    eps=eps,
-                    memory_efficient=memory_efficient,
-                    rmsnorm_denominator_ptr=rmsnorm_denominator,
-                    B=num_elements,
-                    H=hidden_size,
-                    BLOCK_SIZE_B=BLOCK_SIZE_B_backward,
-                    BLOCK_SIZE_H=BLOCK_SIZE_H_backward,
-                )
-        else:
-            raise ValueError(f"unexpected kernel_backend_backward ({kernel_backend_backward})")
+        x_grad, weight_grad = _backward(
+            x=x,
+            weight=weight,
+            eps=eps,
+            rmsnorm_denominator=rmsnorm_denominator,
+            output_grad=output_grad,
+            memory_efficient=memory_efficient,
+            kernel_backend=kernel_backend_backward,
+            BLOCK_SIZE_B=BLOCK_SIZE_B_backward,
+            BLOCK_SIZE_H=BLOCK_SIZE_H_backward,
+        )
 
         return x_grad, weight_grad, *[None] * 8
 
