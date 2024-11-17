@@ -40,7 +40,7 @@ def rmsnorm_backward_triton_kernel(
             x = tl.load(x_ptrs, mask=mask_bh).to(tl.float32)
 
             squared_sum = tl.sum(x * x, axis=1)
-            inverse_rms = tl.rsqrt((squared_sum / H) + eps)
+            inverse_rms = tl.rsqrt(squared_sum / H + eps)
 
             y_without_weight = x * inverse_rms[:, None]
 
@@ -50,6 +50,39 @@ def rmsnorm_backward_triton_kernel(
             output_grad = tl.load(output_grad_ptrs, mask=mask_bh).to(tl.float32)
 
             weight_grad += tl.sum(output_grad * y_without_weight, axis=0)
+        else:
+            squared_sum = tl.zeros((BLOCK_SIZE_B,), dtype=tl.float32)
+
+            for pid_h in range(num_iterations_h):
+                indices_h = pid_h * BLOCK_SIZE_H + tl.arange(0, BLOCK_SIZE_H)
+                mask_h = indices_h < H
+                mask_bh = mask_b[:, None] & mask_h[None, :]
+
+                x_ptrs = x_ptr + indices_b[:, None] * x_stride_b + indices_h[None, :] * x_stride_h
+                x = tl.load(x_ptrs, mask=mask_bh).to(tl.float32)
+
+                squared_sum += tl.sum(x * x, axis=1)
+
+            inverse_rms = tl.rsqrt(squared_sum / H + eps)
+
+            for pid_h in range(num_iterations_h):
+                indices_h = pid_h * BLOCK_SIZE_H + tl.arange(0, BLOCK_SIZE_H)
+                mask_h = indices_h < H
+                mask_bh = mask_b[:, None] & mask_h[None, :]
+
+                x_ptrs = x_ptr + indices_b[:, None] * x_stride_b + indices_h[None, :] * x_stride_h
+                x = tl.load(x_ptrs, mask=mask_bh).to(tl.float32)
+
+                y_without_weight = x * inverse_rms[:, None]
+
+                output_grad_ptrs = (
+                    output_grad_ptr
+                    + indices_b[:, None] * output_grad_stride_b
+                    + indices_h[None, :] * output_grad_stride_h
+                )
+                output_grad = tl.load(output_grad_ptrs, mask=mask_bh).to(tl.float32)
+
+                weight_grad += tl.sum(output_grad * y_without_weight, axis=0)
 
     if num_iterations_h == 1:
         indices_h = tl.arange(0, BLOCK_SIZE_H)
