@@ -33,18 +33,21 @@ def rmsnorm_forward_triton_kernel(
     mask_bh = mask_b[:, None] & mask_h[None, :]
 
     x_ptrs = x_ptr + indices_b[:, None] * x_stride_b + indices_h[None, :] * x_stride_h
-    x = tl.load(x_ptrs, mask=mask_bh).to(tl.float32)
+    x = tl.load(x_ptrs, mask=mask_bh)
+    original_dtype = x.dtype
+    x_upcast = x.to(tl.float32)
 
-    squared_sum = tl.sum(x * x, axis=1)
+    squared_sum = tl.sum(x_upcast * x_upcast, axis=1)
     inverse_rms = tl.rsqrt((squared_sum / H) + eps)
 
     if not memory_efficient:
         tl.store(rmsnorm_denominator_ptr + indices_b, inverse_rms, mask=mask_b)
 
-    x *= inverse_rms[:, None]
+    x_upcast *= inverse_rms[:, None]
 
     if has_weight:
         weight = tl.load(weight_ptr + indices_h, mask=mask_h)
+        x = x_upcast.to(original_dtype)
         x *= weight[None, :]
 
     output_ptrs = output_ptr + indices_b[:, None] * output_stride_b + indices_h[None, :] * output_stride_h
