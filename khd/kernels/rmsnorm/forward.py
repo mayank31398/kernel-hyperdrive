@@ -19,7 +19,7 @@ def _get_cutotune_configs() -> list[CutoTuneConfig]:
                             "BLOCK_SIZE_B": BLOCK_SIZE_B,
                             "BLOCK_SIZE_H": BLOCK_SIZE_H,
                         },
-                        condition=lambda **kwargs: kwargs["x"].size(-1) < BLOCK_SIZE_H,
+                        condition=lambda **kwargs: kwargs["x"].size(-1) <= kwargs["BLOCK_SIZE_H"],
                     )
                 )
 
