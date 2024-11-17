@@ -26,6 +26,8 @@ class CutoTuneConfig:
         return self.config
 
     def is_condition_valid(self, **kwargs) -> bool:
+        # note that here we override the values from the args passed by the user
+        kwargs.update(self.get_key_values())
         return True if self.condition is None else self.condition(**kwargs)
 
     def __repr__(self) -> str:
