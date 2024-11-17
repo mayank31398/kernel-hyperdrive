@@ -1,34 +1,23 @@
 import torch
 import triton
 
+from ...constants import BLOCK_SIZES_POWERS_OF_2
 from ...enums import KernelBackend
 from ...utils import CutoTuneParameter, cutotune, get_cartesian_product_cutotune_configs
 from .triton_implementation import rmsnorm_forward_triton_kernel
 
 
 @cutotune(
-    configs=(
+    configs=[
         get_cartesian_product_cutotune_configs(
             kernel_backend=[KernelBackend.triton],
             BLOCK_SIZE_B=BLOCK_SIZES_POWERS_OF_2,
+            BLOCK_SIZE_H=[BLOCK_SIZE_H],
+            condition=lambda **kwargs: kwargs["x"].size(-1) < BLOCK_SIZE_H,
         )
-        if torch.cuda.is_available()
-        else []
-    )
-    + (
-        get_cartesian_product_cutotune_configs(
-            kernel_backend=[KernelBackend.cuda],
-            vector_instruction_width=[8],
-            BLOCK_SIZE=BLOCK_SIZES_POWERS_OF_2,
-            condition=lambda **kwargs: kwargs["x"].dtype in [torch.float16, torch.bfloat16],
-        )
-        if torch.cuda.is_available()
-        else []
-    )
-    + get_cartesian_product_cutotune_configs(
-        kernel_backend=[KernelBackend.triton], vector_instruction_width=[None], BLOCK_SIZE=BLOCK_SIZES_POWERS_OF_2
-    ),
-    triggers={"x.dtype"},
+        for BLOCK_SIZE_H in BLOCK_SIZES_POWERS_OF_2
+    ],
+    triggers={"x.dtype", "x.size(-1)"},
 )
 def _forward(
     x: torch.Tensor,
