@@ -55,7 +55,8 @@ def rmsnorm_backward_triton_kernel(
         output_grad = tl.load(output_grad_ptrs, mask=mask_bh).to(tl.float32)
 
         if has_weight:
-            weight_grad += tl.sum(output_grad * y_without_weight, axis=0)
+            _weight_grad = output_grad * y_without_weight.to(x_dtype)
+            weight_grad += tl.sum(_weight_grad, axis=0)
 
     if has_weight:
         weight_grad_ptrs = weight_grad_ptr + indices_h
