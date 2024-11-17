@@ -47,8 +47,7 @@ def rmsnorm_forward_triton_kernel(
 
     if has_weight:
         weight = tl.load(weight_ptr + indices_h, mask=mask_h)
-        x = x_upcast.to(original_dtype)
-        x *= weight[None, :]
+        x = x_upcast.to(original_dtype) * weight[None, :]
 
     output_ptrs = output_ptr + indices_b[:, None] * output_stride_b + indices_h[None, :] * output_stride_h
     tl.store(output_ptrs, x, mask=mask_bh)
