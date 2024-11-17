@@ -12,7 +12,7 @@ def _get_cutotune_configs() -> list[CutoTuneConfig]:
     for BLOCK_SIZE_H in BLOCK_SIZES_POWERS_OF_2:
         for BLOCK_SIZE_B in [1, 2, 4, 8, 16, 32] + BLOCK_SIZES_POWERS_OF_2:
             if 64 < BLOCK_SIZE_B * BLOCK_SIZE_H <= 65536:
-                configs.extend(
+                configs.append(
                     CutoTuneConfig(
                         config={
                             "kernel_backend": KernelBackend.triton,
