@@ -66,5 +66,5 @@ class RMSNormTest(TestCommons):
         z_expected.sum().backward()
 
         self.assert_equal_tensors(z_kernel, z_expected, False)
-        # self.assert_equal_tensors(x_kernel.grad, x_expected.grad, True)
+        self.assert_equal_tensors(x_kernel.grad, x_expected.grad, False)
         self.assert_equal_tensors(weight_kernel.grad, weight_expected.grad, False)
