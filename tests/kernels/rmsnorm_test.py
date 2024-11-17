@@ -22,10 +22,6 @@ class RMSNormTest(TestCommons):
             [True],  # memory_efficient
             [KernelBackend.triton],  # kernel_backend_forward
             [KernelBackend.triton],  # kernel_backend_backward
-            [1],  # BLOCK_SIZE_B_forward
-            [1],  # BLOCK_SIZE_B_backward
-            [1024],  # BLOCK_SIZE_H_forward
-            [1024],  # BLOCK_SIZE_H_backward
             [rmsnorm_khd, rmsnorm_khd],  # function
         )
     )
@@ -37,10 +33,6 @@ class RMSNormTest(TestCommons):
         memory_efficient: bool,
         kernel_backend_forward: KernelBackend,
         kernel_backend_backward: KernelBackend,
-        BLOCK_SIZE_B_forward: int,
-        BLOCK_SIZE_B_backward: int,
-        BLOCK_SIZE_H_forward: int,
-        BLOCK_SIZE_H_backward: int,
         function: Callable,
     ) -> None:
         set_seed(_SEED)
@@ -55,10 +47,6 @@ class RMSNormTest(TestCommons):
             memory_efficient=memory_efficient,
             kernel_backend_forward=kernel_backend_forward,
             kernel_backend_backward=kernel_backend_backward,
-            BLOCK_SIZE_B_forward=BLOCK_SIZE_B_forward,
-            BLOCK_SIZE_B_backward=BLOCK_SIZE_B_backward,
-            BLOCK_SIZE_H_forward=BLOCK_SIZE_H_forward,
-            BLOCK_SIZE_H_backward=BLOCK_SIZE_H_backward,
         )
         z_expected = rmsnorm_torch(x=x_expected, weight=weight_expected, eps=_EPSILON)
 
