@@ -4,7 +4,7 @@ import torch
 from parameterized import parameterized
 from transformers import set_seed
 
-from khd import KernelBackend, rmsnorm_khd, rmsnorm_torch
+from khd import rmsnorm_khd, rmsnorm_torch
 
 from ..test_commons import TestCommons
 
