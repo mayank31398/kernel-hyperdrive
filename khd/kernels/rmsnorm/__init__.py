@@ -1,10 +1,10 @@
 import torch
-import triton
 
 from ...enums import KernelBackend
 from ...utils import CutoTuneParameter, ensure_same_strides
+from .forward import _forward
 from .torch_implementation import rmsnorm_torch
-from .triton_implementation import rmsnorm_backward_triton_kernel, rmsnorm_forward_triton_kernel
+from .triton_implementation import rmsnorm_backward_triton_kernel
 
 
 class _RMSNorm_KHD(torch.autograd.Function):
@@ -22,56 +22,17 @@ class _RMSNorm_KHD(torch.autograd.Function):
         BLOCK_SIZE_H_forward: int | CutoTuneParameter,
         BLOCK_SIZE_H_backward: int | CutoTuneParameter,
     ) -> torch.Tensor:
-        if x.stride(-1) != 1:
-            x = x.contiguous()
-
-        assert x.dim() > 1, "x should have more than 1 dimensions"
-
-        has_weight = weight is not None
-
-        if has_weight:
-            assert weight.dim() == 1, "weight should be 1D"
-            assert weight.size(-1) == x.size(-1), "hidden size for x and weight tensor is different"
-            assert weight.type() == x.type(), "tensors weight and y should have same dtype"
-
-            weight = weight.contiguous()
-
-        hidden_size = x.size(-1)
-        num_elements = x.numel() // hidden_size
-
-        x_view = x.view(-1, hidden_size)
-
-        output = torch.empty_like(x)
-        rmsnorm_denominator = (
-            None if memory_efficient else torch.empty(num_elements, device=x.device, dtype=torch.float32)
+        output, rmsnorm_denominator = _forward(
+            x=x,
+            weight=weight,
+            eps=eps,
+            memory_efficient=memory_efficient,
+            kernel_backend=kernel_backend_forward,
+            BLOCK_SIZE_B=BLOCK_SIZE_B_forward,
+            BLOCK_SIZE_H=BLOCK_SIZE_H_forward,
         )
 
-        if kernel_backend_forward == KernelBackend.triton:
-            if BLOCK_SIZE_H_forward < hidden_size:
-                raise ValueError(f"hidden_size should be more than the BLOCK_SIZE_H_forward")
-
-            grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE_B"]),)
-
-            with torch.device(x.device):
-                rmsnorm_forward_triton_kernel[grid](
-                    x_ptr=x,
-                    x_stride_b=x_view.stride(0),
-                    x_stride_h=x_view.stride(1),
-                    has_weight=has_weight,
-                    weight_ptr=weight,
-                    output_ptr=output,
-                    output_stride_b=output.stride(0),
-                    output_stride_h=output.stride(1),
-                    eps=eps,
-                    memory_efficient=memory_efficient,
-                    rmsnorm_denominator_ptr=rmsnorm_denominator,
-                    B=num_elements,
-                    H=hidden_size,
-                    BLOCK_SIZE_B=BLOCK_SIZE_B_forward,
-                    BLOCK_SIZE_H=BLOCK_SIZE_H_forward,
-                )
-        else:
-            raise ValueError(f"unexpected kernel_backend_forward ({kernel_backend_forward})")
+        has_weight = weight is not None
 
         ctx.memory_efficient = memory_efficient
         ctx.kernel_backend_backward = kernel_backend_backward
@@ -81,9 +42,13 @@ class _RMSNorm_KHD(torch.autograd.Function):
         ctx.BLOCK_SIZE_H_backward = BLOCK_SIZE_H_backward
 
         tensors_to_save = [x]
+
         if has_weight:
             tensors_to_save.append(weight)
-        if not memory_efficient:
+
+        if memory_efficient:
+            assert rmsnorm_denominator is None
+        else:
             tensors_to_save.append(rmsnorm_denominator)
 
         ctx.save_for_backward(*tensors_to_save)
