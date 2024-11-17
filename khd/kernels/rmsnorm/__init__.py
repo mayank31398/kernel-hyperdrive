@@ -58,28 +58,23 @@ class _RMSNorm_KHD(torch.autograd.Function):
     @staticmethod
     def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor | None]:
         memory_efficient = ctx.memory_efficient
-        kernel_backend_backward = ctx.kernel_backend_backward
-        has_weight = ctx.has_weight
-        eps = ctx.eps
-        BLOCK_SIZE_B_backward = ctx.BLOCK_SIZE_B_backward
-        BLOCK_SIZE_H_backward = ctx.BLOCK_SIZE_H_backward
 
         saved_tensors = ctx.saved_tensors
 
         x = saved_tensors[0]
-        weight = saved_tensors[1] if has_weight else None
+        weight = saved_tensors[1] if ctx.has_weight else None
         rmsnorm_denominator = None if memory_efficient else saved_tensors[2]
 
         x_grad, weight_grad = _backward(
             x=x,
             weight=weight,
-            eps=eps,
+            eps=ctx.eps,
             rmsnorm_denominator=rmsnorm_denominator,
             output_grad=output_grad,
             memory_efficient=memory_efficient,
-            kernel_backend=kernel_backend_backward,
-            BLOCK_SIZE_B=BLOCK_SIZE_B_backward,
-            BLOCK_SIZE_H=BLOCK_SIZE_H_backward,
+            kernel_backend=ctx.kernel_backend_backward,
+            BLOCK_SIZE_B=ctx.BLOCK_SIZE_B_backward,
+            BLOCK_SIZE_H=ctx.BLOCK_SIZE_H_backward,
         )
 
         return x_grad, weight_grad, *[None] * 8
