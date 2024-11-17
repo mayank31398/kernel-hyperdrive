@@ -44,7 +44,7 @@ class _CutoTune:
         configs: list[CutoTuneConfig],
         triggers: set[str] = set(),
         warmup_iterations: int = 5,
-        benchmark_iterations: int = 100,
+        benchmark_iterations: int = 10,
         in_place_op: bool = False,
     ) -> None:
         self.function = function
