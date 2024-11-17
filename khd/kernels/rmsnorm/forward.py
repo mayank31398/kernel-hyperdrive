@@ -3,22 +3,25 @@ import triton
 
 from ...constants import BLOCK_SIZES_POWERS_OF_2
 from ...enums import KernelBackend
-from ...utils import CutoTuneParameter, cutotune, get_cartesian_product_cutotune_configs
+from ...utils import CutoTuneConfig, CutoTuneParameter, cutotune, get_cartesian_product_cutotune_configs
 from .triton_implementation import rmsnorm_forward_triton_kernel
 
 
-@cutotune(
-    configs=[
-        get_cartesian_product_cutotune_configs(
+def _get_cutotune_configs() -> list[CutoTuneConfig]:
+    all_configs = []
+    for BLOCK_SIZE_H in BLOCK_SIZES_POWERS_OF_2:
+        configs = get_cartesian_product_cutotune_configs(
             kernel_backend=[KernelBackend.triton],
             BLOCK_SIZE_B=BLOCK_SIZES_POWERS_OF_2,
             BLOCK_SIZE_H=[BLOCK_SIZE_H],
             condition=lambda **kwargs: kwargs["x"].size(-1) < BLOCK_SIZE_H,
         )
-        for BLOCK_SIZE_H in BLOCK_SIZES_POWERS_OF_2
-    ],
-    triggers={"x.dtype", "x.size(-1)"},
-)
+        all_configs.extend(configs)
+
+    return all_configs
+
+
+@cutotune(configs=_get_cutotune_configs(), triggers={"x.dtype", "x.size(-1)"})
 def _forward(
     x: torch.Tensor,
     weight: torch.Tensor,
