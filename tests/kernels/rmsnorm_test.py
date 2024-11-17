@@ -17,7 +17,7 @@ class RMSNormTest(TestCommons):
     @parameterized.expand(
         TestCommons.make_args_matrix(
             # TestCommons.get_2d_tensor_sizes(),  # size
-            [(13, 23)],
+            [(13, 23), (13, 1000)],
             [torch.device("cuda")],  # device
             TestCommons.get_dtypes(),  # dtype
             [True],  # memory_efficient
@@ -25,8 +25,8 @@ class RMSNormTest(TestCommons):
             [KernelBackend.triton],  # kernel_backend_backward
             [1],  # BLOCK_SIZE_B_forward
             [1],  # BLOCK_SIZE_B_backward
-            [32],  # BLOCK_SIZE_H_forward
-            [32],  # BLOCK_SIZE_H_backward
+            [1024],  # BLOCK_SIZE_H_forward
+            [1024],  # BLOCK_SIZE_H_backward
             [rmsnorm_khd, rmsnorm_khd],  # function
         )
     )
@@ -68,12 +68,4 @@ class RMSNormTest(TestCommons):
 
         self.assert_equal_tensors(z_kernel, z_expected, False)
         # self.assert_equal_tensors(x_kernel.grad, x_expected.grad, True)
-        self.assert_equal_tensors(
-            weight_kernel.grad,
-            weight_expected.grad,
-            False,
-            atol_float16=3e-3,
-            rtol_float16=0,
-            atol_bfloat16=1e-2,
-            rtol_bfloat16=5e-3,
-        )
+        self.assert_equal_tensors(weight_kernel.grad, weight_expected.grad, False)
