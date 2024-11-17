@@ -19,6 +19,8 @@ def _backward(
     BLOCK_SIZE_B: int | CutoTuneParameter,
     BLOCK_SIZE_H: int | CutoTuneParameter,
 ) -> tuple[torch.Tensor | None]:
+    # x already has stride(-1) = 1 from the forward function
+    # so we just ensure that x & output_grad have the same strides
     x, output_grad = ensure_same_strides(x, output_grad)
 
     has_weight = weight is not None
