@@ -256,19 +256,21 @@ class _CutoTune:
         if len(split_trigger) == 1:
             func = None
         elif len(split_trigger) == 2:
-            if split_trigger[1] == "dtype":
+            func = split_trigger[1]
+
+            if func == "dtype":
                 func = lambda tensor: tensor.dtype
-            elif split_trigger[1] in ["size()", "shape"]:
+            elif func in ["size()", "shape"]:
                 func = lambda tensor: tensor.size()
-            elif split_trigger[1] == "stride()":
+            elif func == "stride()":
                 func = lambda tensor: tensor.stride()
-            elif split_trigger[1].startswith("size"):
+            elif func.startswith("size"):
                 dim = int(func[5:][:-1])
                 func = lambda tensor: tensor.size(dim)
-            elif split_trigger[1].startswith("shape"):
+            elif func.startswith("shape"):
                 dim = int(func[6:][:-1])
                 func = lambda tensor: tensor.size(dim)
-            elif split_trigger[1].startswith("stride"):
+            elif func.startswith("stride"):
                 dim = int(func[7:][:-1])
                 func = lambda tensor: tensor.stride(dim)
             else:
