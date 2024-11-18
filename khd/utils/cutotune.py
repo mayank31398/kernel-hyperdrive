@@ -178,19 +178,20 @@ class _CutoTune:
             triggers = self.variable_name_trigger_map[variable_name]
 
             if isinstance(value, torch.Tensor):
-                for trigger in triggers:
-                    if trigger is None:
+                for func_name, func in triggers:
+                    if func is None:
                         assert len(triggers) == 1
                         trigger = lambda tensor: (tensor.dtype, tensor.size(), tensor.stride())
 
-                    lookup_key.append(f"{variable_name} = {trigger(value)}")
+                    lookup_key.append(f"{variable_name}.{func_name} = {func(value)}")
             else:
                 assert len(triggers) == 1
+                func_name, func = triggers[0]
                 assert (
-                    triggers[0] is None
+                    func is None
                 ), f"trigger ({variable_name}) is not a tensor and shouldn't have a functional trigger"
 
-                lookup_key.append(f"{variable_name} = {value}")
+                lookup_key.append(f"{variable_name}.{func_name} = {value}")
 
         for i, value in enumerate(args):
             variable_name = self.signature.args[i]
@@ -237,13 +238,13 @@ class _CutoTune:
         self.variable_name_trigger_map = defaultdict(list)
 
         for trigger in triggers:
-            variable_name, trigger = self._parse_trigger(trigger)
-            self.variable_name_trigger_map[variable_name].append(trigger)
+            variable_name, func_name, func = self._parse_trigger(trigger)
+            self.variable_name_trigger_map[variable_name].append((func_name, func))
 
-        # filter to remove all triggers if None, this is usefull for Tensor based triggers
+        # filter to remove all triggers if None, this is useful for Tensor based triggers
         for variable_name in self.variable_name_trigger_map:
-            if None in self.variable_name_trigger_map[variable_name]:
-                self.variable_name_trigger_map[variable_name] = [None]
+            if ("info", None) in self.variable_name_trigger_map[variable_name]:
+                self.variable_name_trigger_map[variable_name] = [("info", None)]
 
             assert (
                 variable_name in self.signature.args
@@ -254,34 +255,35 @@ class _CutoTune:
                 variable_name not in self.variable_name_trigger_map
             ), "trigger can't be an instance of CutoTuneParameter"
 
-    def _parse_trigger(self, trigger: str) -> tuple[str, Callable]:
+    def _parse_trigger(self, trigger: str) -> tuple[str, str, Callable]:
         split_trigger = trigger.split(_SEPARATOR)
         variable_name = split_trigger[0]
 
         if len(split_trigger) == 1:
+            func_name = "info"
             func = None
         elif len(split_trigger) == 2:
-            func = split_trigger[1]
+            func_name = split_trigger[1]
 
-            if func == "dtype":
+            if func_name == "dtype":
                 func = lambda tensor: tensor.dtype
-            elif func in ["size()", "shape"]:
+            elif func_name in ["size()", "shape"]:
                 func = lambda tensor: tensor.size()
-            elif func == "stride()":
+            elif func_name == "stride()":
                 func = lambda tensor: tensor.stride()
-            elif func.startswith("size"):
-                dim = int(func[5:][:-1])
+            elif func_name.startswith("size"):
+                dim = int(func_name[5:][:-1])
                 func = lambda tensor: tensor.size(dim)
-            elif func.startswith("shape"):
-                dim = int(func[6:][:-1])
+            elif func_name.startswith("shape"):
+                dim = int(func_name[6:][:-1])
                 func = lambda tensor: tensor.size(dim)
-            elif func.startswith("stride"):
-                dim = int(func[7:][:-1])
+            elif func_name.startswith("stride"):
+                dim = int(func_name[7:][:-1])
                 func = lambda tensor: tensor.stride(dim)
             else:
                 raise ValueError(f"unexpected triggeer found ({trigger})")
 
-        return variable_name, func
+        return variable_name, func_name, func
 
     def __enter__(self) -> Any:
         return
