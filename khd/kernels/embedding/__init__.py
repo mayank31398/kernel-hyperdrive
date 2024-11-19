@@ -2,7 +2,7 @@ import torch
 import triton
 
 from ...enums import KernelBackend
-from ...utils import make_contiguous
+from ...utils import ceil_divide, make_contiguous
 from .torch_implementation import embedding_torch
 from .triton_implementation import embedding_forward_triton_kernel
 
@@ -26,13 +26,10 @@ class _Embedding_KHD(torch.autograd.Function):
         output = torch.empty(num_elements, hidden_size, dtype=wte.dtype, device=input_ids.device)
 
         if kernel_backend == KernelBackend.triton:
-            grid = lambda meta: (
-                triton.cdiv(num_elements, meta["BLOCK_SIZE_B"]),
-                triton.cdiv(hidden_size, meta["BLOCK_SIZE_H"]),
-            )
-
             with torch.device(input_ids.device):
-                embedding_forward_triton_kernel[grid](
+                embedding_forward_triton_kernel[
+                    (ceil_divide(num_elements, BLOCK_SIZE_B), ceil_divide(hidden_size, BLOCK_SIZE_H))
+                ](
                     x_ptr=input_ids,
                     wte_ptr=wte,
                     wte_stride_v=wte.stride(0),
