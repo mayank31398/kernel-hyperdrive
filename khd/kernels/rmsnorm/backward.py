@@ -78,9 +78,7 @@ def _backward(
     x, output_grad = ensure_same_strides(x, output_grad)
 
     has_weight = weight is not None
-
     hidden_size = x.size(-1)
-    num_elements = x.numel() // hidden_size
 
     x_grad = torch.empty_like(x)
     weight_grad = torch.empty(hidden_size, device=x.device, dtype=x.dtype) if has_weight else None

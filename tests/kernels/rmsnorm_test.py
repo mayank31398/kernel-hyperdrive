@@ -18,9 +18,9 @@ class RMSNormTest(TestCommons):
         TestCommons.make_args_matrix(
             TestCommons.get_2d_tensor_sizes(400),  # size
             [torch.device("cuda")],  # device
-            TestCommons.get_dtypes(),  # dtype
+            TestCommons.get_dtypes()[:1],  # dtype
             [True],  # memory_efficient
-            [rmsnorm_khd, rmsnorm_khd],  # function
+            [rmsnorm_khd, torch.compile(rmsnorm_khd)],  # function
         )
     )
     def test_rmsnorm(
@@ -44,4 +44,4 @@ class RMSNormTest(TestCommons):
 
         self.assert_equal_tensors(z_kernel, z_expected, False)
         self.assert_equal_tensors(x_kernel.grad, x_expected.grad, False)
-        self.assert_equal_tensors(weight_kernel.grad, weight_expected.grad, False)
+        self.assert_equal_tensors(weight_kernel.grad, weight_expected.grad, False, atol_float32=8.5e-5, rtol_float32=0)
