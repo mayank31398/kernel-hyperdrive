@@ -109,13 +109,11 @@ class _CutoTune:
         for i, value in enumerate(args):
             variable_name = self.signature.args[i]
 
-            if isinstance(value, CutoTuneParameter):
-                assert variable_name in self.cutotuneable_parameters
+            if isinstance(value, CutoTuneParameter) and variable_name in self.cutotuneable_parameters:
                 num_cutotune_overrideables += 1
 
         for variable_name, value in kwargs.items():
-            if isinstance(value, CutoTuneParameter):
-                assert variable_name in self.cutotuneable_parameters
+            if isinstance(value, CutoTuneParameter) and variable_name in self.cutotuneable_parameters:
                 num_cutotune_overrideables += 1
 
         assert num_cutotune_overrideables in [
