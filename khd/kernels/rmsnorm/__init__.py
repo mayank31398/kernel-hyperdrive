@@ -1,11 +1,10 @@
 import torch
-import triton
 
-from ...constants import BLOCK_SIZES_POWERS_OF_2
 from ...enums import KernelBackend
-from ...utils import CutoTuneParameter, cutotune, get_cartesian_product_cutotune_configs
+from ...utils import CutoTuneParameter
+from .backward import _backward
+from .forward import _forward
 from .torch_implementation import rmsnorm_torch
-from .triton_implementation import rmsnorm_forward_triton_kernel
 
 
 class _RMSNorm_KHD(torch.autograd.Function):
@@ -15,62 +14,93 @@ class _RMSNorm_KHD(torch.autograd.Function):
         x: torch.Tensor,
         weight: torch.Tensor,
         eps: float,
-        kernel_backend: KernelBackend | CutoTuneParameter,
-        BLOCK_SIZE_B: int | CutoTuneParameter,
-        BLOCK_SIZE_H: int | CutoTuneParameter,
+        memory_efficient: bool,
+        kernel_backend_forward: KernelBackend | CutoTuneParameter,
+        kernel_backend_backward: KernelBackend | CutoTuneParameter,
+        BLOCK_SIZE_B_forward: int | CutoTuneParameter,
+        BLOCK_SIZE_B_backward: int | CutoTuneParameter,
+        BLOCK_SIZE_H_forward: int | CutoTuneParameter,
+        BLOCK_SIZE_H_backward: int | CutoTuneParameter,
     ) -> torch.Tensor:
-        if x.stride(-1) != 1:
-            x = x.contiguous()
+        output, rmsnorm_denominator = _forward(
+            x=x,
+            weight=weight,
+            eps=eps,
+            memory_efficient=memory_efficient,
+            kernel_backend=kernel_backend_forward,
+            BLOCK_SIZE_B=BLOCK_SIZE_B_forward,
+            BLOCK_SIZE_H=BLOCK_SIZE_H_forward,
+        )
 
-        assert x.dim() > 1, "x should have more than 1 dimensions"
+        has_weight = weight is not None
 
-        if weight is not None:
-            assert weight.dim() == 1, "weight should be 1D"
-            assert weight.size(-1) == x.size(-1), "hidden size for x and weight tensor is different"
+        ctx.memory_efficient = memory_efficient
+        ctx.kernel_backend_backward = kernel_backend_backward
+        ctx.has_weight = has_weight
+        ctx.eps = eps
+        ctx.BLOCK_SIZE_B_backward = BLOCK_SIZE_B_backward
+        ctx.BLOCK_SIZE_H_backward = BLOCK_SIZE_H_backward
 
-            weight = weight.contiguous()
+        tensors_to_save = [x]
 
-        hidden_size = x.size(-1)
-        num_elements = x.numel() // hidden_size
+        if has_weight:
+            tensors_to_save.append(weight)
 
-        original_shape = x.size()
-        x = x.view(-1, hidden_size)
-
-        output = torch.empty_like(x)
-
-        if kernel_backend == KernelBackend.triton:
-            grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE_B"]),)
-
-            with torch.device(x.device):
-                rmsnorm_forward_triton_kernel[grid](
-                    x_ptr=x,
-                    x_stride_b=x.stride(0),
-                    x_stride_h=x.stride(1),
-                    has_weight=weight is not None,
-                    weight_ptr=weight,
-                    output_ptr=output,
-                    output_stride_b=output.stride(0),
-                    output_stride_h=output.stride(1),
-                    eps=eps,
-                    B=num_elements,
-                    H=hidden_size,
-                    BLOCK_SIZE_B=BLOCK_SIZE_B,
-                    BLOCK_SIZE_H=BLOCK_SIZE_H,
-                )
+        if memory_efficient:
+            assert rmsnorm_denominator is None
         else:
-            raise ValueError(f"unexpected kernel_backend ({kernel_backend})")
+            tensors_to_save.append(rmsnorm_denominator)
 
-        output = output.view(original_shape)
+        ctx.save_for_backward(*tensors_to_save)
 
         return output
+
+    @staticmethod
+    def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor | None]:
+        memory_efficient = ctx.memory_efficient
+
+        saved_tensors = ctx.saved_tensors
+
+        x = saved_tensors[0]
+        weight = saved_tensors[1] if ctx.has_weight else None
+        rmsnorm_denominator = None if memory_efficient else saved_tensors[2]
+
+        x_grad, weight_grad = _backward(
+            x=x,
+            weight=weight,
+            eps=ctx.eps,
+            rmsnorm_denominator=rmsnorm_denominator,
+            output_grad=output_grad,
+            memory_efficient=memory_efficient,
+            kernel_backend=ctx.kernel_backend_backward,
+            BLOCK_SIZE_B=ctx.BLOCK_SIZE_B_backward,
+            BLOCK_SIZE_H=ctx.BLOCK_SIZE_H_backward,
+        )
+
+        return x_grad, weight_grad, *[None] * 8
 
 
 def rmsnorm_khd(
     x: torch.Tensor,
     weight: torch.Tensor,
     eps: float,
-    kernel_backend: KernelBackend | CutoTuneParameter = CutoTuneParameter(),
-    BLOCK_SIZE_B: int | CutoTuneParameter = CutoTuneParameter(),
-    BLOCK_SIZE_H: int | CutoTuneParameter = CutoTuneParameter(),
+    memory_efficient: bool = False,
+    kernel_backend_forward: KernelBackend | CutoTuneParameter = CutoTuneParameter(),
+    kernel_backend_backward: KernelBackend | CutoTuneParameter = CutoTuneParameter(),
+    BLOCK_SIZE_B_forward: int | CutoTuneParameter = CutoTuneParameter(),
+    BLOCK_SIZE_B_backward: int | CutoTuneParameter = CutoTuneParameter(),
+    BLOCK_SIZE_H_forward: int | CutoTuneParameter = CutoTuneParameter(),
+    BLOCK_SIZE_H_backward: int | CutoTuneParameter = CutoTuneParameter(),
 ) -> torch.Tensor:
-    return _RMSNorm_KHD.apply(x, weight, eps, kernel_backend, BLOCK_SIZE_B, BLOCK_SIZE_H)
+    return _RMSNorm_KHD.apply(
+        x,
+        weight,
+        eps,
+        memory_efficient,
+        kernel_backend_forward,
+        kernel_backend_backward,
+        BLOCK_SIZE_B_forward,
+        BLOCK_SIZE_B_backward,
+        BLOCK_SIZE_H_forward,
+        BLOCK_SIZE_H_backward,
+    )

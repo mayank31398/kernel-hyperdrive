@@ -130,7 +130,7 @@ def compute_expert_block(
     W_blk_ptrs = W_ptr + K_block[:, None] * stride_wk + N_block[None, :] * stride_wn + E_idx * stride_we
     iters = tl.cdiv(K, BLOCK_K)
 
-    for K_block_id in range(0, iters):
+    for K_block_id in range(iters):
         if no_k_mask:
             x = tl.load(X_blk_ptrs, mask=E_mask[:, None])
             if no_n_mask or K_block_id < (iters - 1):
@@ -218,7 +218,7 @@ def groupXtY_triton_kernel(
         no_k_mask = K % BLOCK_K == 0
         no_n_mask = N % BLOCK_N == 0
 
-        for i in range(0, iters):
+        for i in range(iters):
             M_mask = (i * BLOCK_M + M_block) < end_idx
 
             if no_k_mask:
@@ -276,7 +276,7 @@ def group_triton_kernel(
     iters = tl.cdiv(K, BLOCK_K)
     no_k_mask = K % BLOCK_K == 0
 
-    for i in range(0, iters):
+    for i in range(iters):
         if no_k_mask or i < iters - 1:
             block = tl.load(src_blk_ptrs, mask=N_mask[:, None])
 
