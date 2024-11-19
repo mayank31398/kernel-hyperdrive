@@ -191,7 +191,7 @@ class _CutoTune:
                     func is None
                 ), f"trigger ({variable_name}) is not a tensor and shouldn't have a functional trigger"
 
-                lookup_key.append(f"{variable_name}.{func_name} = {value}")
+                lookup_key.append(f"{variable_name} = {value}")
 
         for i, value in enumerate(args):
             variable_name = self.signature.args[i]
