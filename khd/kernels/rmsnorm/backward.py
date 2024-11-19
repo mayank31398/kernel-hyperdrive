@@ -93,7 +93,7 @@ def _backward(
         assert BLOCK_SIZE_H <= MAX_TRITON_BLOCK_SIZE
 
         _triton_backward(
-            x=x_view,
+            x_view=x_view,
             weight=weight,
             output_grad=output_grad_view,
             rmsnorm_denominator=rmsnorm_denominator,
