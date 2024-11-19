@@ -17,7 +17,7 @@ from .triton_implementation import rmsnorm_forward_triton_kernel
         )
         for BLOCK_SIZE_B in [1, 2, 4, 8, 16, 32] + TRITON_BLOCK_SIZES_POWERS_OF_2
     ],
-    triggers={"x.dtype", "BLOCK_SIZE_H"},
+    triggers={"x_view.dtype", "BLOCK_SIZE_H"},
 )
 def _triton_forward(
     x_view: torch.Tensor,
