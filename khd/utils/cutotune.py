@@ -15,6 +15,8 @@ from .synchronization import device_synchronize
 _DEBUG_CUTOTUNE = bool(os.getenv("DEBUG_CUTOTUNE", 0))
 _DISABLE_CUTOTUNE = bool(os.getenv("DISABLE_CUTOTUNE", 0))
 _SEPARATOR = "."
+_DEFAULT_WARMUP_ITERATIONS = 5
+_BENCHMARK_ITERATIONS = 10
 
 
 class CutoTuneConfig:
@@ -42,9 +44,9 @@ class _CutoTune:
         self,
         function: Callable,
         configs: list[CutoTuneConfig],
-        triggers: set[str] = set(),
-        warmup_iterations: int = 5,
-        benchmark_iterations: int = 10,
+        triggers: set[str],
+        warmup_iterations: int,
+        benchmark_iterations: int,
         in_place_op: bool = False,
     ) -> None:
         assert len(configs) > 0, "no cutotune config is passed"
@@ -291,8 +293,8 @@ class _CutoTune:
 def cutotune(
     configs: list[CutoTuneConfig],
     triggers: set[str] = set(),
-    warmup_iterations: int = 5,
-    benchmark_iterations: int = 100,
+    warmup_iterations: int = _DEFAULT_WARMUP_ITERATIONS,
+    benchmark_iterations: int = _BENCHMARK_ITERATIONS,
     in_place_op: bool = False,
 ) -> _CutoTune:
     def inner(function: Callable) -> Callable:
