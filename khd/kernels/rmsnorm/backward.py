@@ -37,7 +37,7 @@ def _triton_backward(
         raise ValueError(f"hidden_size should be more than the BLOCK_SIZE_H")
 
     sm_count = get_sm_count(x_view.device)
-    grid = (1,)
+    grid = (sm_count,)
 
     with torch.device(x_view.device):
         rmsnorm_backward_triton_kernel[grid](
