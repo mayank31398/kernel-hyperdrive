@@ -79,7 +79,9 @@ class _CutoTune:
                 best_config, best_time = self._cutotune(*args, **kwargs)
 
                 if _DEBUG_CUTOTUNE and (not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0):
-                    print(f"config {best_config} achieved the best time ({best_time} sec) for {lookup_key}")
+                    print(
+                        f"config {best_config} achieved the best time ({best_time} sec) for {lookup_key} for function {self.function.__name__}"
+                    )
 
                 self.best_configs[lookup_key] = best_config
 
