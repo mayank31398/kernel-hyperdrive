@@ -3,7 +3,7 @@ import os
 from collections import defaultdict
 from itertools import product
 from time import perf_counter
-from typing import Any, Callable, get_args
+from typing import Any, Callable
 
 import torch
 import torch.distributed
@@ -47,6 +47,8 @@ class _CutoTune:
         benchmark_iterations: int = 10,
         in_place_op: bool = False,
     ) -> None:
+        assert len(configs) > 0, "no cutotune config is passed"
+
         self.function = function
         self.configs = configs
         self.warmup_iterations = warmup_iterations
@@ -54,8 +56,8 @@ class _CutoTune:
         self.in_place_op = in_place_op
 
         self.signature = inspect.getfullargspec(function)
+        self.cutotuneable_parameters = set(self.configs[0].get_key_values().keys())
 
-        self._setup_overrideables()
         self._setup_trigger_map(triggers)
         self._check_configs()
 
@@ -66,10 +68,10 @@ class _CutoTune:
 
     def __call__(self, *args, **kwargs) -> Any:
         if _DISABLE_CUTOTUNE:
-            self._check_no_args_are_cutotune_overrideable(*args, **kwargs)
+            self._check_no_args_are_cutotune_parameters(*args, **kwargs)
             output = self.function(*args, **kwargs)
         else:
-            override_cutotune_parameters = self._check_all_or_no_args_are_cutotune_overrideable(*args, **kwargs)
+            override_cutotune_parameters = self._check_all_or_no_args_are_cutotune_parameters(*args, **kwargs)
 
             lookup_key = self._get_lookup_key(*args, **kwargs)
 
@@ -92,7 +94,7 @@ class _CutoTune:
 
         return output
 
-    def _check_no_args_are_cutotune_overrideable(self, *args, **kwargs) -> None:
+    def _check_no_args_are_cutotune_parameters(self, *args, **kwargs) -> None:
         for i, value in enumerate(args):
             assert not isinstance(
                 value, CutoTuneParameter
@@ -101,25 +103,25 @@ class _CutoTune:
         for variable_name, value in kwargs.items():
             assert not isinstance(value, CutoTuneParameter), f"{variable_name} should not be CutoTuneParameter"
 
-    def _check_all_or_no_args_are_cutotune_overrideable(self, *args, **kwargs) -> bool:
+    def _check_all_or_no_args_are_cutotune_parameters(self, *args, **kwargs) -> bool:
         num_cutotune_overrideables = 0
 
         for i, value in enumerate(args):
             variable_name = self.signature.args[i]
 
             if isinstance(value, CutoTuneParameter):
-                assert variable_name in self.overrideables
+                assert variable_name in self.cutotuneable_parameters
                 num_cutotune_overrideables += 1
 
         for variable_name, value in kwargs.items():
             if isinstance(value, CutoTuneParameter):
-                assert variable_name in self.overrideables
+                assert variable_name in self.cutotuneable_parameters
                 num_cutotune_overrideables += 1
 
         assert num_cutotune_overrideables in [
             0,
-            len(self.overrideables),
-        ], f"invalid number of CutoTuneParameter arguments, should be either 0 or {len(self.overrideables)}"
+            len(self.cutotuneable_parameters),
+        ], f"invalid number of CutoTuneParameter arguments, should be either 0 or {len(self.cutotuneable_parameters)}"
 
         return num_cutotune_overrideables == 0
 
@@ -223,14 +225,8 @@ class _CutoTune:
     def _check_configs(self) -> None:
         for config in self.configs:
             assert (
-                set(config.get_key_values().keys()) == self.overrideables
+                set(config.get_key_values().keys()) == self.cutotuneable_parameters
             ), "cutotune configs don't match the expected function signature"
-
-    def _setup_overrideables(self) -> None:
-        self.overrideables = set()
-        for key in self.signature.annotations:
-            if CutoTuneParameter in get_args(self.signature.annotations[key]):
-                self.overrideables.add(key)
 
     def _setup_trigger_map(self, triggers: set[str]) -> None:
         assert isinstance(triggers, set), "triggers should be a set"
@@ -250,7 +246,7 @@ class _CutoTune:
                 variable_name in self.signature.args
             ), f"unexpected variable_name ({variable_name}) found in triggers"
 
-        for variable_name in self.overrideables:
+        for variable_name in self.cutotuneable_parameters:
             assert (
                 variable_name not in self.variable_name_trigger_map
             ), "trigger can't be an instance of CutoTuneParameter"
