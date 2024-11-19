@@ -89,8 +89,9 @@ def _forward(
     rmsnorm_denominator = None if memory_efficient else torch.empty(num_elements, device=x.device, dtype=torch.float32)
 
     if kernel_backend == KernelBackend.triton:
-        BLOCK_SIZE_H = triton.next_power_of_2(hidden_size)
-        assert BLOCK_SIZE_H <= MAX_TRITON_BLOCK_SIZE
+        if isinstance(BLOCK_SIZE_H, CutoTuneParameter):
+            BLOCK_SIZE_H = triton.next_power_of_2(hidden_size)
+            assert BLOCK_SIZE_H <= MAX_TRITON_BLOCK_SIZE
 
         _triton_forward(
             x_view=x_view,

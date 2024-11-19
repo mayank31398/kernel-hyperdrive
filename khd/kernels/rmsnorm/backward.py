@@ -100,8 +100,9 @@ def _backward(
     output_grad_view = output_grad.view(-1, hidden_size)
 
     if kernel_backend == KernelBackend.triton:
-        BLOCK_SIZE_H = triton.next_power_of_2(hidden_size)
-        assert BLOCK_SIZE_H <= MAX_TRITON_BLOCK_SIZE
+        if isinstance(BLOCK_SIZE_H, CutoTuneParameter):
+            BLOCK_SIZE_H = triton.next_power_of_2(hidden_size)
+            assert BLOCK_SIZE_H <= MAX_TRITON_BLOCK_SIZE
 
         _triton_backward(
             x=x_view,
