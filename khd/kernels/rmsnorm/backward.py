@@ -1,4 +1,5 @@
 import torch
+import triton
 
 from ...constants import MAX_TRITON_BLOCK_SIZE, TORCH_TO_TRITON_DTYPE, TRITON_BLOCK_SIZES_POWERS_OF_2
 from ...enums import KernelBackend
@@ -99,8 +100,8 @@ def _backward(
     output_grad_view = output_grad.view(-1, hidden_size)
 
     if kernel_backend == KernelBackend.triton:
-        if BLOCK_SIZE_H < hidden_size:
-            raise ValueError(f"hidden_size should be more than the BLOCK_SIZE_H_backward")
+        BLOCK_SIZE_H = triton.next_power_of_2(hidden_size)
+        assert BLOCK_SIZE_H <= MAX_TRITON_BLOCK_SIZE
 
         _triton_backward(
             x=x_view,
