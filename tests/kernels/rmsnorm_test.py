@@ -16,7 +16,7 @@ _SEED = 4
 class RMSNormTest(TestCommons):
     @parameterized.expand(
         TestCommons.make_args_matrix(
-            TestCommons.get_2d_tensor_sizes(),  # size
+            TestCommons.get_2d_tensor_sizes(400),  # size
             [torch.device("cuda")],  # device
             TestCommons.get_dtypes(),  # dtype
             [True],  # memory_efficient
