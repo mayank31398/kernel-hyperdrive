@@ -1,14 +1,62 @@
 import torch
 import triton
 
-from ...constants import TORCH_TO_TRITON_DTYPE
+from ...constants import MAX_TRITON_BLOCK_SIZE, TORCH_TO_TRITON_DTYPE, TRITON_BLOCK_SIZES_POWERS_OF_2
 from ...enums import KernelBackend
-from ...utils import CutoTuneParameter, cutotune
-from .configs import _get_cutotune_configs
+from ...utils import CutoTuneConfig, CutoTuneParameter, cutotune
 from .triton_implementation import rmsnorm_forward_triton_kernel
 
 
-@cutotune(configs=_get_cutotune_configs(), triggers={"x.dtype", "x.size(-1)"})
+@cutotune(
+    configs=[
+        CutoTuneConfig(
+            config={"BLOCK_SIZE_B": BLOCK_SIZE_B},
+            condition=lambda **kwargs: 1024
+            <= kwargs["BLOCK_SIZE_B"] * kwargs["BLOCK_SIZE_H"]
+            <= MAX_TRITON_BLOCK_SIZE,
+        )
+        for BLOCK_SIZE_B in [1, 2, 4, 8, 16, 32] + TRITON_BLOCK_SIZES_POWERS_OF_2
+    ],
+    triggers={"x.dtype", "BLOCK_SIZE_H"},
+)
+def _triton_forward(
+    x_view: torch.Tensor,
+    weight: torch.Tensor,
+    output: torch.Tensor,
+    rmsnorm_denominator: torch.Tensor,
+    eps: float,
+    memory_efficient: bool,
+    BLOCK_SIZE_B: int | CutoTuneParameter,
+    BLOCK_SIZE_H: int,
+) -> None:
+    num_elements, hidden_size = x_view.size()
+
+    if BLOCK_SIZE_H < hidden_size:
+        raise ValueError(f"hidden_size should be more than the BLOCK_SIZE_H")
+
+    grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE_B"]),)
+
+    with torch.device(x_view.device):
+        rmsnorm_forward_triton_kernel[grid](
+            x_ptr=x_view,
+            x_stride_b=x_view.stride(0),
+            x_stride_h=x_view.stride(1),
+            x_dtype=TORCH_TO_TRITON_DTYPE[x_view.dtype],
+            has_weight=weight is not None,
+            weight_ptr=weight,
+            output_ptr=output,
+            output_stride_b=output.stride(0),
+            output_stride_h=output.stride(1),
+            eps=eps,
+            memory_efficient=memory_efficient,
+            rmsnorm_denominator_ptr=rmsnorm_denominator,
+            B=num_elements,
+            H=hidden_size,
+            BLOCK_SIZE_B=BLOCK_SIZE_B,
+            BLOCK_SIZE_H=BLOCK_SIZE_H,
+        )
+
+
 def _forward(
     x: torch.Tensor,
     weight: torch.Tensor,
@@ -41,30 +89,19 @@ def _forward(
     rmsnorm_denominator = None if memory_efficient else torch.empty(num_elements, device=x.device, dtype=torch.float32)
 
     if kernel_backend == KernelBackend.triton:
-        if BLOCK_SIZE_H < hidden_size:
-            raise ValueError(f"hidden_size should be more than the BLOCK_SIZE_H")
+        BLOCK_SIZE_H = triton.next_power_of_2(hidden_size)
+        assert BLOCK_SIZE_H <= MAX_TRITON_BLOCK_SIZE
 
-        grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE_B"]),)
-
-        with torch.device(x.device):
-            rmsnorm_forward_triton_kernel[grid](
-                x_ptr=x,
-                x_stride_b=x_view.stride(0),
-                x_stride_h=x_view.stride(1),
-                x_dtype=TORCH_TO_TRITON_DTYPE[x.dtype],
-                has_weight=has_weight,
-                weight_ptr=weight,
-                output_ptr=output,
-                output_stride_b=output.stride(0),
-                output_stride_h=output.stride(1),
-                eps=eps,
-                memory_efficient=memory_efficient,
-                rmsnorm_denominator_ptr=rmsnorm_denominator,
-                B=num_elements,
-                H=hidden_size,
-                BLOCK_SIZE_B=BLOCK_SIZE_B,
-                BLOCK_SIZE_H=BLOCK_SIZE_H,
-            )
+        _triton_forward(
+            x_view=x_view,
+            weight=weight,
+            output=output,
+            rmsnorm_denominator=rmsnorm_denominator,
+            eps=eps,
+            memory_efficient=memory_efficient,
+            BLOCK_SIZE_B=BLOCK_SIZE_B,
+            BLOCK_SIZE_H=BLOCK_SIZE_H,
+        )
     else:
         raise ValueError(f"unexpected kernel_backend ({kernel_backend})")
 

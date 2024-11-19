@@ -1,13 +1,77 @@
 import torch
 
-from ...constants import TORCH_TO_TRITON_DTYPE
+from ...constants import MAX_TRITON_BLOCK_SIZE, TORCH_TO_TRITON_DTYPE, TRITON_BLOCK_SIZES_POWERS_OF_2
 from ...enums import KernelBackend
-from ...utils import CutoTuneParameter, cutotune, ensure_same_strides
-from .configs import _get_cutotune_configs
+from ...utils import CutoTuneConfig, CutoTuneParameter, cutotune, ensure_same_strides
 from .triton_implementation import rmsnorm_backward_triton_kernel
 
 
-@cutotune(configs=_get_cutotune_configs(), triggers={"x.dtype", "x.size(-1)"})
+@cutotune(
+    configs=[
+        CutoTuneConfig(
+            config={"BLOCK_SIZE_B": BLOCK_SIZE_B},
+            condition=lambda **kwargs: 1024
+            <= kwargs["BLOCK_SIZE_B"] * kwargs["BLOCK_SIZE_H"]
+            <= MAX_TRITON_BLOCK_SIZE,
+        )
+        for BLOCK_SIZE_B in [1, 2, 4, 8, 16, 32] + TRITON_BLOCK_SIZES_POWERS_OF_2
+    ],
+    triggers={"x.dtype", "BLOCK_SIZE_H"},
+)
+def _triton_backward(
+    x_view: torch.Tensor,
+    weight: torch.Tensor,
+    output_grad: torch.Tensor,
+    rmsnorm_denominator: torch.Tensor,
+    x_grad: torch.Tensor,
+    weight_grad: torch.Tensor,
+    eps: float,
+    memory_efficient: bool,
+    BLOCK_SIZE_B: int | CutoTuneParameter,
+    BLOCK_SIZE_H: int,
+) -> None:
+    num_elements, hidden_size = x_view.size()
+
+    if BLOCK_SIZE_H < hidden_size:
+        raise ValueError(f"hidden_size should be more than the BLOCK_SIZE_H")
+
+    grid = (1,)
+
+    with torch.device(x_view.device):
+        rmsnorm_backward_triton_kernel[grid](
+            x_ptr=x_view,
+            x_stride_b=x_view.stride(0),
+            x_stride_h=x_view.stride(1),
+            x_dtype=TORCH_TO_TRITON_DTYPE[x_view.dtype],
+            has_weight=weight is not None,
+            weight_ptr=weight,
+            output_grad_ptr=output_grad,
+            output_grad_stride_b=output_grad.stride(0),
+            output_grad_stride_h=output_grad.stride(1),
+            x_grad_ptr=x_grad,
+            weight_grad_ptr=weight_grad,
+            eps=eps,
+            memory_efficient=memory_efficient,
+            rmsnorm_denominator_ptr=rmsnorm_denominator,
+            B=num_elements,
+            H=hidden_size,
+            BLOCK_SIZE_B=BLOCK_SIZE_B,
+            BLOCK_SIZE_H=BLOCK_SIZE_H,
+        )
+
+
+@cutotune(
+    configs=[
+        CutoTuneConfig(
+            config={"BLOCK_SIZE_B": BLOCK_SIZE_B},
+            condition=lambda **kwargs: 1024
+            <= kwargs["BLOCK_SIZE_B"] * kwargs["BLOCK_SIZE_H"]
+            <= MAX_TRITON_BLOCK_SIZE,
+        )
+        for BLOCK_SIZE_B in [1, 2, 4, 8, 16, 32] + TRITON_BLOCK_SIZES_POWERS_OF_2
+    ],
+    triggers={"x.dtype", "BLOCK_SIZE_H"},
+)
 def _backward(
     x: torch.Tensor,
     weight: torch.Tensor,
@@ -38,29 +102,18 @@ def _backward(
         if BLOCK_SIZE_H < hidden_size:
             raise ValueError(f"hidden_size should be more than the BLOCK_SIZE_H_backward")
 
-        grid = (1,)
-
-        with torch.device(x.device):
-            rmsnorm_backward_triton_kernel[grid](
-                x_ptr=x,
-                x_stride_b=x_view.stride(0),
-                x_stride_h=x_view.stride(1),
-                x_dtype=TORCH_TO_TRITON_DTYPE[x.dtype],
-                has_weight=has_weight,
-                weight_ptr=weight,
-                output_grad_ptr=output_grad,
-                output_grad_stride_b=output_grad_view.stride(0),
-                output_grad_stride_h=output_grad_view.stride(1),
-                x_grad_ptr=x_grad,
-                weight_grad_ptr=weight_grad,
-                eps=eps,
-                memory_efficient=memory_efficient,
-                rmsnorm_denominator_ptr=rmsnorm_denominator,
-                B=num_elements,
-                H=hidden_size,
-                BLOCK_SIZE_B=BLOCK_SIZE_B,
-                BLOCK_SIZE_H=BLOCK_SIZE_H,
-            )
+        _triton_backward(
+            x=x_view,
+            weight=weight,
+            output_grad=output_grad_view,
+            rmsnorm_denominator=rmsnorm_denominator,
+            x_grad=x_grad,
+            weight_grad=weight_grad,
+            eps=eps,
+            memory_efficient=memory_efficient,
+            BLOCK_SIZE_B=BLOCK_SIZE_B,
+            BLOCK_SIZE_H=BLOCK_SIZE_H,
+        )
     else:
         raise ValueError(f"unexpected kernel_backend ({kernel_backend})")
 
