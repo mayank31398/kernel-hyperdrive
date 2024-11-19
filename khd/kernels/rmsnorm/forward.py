@@ -57,6 +57,9 @@ def _triton_forward(
         )
 
 
+@cutotune(
+    configs=[CutoTuneConfig(config={"kernel_backend": KernelBackend.triton})], triggers={"x.dtype", "BLOCK_SIZE_H"}
+)
 def _forward(
     x: torch.Tensor,
     weight: torch.Tensor,
