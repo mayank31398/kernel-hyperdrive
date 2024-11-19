@@ -3,7 +3,7 @@ import triton
 
 from ...constants import CUDA_BLOCK_SIZES_POWERS_OF_2, TRITON_BLOCK_SIZES_POWERS_OF_2
 from ...enums import KernelBackend
-from ...utils import CutoTuneParameter, cutotune, get_cartesian_product_cutotune_configs
+from ...utils import cutotune, get_cartesian_product_cutotune_configs
 from .cuda_implementation import swiglu_backward_cuda_kernel, swiglu_backward_cuda_kernel_compileable
 from .triton_implementation import swiglu_backward_triton_kernel
 
@@ -39,9 +39,9 @@ def _backward(
     gate: torch.Tensor,
     up: torch.Tensor,
     output_grad: torch.Tensor,
-    kernel_backend: KernelBackend | CutoTuneParameter,
-    vector_instruction_width: int | CutoTuneParameter,
-    BLOCK_SIZE: int | CutoTuneParameter,
+    kernel_backend: KernelBackend,
+    vector_instruction_width: int,
+    BLOCK_SIZE: int,
 ) -> tuple[torch.Tensor]:
     gate_grad = torch.empty_like(gate)
     up_grad = torch.empty_like(up)

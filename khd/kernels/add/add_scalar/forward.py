@@ -3,7 +3,7 @@ import triton
 
 from ....constants import CUDA_BLOCK_SIZES_POWERS_OF_2, TRITON_BLOCK_SIZES_POWERS_OF_2
 from ....enums import KernelBackend
-from ....utils import CutoTuneParameter, cutotune, get_cartesian_product_cutotune_configs
+from ....utils import cutotune, get_cartesian_product_cutotune_configs
 from .cuda_implementation import add_scalar_forward_cuda_kernel, add_scalar_forward_cuda_kernel_compileable
 from .triton_implementation import add_scalar_forward_triton_kernel
 
@@ -36,12 +36,11 @@ from .triton_implementation import add_scalar_forward_triton_kernel
     triggers={"x.dtype"},
 )
 def _forward(
-    ctx,
     x: torch.Tensor,
     y: float,
-    kernel_backend: KernelBackend | CutoTuneParameter,
-    vector_instruction_width: int | CutoTuneParameter,
-    BLOCK_SIZE: int | CutoTuneParameter,
+    kernel_backend: KernelBackend,
+    vector_instruction_width: int,
+    BLOCK_SIZE: int,
 ) -> torch.Tensor:
     if y == 0:
         return x

@@ -28,7 +28,7 @@ def _triton_backward(
     weight_grad: torch.Tensor,
     eps: float,
     memory_efficient: bool,
-    BLOCK_SIZE_B: int | CutoTuneParameter,
+    BLOCK_SIZE_B: int,
     BLOCK_SIZE_H: int,
 ) -> None:
     num_elements, hidden_size = x_view.size()
@@ -61,6 +61,7 @@ def _triton_backward(
         )
 
 
+@cutotune(configs=[CutoTuneConfig(config={"kernel_backend": KernelBackend.triton})], triggers={"x.dtype"})
 def _backward(
     x: torch.Tensor,
     weight: torch.Tensor,
@@ -68,7 +69,7 @@ def _backward(
     rmsnorm_denominator: torch.Tensor,
     output_grad: torch.Tensor,
     memory_efficient: bool,
-    kernel_backend: KernelBackend | CutoTuneParameter,
+    kernel_backend: KernelBackend,
     BLOCK_SIZE_B: int | CutoTuneParameter,
     BLOCK_SIZE_H: int | CutoTuneParameter,
 ) -> tuple[torch.Tensor | None]:
@@ -88,9 +89,8 @@ def _backward(
     output_grad_view = output_grad.view(-1, hidden_size)
 
     if kernel_backend == KernelBackend.triton:
-        if isinstance(BLOCK_SIZE_H, CutoTuneParameter):
-            BLOCK_SIZE_H = triton.next_power_of_2(hidden_size)
-            assert BLOCK_SIZE_H <= MAX_TRITON_BLOCK_SIZE
+        BLOCK_SIZE_H = triton.next_power_of_2(hidden_size)
+        assert BLOCK_SIZE_H <= MAX_TRITON_BLOCK_SIZE
 
         _triton_backward(
             x=x_view,

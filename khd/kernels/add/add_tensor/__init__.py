@@ -17,7 +17,6 @@ class _AddTensor_KHD(torch.autograd.Function):
         BLOCK_SIZE: int | CutoTuneParameter,
     ) -> torch.Tensor:
         return _forward(
-            ctx=ctx,
             x=x,
             y=y,
             kernel_backend=kernel_backend,

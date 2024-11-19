@@ -26,7 +26,7 @@ def _triton_forward(
     rmsnorm_denominator: torch.Tensor,
     eps: float,
     memory_efficient: bool,
-    BLOCK_SIZE_B: int | CutoTuneParameter,
+    BLOCK_SIZE_B: int,
     BLOCK_SIZE_H: int,
 ) -> None:
     num_elements, hidden_size = x_view.size()
@@ -57,15 +57,13 @@ def _triton_forward(
         )
 
 
-@cutotune(
-    configs=[CutoTuneConfig(config={"kernel_backend": KernelBackend.triton})], triggers={"x.dtype", "BLOCK_SIZE_H"}
-)
+@cutotune(configs=[CutoTuneConfig(config={"kernel_backend": KernelBackend.triton})], triggers={"x.dtype"})
 def _forward(
     x: torch.Tensor,
     weight: torch.Tensor,
     eps: float,
     memory_efficient: bool,
-    kernel_backend: KernelBackend | CutoTuneParameter,
+    kernel_backend: KernelBackend,
     BLOCK_SIZE_B: int | CutoTuneParameter,
     BLOCK_SIZE_H: int | CutoTuneParameter,
 ) -> tuple[torch.Tensor | None]:
@@ -92,9 +90,8 @@ def _forward(
     rmsnorm_denominator = None if memory_efficient else torch.empty(num_elements, device=x.device, dtype=torch.float32)
 
     if kernel_backend == KernelBackend.triton:
-        if isinstance(BLOCK_SIZE_H, CutoTuneParameter):
-            BLOCK_SIZE_H = triton.next_power_of_2(hidden_size)
-            assert BLOCK_SIZE_H <= MAX_TRITON_BLOCK_SIZE
+        BLOCK_SIZE_H = triton.next_power_of_2(hidden_size)
+        assert BLOCK_SIZE_H <= MAX_TRITON_BLOCK_SIZE
 
         _triton_forward(
             x_view=x_view,
