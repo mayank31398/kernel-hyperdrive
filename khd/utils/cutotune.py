@@ -9,7 +9,7 @@ import torch
 import torch.distributed
 from tqdm import tqdm
 
-from .synchronization import device_synchronize
+from .device import device_synchronize
 
 
 _DEBUG_CUTOTUNE = bool(os.getenv("DEBUG_CUTOTUNE", 0))

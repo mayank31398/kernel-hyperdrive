@@ -3,7 +3,7 @@ import triton
 
 from ...constants import MAX_TRITON_BLOCK_SIZE, TORCH_TO_TRITON_DTYPE, TRITON_BLOCK_SIZES_POWERS_OF_2
 from ...enums import KernelBackend
-from ...utils import CutoTuneConfig, CutoTuneParameter, cutotune, ensure_same_strides
+from ...utils import CutoTuneConfig, CutoTuneParameter, cutotune, ensure_same_strides, get_sm_count
 from .triton_implementation import rmsnorm_backward_triton_kernel
 
 
@@ -36,6 +36,7 @@ def _triton_backward(
     if BLOCK_SIZE_H < hidden_size:
         raise ValueError(f"hidden_size should be more than the BLOCK_SIZE_H")
 
+    sm_count = get_sm_count(x_view.device)
     grid = (1,)
 
     with torch.device(x_view.device):
