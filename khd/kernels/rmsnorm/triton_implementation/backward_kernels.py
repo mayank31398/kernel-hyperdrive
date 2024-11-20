@@ -23,57 +23,48 @@ def rmsnorm_backward_triton_kernel(
     B,
     H,
     BLOCK_SIZE_B: tl.constexpr,
-    LOOP_BLOCK_SIZE_B: tl.constexpr,
     BLOCK_SIZE_H: tl.constexpr,
 ):
     tl.device_assert(BLOCK_SIZE_H >= H, "BLOCK_SIZE_H should be more than H")
 
-    indices_h = tl.arange(0, BLOCK_SIZE_H)
-    mask_h = indices_h < H
-
-    pid_b = tl.program_id(axis=0)
-
     if has_weight:
         weight_grad = tl.zeros((1, BLOCK_SIZE_H), dtype=tl.float32)
 
-    loops_b = tl.cdiv(BLOCK_SIZE_B, LOOP_BLOCK_SIZE_B)
-    block_start_b = pid_b * BLOCK_SIZE_B
+    pid_b = tl.program_id(axis=0)
 
-    for b in range(loops_b):
-        indices_b = block_start_b + b * LOOP_BLOCK_SIZE_B + tl.arange(0, LOOP_BLOCK_SIZE_B)
-        mask_b = indices_b < B
+    indices_b = pid_b * BLOCK_SIZE_B + tl.arange(0, BLOCK_SIZE_B)
+    mask_b = indices_b < B
 
-        mask_bh = mask_b[:, None] & mask_h[None, :]
+    indices_h = tl.arange(0, BLOCK_SIZE_H)
+    mask_h = indices_h < H
 
-        x_ptrs = x_ptr + indices_b[:, None] * x_stride_b + indices_h[None, :] * x_stride_h
-        x = tl.load(x_ptrs, mask=mask_bh).to(tl.float32)
+    mask_bh = mask_b[:, None] & mask_h[None, :]
 
-        squared_sum = tl.sum(x * x, axis=1)
-        inverse_rms = tl.rsqrt(squared_sum / H + eps)
+    x_ptrs = x_ptr + indices_b[:, None] * x_stride_b + indices_h[None, :] * x_stride_h
+    x = tl.load(x_ptrs, mask=mask_bh).to(tl.float32)
 
-        y_without_weight = x * inverse_rms[:, None]
+    squared_sum = tl.sum(x * x, axis=1)
+    inverse_rms = tl.rsqrt(squared_sum / H + eps)
 
-        output_grad_ptrs = (
-            output_grad_ptr + indices_b[:, None] * output_grad_stride_b + indices_h[None, :] * output_grad_stride_h
-        )
-        output_grad = tl.load(output_grad_ptrs, mask=mask_bh)
+    y_without_weight = x * inverse_rms[:, None]
 
-        if has_weight:
-            _weight_grad = output_grad * y_without_weight
-            weight_grad += tl.sum(_weight_grad, axis=0, keep_dims=True)
+    output_grad_ptrs = (
+        output_grad_ptr + indices_b[:, None] * output_grad_stride_b + indices_h[None, :] * output_grad_stride_h
+    )
+    output_grad = tl.load(output_grad_ptrs, mask=mask_bh)
 
-            weight = tl.load(weight_ptr + indices_h, mask=mask_h)[None, :]
-        else:
-            weight = 1
+    if has_weight:
+        weight_grad = tl.sum(output_grad * y_without_weight, axis=0, keep_dims=True)
+        weight = tl.load(weight_ptr + indices_h, mask=mask_h)[None, :]
+    else:
+        weight = 1
 
-        dot = tl.sum(weight * x, axis=1, keep_dims=True)
-        x_grad = (
-            output_grad * inverse_rms[:, None] * (weight - inverse_rms[:, None] * inverse_rms[:, None] * dot * x / H)
-        )
-        x_grad = x_grad.to(x_dtype)
+    dot = tl.sum(weight * x, axis=1, keep_dims=True)
+    x_grad = output_grad * inverse_rms[:, None] * (weight - inverse_rms[:, None] * inverse_rms[:, None] * dot * x / H)
+    x_grad = x_grad.to(x_dtype)
 
-        x_grad_ptrs = x_grad_ptr + indices_b[:, None] * x_stride_b + indices_h[None, :] * x_stride_h
-        tl.store(x_grad_ptrs, x_grad, mask=mask_bh)
+    x_grad_ptrs = x_grad_ptr + indices_b[:, None] * x_stride_b + indices_h[None, :] * x_stride_h
+    tl.store(x_grad_ptrs, x_grad, mask=mask_bh)
 
     if has_weight:
         weight_grad_ptrs = weight_grad_ptr + pid_b * weight_grad_stride_b + indices_h[None, :] * weight_grad_stride_h
