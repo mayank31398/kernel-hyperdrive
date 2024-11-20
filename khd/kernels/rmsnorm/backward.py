@@ -53,6 +53,8 @@ def _triton_backward(
             output_grad_stride_h=output_grad.stride(1),
             x_grad_ptr=x_grad,
             weight_grad_ptr=weight_grad,
+            weight_grad_stride_b=weight_grad.stride(0),
+            weight_grad_stride_h=weight_grad.stride(1),
             eps=eps,
             memory_efficient=memory_efficient,
             rmsnorm_denominator_ptr=rmsnorm_denominator,
