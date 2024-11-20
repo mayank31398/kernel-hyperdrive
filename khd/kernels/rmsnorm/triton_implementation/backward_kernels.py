@@ -15,6 +15,8 @@ def rmsnorm_backward_triton_kernel(
     output_grad_stride_h,
     x_grad_ptr,
     weight_grad_ptr,
+    weight_grad_stride_b,
+    weight_grad_stride_h,
     eps,
     memory_efficient: tl.constexpr,
     rmsnorm_denominator_ptr,
@@ -74,4 +76,5 @@ def rmsnorm_backward_triton_kernel(
         tl.store(x_grad_ptrs, x_grad, mask=mask_bh)
 
     if has_weight:
-        tl.store(weight_grad_ptr + indices_h, weight_grad, mask=mask_h)
+        weight_grad_ptrs = weight_grad_ptr + pid_b * weight_grad_stride_b + indices_h[None, :] * weight_grad_stride_h
+        tl.store(weight_grad_ptrs, weight_grad[None, :], mask=mask_h[None, :])
