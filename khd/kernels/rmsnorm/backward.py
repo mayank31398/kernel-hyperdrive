@@ -65,7 +65,7 @@ def _triton_backward(
             BLOCK_SIZE_H=BLOCK_SIZE_H,
         )
 
-    weight_grad = weight_grad.sum(dim=0).to(x_grad.dtype)
+    weight_grad = weight_grad.sum(dim=0).type_as(x_grad)
 
     return weight_grad
 
