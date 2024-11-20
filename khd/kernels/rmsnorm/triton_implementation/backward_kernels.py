@@ -34,7 +34,7 @@ def rmsnorm_backward_triton_kernel(
     pid_b = tl.program_id(axis=0)
 
     if has_weight:
-        weight_grad = tl.zeros((BLOCK_SIZE_H,), dtype=tl.float32)
+        weight_grad = tl.zeros((1, BLOCK_SIZE_H), dtype=tl.float32)
 
     loops_b = tl.cdiv(BLOCK_SIZE_B, LOOP_BLOCK_SIZE_B)
     block_start_b = pid_b * BLOCK_SIZE_B
@@ -60,7 +60,7 @@ def rmsnorm_backward_triton_kernel(
 
         if has_weight:
             _weight_grad = output_grad * y_without_weight
-            weight_grad += tl.sum(_weight_grad, axis=0)
+            weight_grad += tl.sum(_weight_grad, axis=0, keep_dims=True)
 
             weight = tl.load(weight_ptr + indices_h, mask=mask_h)[None, :]
         else:
@@ -77,4 +77,4 @@ def rmsnorm_backward_triton_kernel(
 
     if has_weight:
         weight_grad_ptrs = weight_grad_ptr + pid_b * weight_grad_stride_b + indices_h[None, :] * weight_grad_stride_h
-        tl.store(weight_grad_ptrs, weight_grad[None, :], mask=mask_h[None, :])
+        tl.store(weight_grad_ptrs, weight_grad, mask=mask_h[None, :])

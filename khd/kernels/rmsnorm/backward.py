@@ -61,7 +61,7 @@ def _triton_backward(
             B=num_elements,
             H=hidden_size,
             BLOCK_SIZE_B=BLOCK_SIZE_B,
-            LOOP_BLOCK_SIZE_B=1,
+            LOOP_BLOCK_SIZE_B=4,
             BLOCK_SIZE_H=BLOCK_SIZE_H,
         )
 
