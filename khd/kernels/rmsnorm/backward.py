@@ -37,7 +37,7 @@ def _triton_backward(
 
     num_blocks_b = ceil_divide(num_elements, BLOCK_SIZE_B)
     weight_grad = (
-        None if weight is None else torch.empty(num_blocks_b, hidden_size, device=x_grad.device, dtype=x_grad.dtype)
+        None if weight is None else torch.empty(num_blocks_b, hidden_size, device=x_grad.device, dtype=torch.float32)
     )
 
     with torch.device(x_view.device):
