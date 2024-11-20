@@ -36,8 +36,10 @@ def _triton_backward(
         raise ValueError(f"hidden_size should be more than the BLOCK_SIZE_H")
 
     num_blocks_b = ceil_divide(num_elements, BLOCK_SIZE_B)
+
+    has_weight = weight is not None
     weight_grad = (
-        None if weight is None else torch.empty(num_blocks_b, hidden_size, device=x_grad.device, dtype=torch.float32)
+        torch.empty(num_blocks_b, hidden_size, device=x_grad.device, dtype=torch.float32) if has_weight else None
     )
 
     with torch.device(x_view.device):
@@ -53,8 +55,8 @@ def _triton_backward(
             output_grad_stride_h=output_grad.stride(1),
             x_grad_ptr=x_grad,
             weight_grad_ptr=weight_grad,
-            weight_grad_stride_b=weight_grad.stride(0),
-            weight_grad_stride_h=weight_grad.stride(1),
+            weight_grad_stride_b=weight_grad.stride(0) if has_weight else None,
+            weight_grad_stride_h=weight_grad.stride(1) if has_weight else None,
             eps=eps,
             memory_efficient=memory_efficient,
             rmsnorm_denominator_ptr=rmsnorm_denominator,
