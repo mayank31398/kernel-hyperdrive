@@ -29,7 +29,7 @@ def _triton_backward(
     memory_efficient: bool,
     BLOCK_SIZE_B: int,
     BLOCK_SIZE_H: int,
-) -> torch.Tensor:
+) -> torch.Tensor | None:
     num_elements, hidden_size = x_view.size()
 
     if BLOCK_SIZE_H < hidden_size:
@@ -66,7 +66,8 @@ def _triton_backward(
             BLOCK_SIZE_H=BLOCK_SIZE_H,
         )
 
-    weight_grad = weight_grad.sum(dim=0).type_as(x_grad)
+    if has_weight:
+        weight_grad = weight_grad.sum(dim=0).type_as(x_grad)
 
     return weight_grad
 
