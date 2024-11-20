@@ -20,8 +20,8 @@ def rmsnorm_backward_triton_kernel(
     rmsnorm_denominator_ptr,
     B,
     H,
-    BLOCK_SIZE_SM: tl.constexpr,
     BLOCK_SIZE_B: tl.constexpr,
+    LOOP_BLOCK_SIZE_B: tl.constexpr,
     BLOCK_SIZE_H: tl.constexpr,
 ):
     tl.device_assert(BLOCK_SIZE_H >= H, "BLOCK_SIZE_H should be more than H")
@@ -34,11 +34,11 @@ def rmsnorm_backward_triton_kernel(
     if has_weight:
         weight_grad = tl.zeros((BLOCK_SIZE_H,), dtype=tl.float32)
 
-    num_iterations_b = tl.cdiv(BLOCK_SIZE_SM, BLOCK_SIZE_B)
-    block_start_sm = pid_sm * BLOCK_SIZE_SM
+    num_iterations_b = tl.cdiv(BLOCK_SIZE_B, LOOP_BLOCK_SIZE_B)
+    block_start_sm = pid_sm * BLOCK_SIZE_B
 
     for b in range(num_iterations_b):
-        indices_sm_b = block_start_sm + b * BLOCK_SIZE_B + tl.arange(0, BLOCK_SIZE_B)
+        indices_sm_b = block_start_sm + b * LOOP_BLOCK_SIZE_B + tl.arange(0, LOOP_BLOCK_SIZE_B)
         mask_sm_b = indices_sm_b < B
 
         mask_sm_b_h = mask_sm_b[:, None] & mask_h[None, :]
