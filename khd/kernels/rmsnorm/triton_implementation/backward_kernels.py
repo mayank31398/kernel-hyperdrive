@@ -27,9 +27,6 @@ def rmsnorm_backward_triton_kernel(
 ):
     tl.device_assert(BLOCK_SIZE_H >= H, "BLOCK_SIZE_H should be more than H")
 
-    if has_weight:
-        weight_grad = tl.zeros((1, BLOCK_SIZE_H), dtype=tl.float32)
-
     pid_b = tl.program_id(axis=0)
 
     indices_b = pid_b * BLOCK_SIZE_B + tl.arange(0, BLOCK_SIZE_B)
@@ -51,10 +48,9 @@ def rmsnorm_backward_triton_kernel(
     output_grad_ptrs = (
         output_grad_ptr + indices_b[:, None] * output_grad_stride_b + indices_h[None, :] * output_grad_stride_h
     )
-    output_grad = tl.load(output_grad_ptrs, mask=mask_bh)
+    output_grad = tl.load(output_grad_ptrs, mask=mask_bh).to(tl.float32)
 
     if has_weight:
-        weight_grad = tl.sum(output_grad * y_without_weight, axis=0, keep_dims=True)
         weight = tl.load(weight_ptr + indices_h, mask=mask_h)[None, :]
     else:
         weight = 1
@@ -67,5 +63,7 @@ def rmsnorm_backward_triton_kernel(
     tl.store(x_grad_ptrs, x_grad, mask=mask_bh)
 
     if has_weight:
+        weight_grad = tl.sum(output_grad * y_without_weight, axis=0, keep_dims=True)
+
         weight_grad_ptrs = weight_grad_ptr + pid_b * weight_grad_stride_b + indices_h[None, :] * weight_grad_stride_h
         tl.store(weight_grad_ptrs, weight_grad, mask=mask_h[None, :])
