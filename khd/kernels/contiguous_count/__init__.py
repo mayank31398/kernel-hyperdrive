@@ -20,7 +20,7 @@ def contiguous_count_khd(
     BLOCK_SIZE_C = triton.next_power_of_2(C)
 
     sm_count = get_sm_count(x.device)
-    num_programs = (min(sm_count, ceil_divide(B, BLOCK_SIZE_B)),)
+    num_programs = min(sm_count, ceil_divide(B, BLOCK_SIZE_B))
 
     output = torch.zeros(sm_count, C, dtype=torch.long, device=x.device)
 
