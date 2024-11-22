@@ -4,10 +4,8 @@ from ...utils import ceil_divide
 
 
 def contiguous_count_naive_kernel(
-    x: torch.Tensor, output: torch.Tensor, num_programs: int, C: int, BLOCK_SIZE_B: int, BLOCK_SIZE_C: int
+    x: torch.Tensor, output: torch.Tensor, num_programs: int, B: int, C: int, BLOCK_SIZE_B: int, BLOCK_SIZE_C: int
 ) -> None:
-    B = x.numel()
-
     num_elements_per_program = ceil_divide(B, num_programs)
     num_loops = ceil_divide(num_elements_per_program, BLOCK_SIZE_B)
 

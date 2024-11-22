@@ -37,6 +37,7 @@ def contiguous_count_khd(
             x=x.view(-1),
             output=output,
             num_programs=sm_count,
+            B=B,
             C=C,
             BLOCK_SIZE_B=BLOCK_SIZE_B,
             BLOCK_SIZE_C=BLOCK_SIZE_C,
