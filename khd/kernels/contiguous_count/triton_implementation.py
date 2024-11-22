@@ -12,7 +12,7 @@ def contiguous_count_triton_kernel(
     num_elements_per_program = tl.cdiv(num_elements, num_programs)
     num_loops = tl.cdiv(num_elements_per_program, BLOCK_SIZE)
 
-    counts = tl.zeros((end - start,), dtype=tl.float32)
+    counts = tl.zeros((end - start,), dtype=tl.int32)
     comparator = tl.arange(start, end)
 
     for i in range(num_loops):
@@ -28,5 +28,5 @@ def contiguous_count_triton_kernel(
         equal = x[:, None] == comparator[None, :]
         counts += tl.sum(equal, axis=0)
 
-        output_ptrs = output_ptr + pid * output_stride_b + comparator - start
-        tl.store(output_ptrs, counts)
+    output_ptrs = output_ptr + pid * output_stride_b + comparator - start
+    tl.store(output_ptrs, counts)

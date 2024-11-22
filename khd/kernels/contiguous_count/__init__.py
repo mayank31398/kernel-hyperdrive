@@ -22,7 +22,6 @@ def contiguous_count_khd(
         contiguous_count_triton_kernel[(B,)](
             x_ptr=x,
             output_ptr=output,
-            B=B,
             output_stride_b=output.stride(0),
             num_elements=num_elements,
             start=start,
