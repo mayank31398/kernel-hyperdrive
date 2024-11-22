@@ -3,6 +3,7 @@ from typing import Callable
 import torch
 import torch.nn as nn
 
+from ...contiguous_count import contiguous_count_khd
 from ..torch_implementation import Experts_Torch, MoE_Torch
 from .ops import expert_boundaries, scattered_experts
 
@@ -76,8 +77,11 @@ class MoE_Triton(MoE_Torch):
         self, hidden_states: torch.Tensor, router_weights: torch.Tensor, selected_experts: torch.Tensor
     ) -> torch.Tensor:
         with torch.no_grad():
-            sorted_expert_idxs, sorted_scattered_idxs = torch.sort(selected_experts.flatten())
+            sorted_expert_idxs, sorted_scattered_idxs = selected_experts.flatten().sort()
+
             expert_offsets = expert_boundaries(sorted_expert_idxs, self.num_experts)
+            expert_offsets1 = contiguous_count_khd(x=sorted_expert_idxs, start=0, end=self.num_experts).cumsum(-1)
+            print(expert_offsets - expert_offsets1)
 
         hidden_states = self.c_fc(
             hidden_states,

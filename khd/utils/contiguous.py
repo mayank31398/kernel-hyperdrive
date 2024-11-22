@@ -13,10 +13,10 @@ def make_contiguous(x: Any) -> Any:
 
 
 def ensure_contiguous(function: Callable):
-    def wrapper(ctx, *args, **kwargs):
+    def wrapper(*args, **kwargs):
         args = [make_contiguous(arg) for arg in args]
         kwargs = {k: make_contiguous(v) for k, v in kwargs.items()}
-        return function(ctx, *args, **kwargs)
+        return function(*args, **kwargs)
 
     return wrapper
 
