@@ -175,8 +175,8 @@ class MoE_Torch(nn.Module):
         # selected_experts -> (total_q * top_k)
 
         expert_frequency = selected_experts.bincount(minlength=self.num_experts)
-        expert_frequency1 = contiguous_count_khd(x=selected_experts, start=0, end=self.num_experts)
-        print(expert_frequency - expert_frequency1)
+        # expert_frequency1 = contiguous_count_khd(x=selected_experts, start=0, end=self.num_experts)
+        # print(expert_frequency - expert_frequency1)
         # expert_frequency -> (num_experts)
 
         index_sorted_experts = selected_experts.argsort()

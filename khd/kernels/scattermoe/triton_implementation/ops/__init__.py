@@ -147,7 +147,6 @@ class _ScatteredExperts(torch.autograd.Function):
         else:
             d_input = d_expanded_input.view(x.size(0), k, d_expanded_input.size(-1)).sum(-2)
 
-        # print("backward end.")
         return (
             # x, expert_weights, k,
             d_input,
