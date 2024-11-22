@@ -28,15 +28,16 @@ def contiguous_count_khd(
     output = torch.zeros(num_programs, C, dtype=torch.long, device=x.device)
 
     if kernel_backend == KernelBackend.triton:
-        contiguous_count_triton_kernel[(num_programs,)](
-            x_ptr=x,
-            output_ptr=output,
-            output_stride_b=output.stride(0),
-            B=B,
-            C=C,
-            BLOCK_SIZE_B=BLOCK_SIZE_B,
-            BLOCK_SIZE_C=BLOCK_SIZE_C,
-        )
+        with torch.device(x.device):
+            contiguous_count_triton_kernel[(num_programs,)](
+                x_ptr=x,
+                output_ptr=output,
+                output_stride_b=output.stride(0),
+                B=B,
+                C=C,
+                BLOCK_SIZE_B=BLOCK_SIZE_B,
+                BLOCK_SIZE_C=BLOCK_SIZE_C,
+            )
     elif kernel_backend == KernelBackend.naive:
         contiguous_count_naive_kernel(
             x=x.view(-1),
