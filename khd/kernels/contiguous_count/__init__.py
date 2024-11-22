@@ -11,22 +11,23 @@ def contiguous_count_khd(
     start: int,
     end: int,
     kernel_backend: KernelBackend | CutoTuneParameter = CutoTuneParameter(),
-    BLOCK_SIZE: int | CutoTuneParameter = CutoTuneParameter(),
+    BLOCK_SIZE_B: int | CutoTuneParameter = CutoTuneParameter(),
 ) -> torch.Tensor:
-    B = get_sm_count(x.device)
-    output = torch.empty(B, end - start, dtype=torch.long, device=x.device)
+    sm_count = get_sm_count(x.device)
+    B = x.numel()
+    C = end - start
 
-    num_elements = x.numel()
+    output = torch.zeros(sm_count, C, dtype=torch.long, device=x.device)
 
     if kernel_backend == KernelBackend.triton:
-        contiguous_count_triton_kernel[(B,)](
+        contiguous_count_triton_kernel[(sm_count,)](
             x_ptr=x,
             output_ptr=output,
             output_stride_b=output.stride(0),
-            num_elements=num_elements,
-            start=start,
-            end=end,
-            BLOCK_SIZE=BLOCK_SIZE,
+            B=B,
+            C=C,
+            BLOCK_SIZE_B=BLOCK_SIZE_B,
+            BLOCK_SIZE_C=triton.next_power_of_2(C),
         )
 
     return output.sum(dim=0)
