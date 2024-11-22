@@ -4,17 +4,17 @@ from ...utils import ceil_divide
 
 
 def contiguous_count_naive_kernel(
-    x: torch.Tensor, output: torch.Tensor, sm_count: int, C: int, BLOCK_SIZE_B: int, BLOCK_SIZE_C: int
+    x: torch.Tensor, output: torch.Tensor, num_programs: int, C: int, BLOCK_SIZE_B: int, BLOCK_SIZE_C: int
 ) -> None:
     B = x.numel()
 
-    num_elements_per_program = ceil_divide(B, sm_count)
+    num_elements_per_program = ceil_divide(B, num_programs)
     num_loops = ceil_divide(num_elements_per_program, BLOCK_SIZE_B)
 
     max_c = min(C, BLOCK_SIZE_C)
     indices_c = torch.arange(0, max_c, device=x.device)
 
-    for pid in range(sm_count):
+    for pid in range(num_programs):
         counts = torch.zeros(max_c, dtype=torch.int32, device=x.device)
 
         for i in range(num_loops):
