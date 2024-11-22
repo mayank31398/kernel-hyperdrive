@@ -22,7 +22,7 @@ def contiguous_count_khd(
     sm_count = get_sm_count(x.device)
     num_programs = min(sm_count, ceil_divide(B, BLOCK_SIZE_B))
 
-    output = torch.zeros(sm_count, C, dtype=torch.long, device=x.device)
+    output = torch.zeros(num_programs, C, dtype=torch.long, device=x.device)
 
     if kernel_backend == KernelBackend.triton:
         contiguous_count_triton_kernel[(num_programs,)](
