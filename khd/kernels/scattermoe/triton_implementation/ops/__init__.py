@@ -1,17 +1,10 @@
 import torch
 
-from ....contiguous_count import contiguous_count_khd
 from .compileable_ops import group, group_bwd_W, scatter2scatter
 
 
 BLOCK_M = 128
 torch._dynamo.config.capture_scalar_outputs = True
-
-
-def expert_boundaries(sorted_experts_idxs: torch.Tensor, k: int) -> torch.Tensor:
-    expert_counts = contiguous_count_khd(x=sorted_experts_idxs, start=0, end=k)
-    expert_boundaries_end = expert_counts.cumsum(-1)
-    return expert_boundaries_end
 
 
 class _ScatteredExperts(torch.autograd.Function):
