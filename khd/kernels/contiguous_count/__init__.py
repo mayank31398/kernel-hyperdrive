@@ -2,7 +2,7 @@ import torch
 import triton
 
 from ...enums import KernelBackend
-from ...utils import CutoTuneParameter, ensure_contiguous, get_sm_count
+from ...utils import CutoTuneParameter, ceil_divide, ensure_contiguous, get_sm_count
 from .naive_implementation import contiguous_count_naive_kernel
 from .triton_implementation import contiguous_count_triton_kernel
 
@@ -15,15 +15,17 @@ def contiguous_count_khd(
     kernel_backend: KernelBackend | CutoTuneParameter = CutoTuneParameter(),
     BLOCK_SIZE_B: int | CutoTuneParameter = CutoTuneParameter(),
 ) -> torch.Tensor:
-    sm_count = get_sm_count(x.device)
     B = x.numel()
     C = end - start
     BLOCK_SIZE_C = triton.next_power_of_2(C)
 
+    sm_count = get_sm_count(x.device)
+    num_programs = (min(sm_count, ceil_divide(B, BLOCK_SIZE_B)),)
+
     output = torch.zeros(sm_count, C, dtype=torch.long, device=x.device)
 
     if kernel_backend == KernelBackend.triton:
-        contiguous_count_triton_kernel[(sm_count,)](
+        contiguous_count_triton_kernel[(num_programs,)](
             x_ptr=x,
             output_ptr=output,
             output_stride_b=output.stride(0),
@@ -36,7 +38,7 @@ def contiguous_count_khd(
         contiguous_count_naive_kernel(
             x=x.view(-1),
             output=output,
-            num_programs=sm_count,
+            num_programs=num_programs,
             B=B,
             C=C,
             BLOCK_SIZE_B=BLOCK_SIZE_B,
