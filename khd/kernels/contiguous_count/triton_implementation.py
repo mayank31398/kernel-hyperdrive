@@ -7,16 +7,26 @@ def contiguous_count_triton_kernel(
     x_ptr, output_ptr, output_stride_b, num_elements, start, end, BLOCK_SIZE: tl.constexpr
 ):
     pid = tl.program_id(axis=0)
-    indices = pid * BLOCK_SIZE + tl.arange(0, BLOCK_SIZE)
-    mask = indices < num_elements
+    num_programs = tl.num_programs(axis=0)
 
+    num_elements_per_program = tl.cdiv(num_elements, num_programs)
+    num_loops = tl.cdiv(num_elements_per_program, BLOCK_SIZE)
+
+    counts = tl.zeros((end - start,), dtype=tl.float32)
     comparator = tl.arange(start, end)
 
-    x_ptrs = x_ptr + indices
-    x = x.load(x_ptrs, mask=mask)
+    for i in range(num_loops):
+        start = pid * num_elements_per_program + i * BLOCK_SIZE
+        end = start + BLOCK_SIZE
 
-    equal = x[:, None] == comparator[None, :]
-    count = tl.sum(equal, axis=0, keep_dims=True)
+        indices = tl.arange(start, end)
+        mask = indices < num_elements
 
-    output_ptrs = output_ptr + pid * output_stride_b + comparator - start
-    tl.store(output_ptrs, count)
+        x_ptrs = x_ptr + indices
+        x = tl.load(x_ptrs, mask=mask)
+
+        equal = x[:, None] == comparator[None, :]
+        counts += tl.sum(equal, axis=0)
+
+        output_ptrs = output_ptr + pid * output_stride_b + comparator - start
+        tl.store(output_ptrs, counts)
