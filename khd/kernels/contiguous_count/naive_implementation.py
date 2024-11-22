@@ -12,9 +12,11 @@ def contiguous_count_naive_kernel(
     num_elements_per_program = ceil_divide(B, num_programs)
     num_loops = ceil_divide(num_elements_per_program, BLOCK_SIZE_B)
 
+    indices_c = torch.arange(0, min(C, BLOCK_SIZE_C))
+
     for pid in range(num_programs):
         for i in range(num_loops):
             start = pid * num_elements_per_program + i * BLOCK_SIZE_B
             end = min(start + BLOCK_SIZE_B, B)
 
-            output[pid, : min(C, BLOCK_SIZE_C)] += x[start:end, : min(C, BLOCK_SIZE_C)].sum(dim=0)
+            output[pid, : min(C, BLOCK_SIZE_C)] += (x[start:end].unsqueeze(1) == indices_c.unsqueeze(0)).sum(dim=0)
