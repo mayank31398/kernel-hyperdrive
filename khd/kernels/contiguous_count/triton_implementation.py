@@ -25,9 +25,9 @@ def contiguous_count_triton_kernel(
         indices_b = program_start + i * BLOCK_SIZE_B + tl.arange(0, BLOCK_SIZE_B)
         mask_b = indices_b < program_end
 
-        x = tl.load(x_ptr + indices_b, mask=mask_b)
+        x = tl.load(x_ptr + indices_b, mask=mask_b, other=-1)
 
-        equal = x[:, None] == indices_c[None, :]
+        equal = (x[:, None] == indices_c[None, :]) * 1
         counts += tl.sum(equal, axis=0)
 
     output_ptrs = output_ptr + pid * output_stride_b + indices_c
