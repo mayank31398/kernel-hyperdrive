@@ -2,19 +2,20 @@ import torch
 import triton
 
 from ...enums import KernelBackend
-from ...utils import ceil_divide, ensure_contiguous, get_sm_count
+from ...utils import ceil_divide, get_sm_count
 from .naive_implementation import contiguous_count_naive_kernel
 from .triton_implementation import contiguous_count_triton_kernel
 
 
-@ensure_contiguous
 def contiguous_count_khd(
     x: torch.Tensor,
     start: int,
     end: int,
     kernel_backend: KernelBackend = KernelBackend.triton,
-    BLOCK_SIZE_B: int = 32,
+    BLOCK_SIZE_B: int = 64,
 ) -> torch.Tensor:
+    x = x.contiguous()
+
     assert x.dtype in [torch.int32, torch.long]
 
     B = x.numel()
