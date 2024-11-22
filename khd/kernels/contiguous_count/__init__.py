@@ -7,6 +7,7 @@ from .naive_implementation import contiguous_count_naive_kernel
 from .triton_implementation import contiguous_count_triton_kernel
 
 
+@torch.no_grad()
 def contiguous_count_khd(
     x: torch.Tensor,
     start: int,
