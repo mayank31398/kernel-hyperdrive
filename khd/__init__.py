@@ -7,6 +7,7 @@ from .kernels import (
     add_scalar_torch,
     add_tensor_khd,
     add_tensor_torch,
+    contiguous_count_khd,
     embedding_khd,
     embedding_torch,
     rmsnorm_khd,
