@@ -35,7 +35,7 @@ def contiguous_count_khd(
     elif kernel_backend == KernelBackend.naive:
         contiguous_count_naive_kernel(
             x=x.view(-1),
-            output=output.view(-1),
+            output=output,
             sm_count=sm_count,
             C=C,
             BLOCK_SIZE_B=BLOCK_SIZE_B,
