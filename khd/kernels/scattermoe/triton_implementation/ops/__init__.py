@@ -1,6 +1,7 @@
 import torch
 
-from .compileable_ops import compileable_bincount, group, group_bwd_W, scatter2scatter
+from ....contiguous_count import contiguous_count_khd
+from .compileable_ops import group, group_bwd_W, scatter2scatter
 
 
 BLOCK_M = 128
@@ -8,11 +9,7 @@ torch._dynamo.config.capture_scalar_outputs = True
 
 
 def expert_boundaries(sorted_experts_idxs: torch.Tensor, k: int) -> torch.Tensor:
-    # there is an overhead of launching a custom op so we only use the custom op when compiling
-    if torch.compiler.is_compiling():
-        expert_counts = compileable_bincount(sorted_experts_idxs, k)
-    else:
-        expert_counts = sorted_experts_idxs.bincount(minlength=k)
+    expert_counts = contiguous_count_khd(x=sorted_experts_idxs, start=0, end=k)
     expert_boundaries_end = expert_counts.cumsum(-1)
     return expert_boundaries_end
 

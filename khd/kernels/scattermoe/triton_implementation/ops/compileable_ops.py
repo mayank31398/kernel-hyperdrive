@@ -10,17 +10,6 @@ BLOCK_M = 128
 torch._dynamo.config.capture_scalar_outputs = True
 
 
-# bincount is not compilable
-@torch.library.custom_op(f"{LIBRARY_NAME}::bincount", mutates_args={})
-def compileable_bincount(x: torch.Tensor, minlength: int) -> torch.Tensor:
-    return x.bincount(minlength=minlength)
-
-
-@compileable_bincount.register_fake
-def _(x: torch.Tensor, minlength: int) -> torch.Tensor:
-    return torch.empty(minlength, dtype=torch.long, device=x.device)
-
-
 def _scatter2scatter(
     X: torch.Tensor,
     W: torch.Tensor,
