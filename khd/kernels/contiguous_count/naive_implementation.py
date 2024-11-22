@@ -18,8 +18,8 @@ def contiguous_count_naive_kernel(
         counts = torch.zeros(BLOCK_SIZE_C, dtype=torch.int32, device=x.device)
 
         for i in range(num_loops):
-            start = program_start + i * BLOCK_SIZE_B
-            end = min(start + BLOCK_SIZE_B, B)
+            start = program_start + i * num_elements_in_current_program
+            end = min(start + num_elements_in_current_program, B)
 
             x_ = x[start:end].unsqueeze(1).repeat(1, BLOCK_SIZE_C)
             indices_c_ = indices_c.unsqueeze(0).repeat(end - start, 1)
