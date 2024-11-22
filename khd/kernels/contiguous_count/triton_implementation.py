@@ -10,17 +10,20 @@ def contiguous_count_triton_kernel(
     num_programs = tl.num_programs(axis=0)
 
     num_elements_per_program = tl.cdiv(B, num_programs)
-    num_loops = tl.cdiv(num_elements_per_program, BLOCK_SIZE_B)
+
+    program_start = pid * num_elements_per_program
+    program_end = min(program_start + num_elements_per_program, B)
+    num_elements_in_current_program = program_end - program_start
+
+    num_loops = tl.cdiv(num_elements_in_current_program, BLOCK_SIZE_B)
+    counts = tl.zeros((BLOCK_SIZE_C,), dtype=tl.int32)
 
     indices_c = tl.arange(0, BLOCK_SIZE_C)
     mask_c = indices_c < C
 
-    counts = tl.zeros((BLOCK_SIZE_C,), dtype=tl.int32)
-
     for i in range(num_loops):
-        start = pid * num_elements_per_program + i * BLOCK_SIZE_B
-        indices_b = start + tl.arange(0, BLOCK_SIZE_B)
-        mask_b = indices_b < B
+        indices_b = program_start + i * BLOCK_SIZE_B + tl.arange(0, BLOCK_SIZE_B)
+        mask_b = indices_b < program_end
 
         x = tl.load(x_ptr + indices_b, mask=mask_b)
 
