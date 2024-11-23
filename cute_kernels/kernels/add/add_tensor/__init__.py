@@ -6,7 +6,7 @@ from .forward import _forward
 from .torch_implementation import add_tensor_torch
 
 
-class _AddTensor_KHD(torch.autograd.Function):
+class _AddTensor_Cute(torch.autograd.Function):
     @staticmethod
     def forward(
         ctx,
@@ -29,11 +29,11 @@ class _AddTensor_KHD(torch.autograd.Function):
         return output_grad, output_grad, *[None] * 3
 
 
-def add_tensor_khd(
+def add_tensor_cute(
     x: torch.Tensor,
     y: torch.Tensor,
     kernel_backend: KernelBackend | CutoTuneParameter = CutoTuneParameter(),
     vector_instruction_width: int | CutoTuneParameter = CutoTuneParameter(),
     BLOCK_SIZE: int | CutoTuneParameter = CutoTuneParameter(),
 ) -> torch.Tensor:
-    return _AddTensor_KHD.apply(x, y, kernel_backend, vector_instruction_width, BLOCK_SIZE)
+    return _AddTensor_Cute.apply(x, y, kernel_backend, vector_instruction_width, BLOCK_SIZE)

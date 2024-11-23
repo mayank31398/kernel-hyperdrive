@@ -3,7 +3,7 @@ from typing import Callable
 import torch
 from parameterized import parameterized
 
-from khd import KernelBackend, contiguous_count_khd
+from cute_kernels import KernelBackend, contiguous_count_cute
 
 from ..test_commons import TestCommons
 
@@ -18,7 +18,7 @@ class ContiguousCountTest(TestCommons):
             [torch.device("cuda")],  # device
             [KernelBackend.triton],  # kernel_backend
             [64],  # BLOCK_SIZE_B
-            [contiguous_count_khd, torch.compile(contiguous_count_khd)],  # function
+            [contiguous_count_cute, torch.compile(contiguous_count_cute)],  # function
         )
     )
     def test_contiguous_count(

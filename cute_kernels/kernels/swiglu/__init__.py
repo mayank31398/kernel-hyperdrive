@@ -7,7 +7,7 @@ from .forward import _forward
 from .torch_implementation import swiglu_torch
 
 
-class _Swiglu_KHD(torch.autograd.Function):
+class _Swiglu_Cute(torch.autograd.Function):
     @staticmethod
     def forward(
         ctx,
@@ -50,7 +50,7 @@ class _Swiglu_KHD(torch.autograd.Function):
         return gate_grad, up_grad, *[None] * 6
 
 
-def swiglu_khd(
+def swiglu_cute(
     gate: torch.Tensor,
     up: torch.Tensor,
     kernel_backend_forward: KernelBackend | CutoTuneParameter = CutoTuneParameter(),
@@ -60,7 +60,7 @@ def swiglu_khd(
     BLOCK_SIZE_forward: int | CutoTuneParameter = CutoTuneParameter(),
     BLOCK_SIZE_backward: int | CutoTuneParameter = CutoTuneParameter(),
 ) -> torch.Tensor:
-    return _Swiglu_KHD.apply(
+    return _Swiglu_Cute.apply(
         gate,
         up,
         kernel_backend_forward,

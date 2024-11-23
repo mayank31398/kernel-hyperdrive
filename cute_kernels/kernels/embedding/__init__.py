@@ -6,7 +6,7 @@ from .torch_implementation import embedding_torch
 from .triton_implementation import embedding_forward_triton_kernel
 
 
-class _Embedding_KHD(torch.autograd.Function):
+class _Embedding_Cute(torch.autograd.Function):
     @staticmethod
     def forward(
         ctx,
@@ -50,7 +50,7 @@ class _Embedding_KHD(torch.autograd.Function):
         return output.view(*input_ids.size(), hidden_size)
 
 
-def embedding_khd(
+def embedding_cute(
     input_ids: torch.Tensor, wte: torch.Tensor, kernel_backend: KernelBackend, BLOCK_SIZE_B: int, BLOCK_SIZE_H: int
 ) -> torch.Tensor:
-    return _Embedding_KHD.apply(input_ids, wte, kernel_backend, BLOCK_SIZE_B, BLOCK_SIZE_H)
+    return _Embedding_Cute.apply(input_ids, wte, kernel_backend, BLOCK_SIZE_B, BLOCK_SIZE_H)

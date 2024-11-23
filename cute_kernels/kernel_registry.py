@@ -7,7 +7,7 @@ from torch.utils.cpp_extension import load as load_cpp_extension
 
 
 class KernelRegistry:
-    module_name = "khd_cuda_kernels"
+    module_name = "cute_cuda_kernels"
     build_directory = "build"
     cuda_kernel_registry = {}
     kernel_registry_yaml = yaml.safe_load(open(os.path.join(os.path.dirname(__file__), "kernel_registry.yml"), "r"))
