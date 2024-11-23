@@ -1,20 +1,10 @@
 import torch
 
-from .compileable_ops import compileable_bincount, group, group_bwd_W, scatter2scatter
+from .compileable_ops import group, group_bwd_W, scatter2scatter
 
 
 BLOCK_M = 128
 torch._dynamo.config.capture_scalar_outputs = True
-
-
-def expert_boundaries(sorted_experts_idxs: torch.Tensor, k: int) -> torch.Tensor:
-    # there is an overhead of launching a custom op so we only use the custom op when compiling
-    if torch.compiler.is_compiling():
-        expert_counts = compileable_bincount(sorted_experts_idxs, k)
-    else:
-        expert_counts = sorted_experts_idxs.bincount(minlength=k)
-    expert_boundaries_end = expert_counts.cumsum(-1)
-    return expert_boundaries_end
 
 
 class _ScatteredExperts(torch.autograd.Function):
@@ -147,7 +137,6 @@ class _ScatteredExperts(torch.autograd.Function):
         else:
             d_input = d_expanded_input.view(x.size(0), k, d_expanded_input.size(-1)).sum(-2)
 
-        # print("backward end.")
         return (
             # x, expert_weights, k,
             d_input,

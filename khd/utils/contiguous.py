@@ -1,21 +1,19 @@
+from typing import Any
+
 import torch
-import torch.distributed
 
 
-def make_contiguous(*args) -> list[torch.Tensor]:
-    output = []
-    for arg in args:
-        if isinstance(arg, torch.Tensor):
-            arg = arg.contiguous()
+def is_hip() -> bool:
+    return torch.version.hip is not None
 
-        output.append(arg)
 
-    return output
+def make_contiguous(x: Any) -> Any:
+    return x.contiguous() if isinstance(x, torch.Tensor) else x
 
 
 def ensure_same_strides(*args, force_contiguous: bool = False) -> list[torch.Tensor]:
     if force_contiguous:
-        output = make_contiguous(*args)
+        output = [make_contiguous(arg) for arg in args]
     else:
         mismatch = False
         expected_stride = None
@@ -28,6 +26,6 @@ def ensure_same_strides(*args, force_contiguous: bool = False) -> list[torch.Ten
                     mismatch = True
                     break
 
-        output = make_contiguous(*args) if mismatch else args
+        output = [make_contiguous(arg) for arg in args] if mismatch else args
 
     return output

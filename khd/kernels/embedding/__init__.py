@@ -2,7 +2,6 @@ import torch
 import triton
 
 from ...enums import KernelBackend
-from ...utils import make_contiguous
 from .torch_implementation import embedding_torch
 from .triton_implementation import embedding_forward_triton_kernel
 
@@ -20,7 +19,7 @@ class _Embedding_KHD(torch.autograd.Function):
         num_elements = input_ids.numel()
         hidden_size = wte.size(-1)
 
-        input_ids = make_contiguous(input_ids)[0]
+        input_ids = input_ids.contiguous()
         assert wte.is_contiguous()
 
         output = torch.empty(num_elements, hidden_size, dtype=wte.dtype, device=input_ids.device)

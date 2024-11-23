@@ -4,6 +4,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from ..contiguous_count import contiguous_count_khd
+
 
 class Experts_Torch(nn.Module):
     def __init__(
@@ -172,7 +174,7 @@ class MoE_Torch(nn.Module):
         selected_experts = selected_experts.flatten()
         # selected_experts -> (total_q * top_k)
 
-        expert_frequency = selected_experts.bincount(minlength=self.num_experts)
+        expert_frequency = contiguous_count_khd(x=selected_experts, start=0, end=self.num_experts)
         # expert_frequency -> (num_experts)
 
         index_sorted_experts = selected_experts.argsort()
