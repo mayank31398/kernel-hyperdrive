@@ -32,6 +32,6 @@ class ContiguousCountTest(TestCommons):
         x = torch.randint(0, MAX_EXPERTS, size, device=device, dtype=torch.long)
 
         z_kernel = function(x=x, start=0, end=MAX_EXPERTS, kernel_backend=kernel_backend, BLOCK_SIZE_B=BLOCK_SIZE_B)
-        z_expected = x.bincount(minlength=MAX_EXPERTS)
+        z_expected = x.view(-1).bincount(minlength=MAX_EXPERTS)
 
         self.assert_equal_tensors(z_kernel, z_expected, True)
