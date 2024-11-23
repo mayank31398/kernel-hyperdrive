@@ -1,10 +1,10 @@
 import torch
-import triton
 
 from ....constants import CUDA_BLOCK_SIZES_POWERS_OF_2, TRITON_BLOCK_SIZES_POWERS_OF_2
 from ....enums import KernelBackend
-from ....utils import cutotune, ensure_same_strides, get_cartesian_product_cutotune_configs
+from ....utils import ceil_divide, cutotune, ensure_same_strides, get_cartesian_product_cutotune_configs
 from .cuda_implementation import add_tensor_forward_cuda_kernel, add_tensor_forward_cuda_kernel_compileable
+from .naive_implementation import add_tensor_forward_naive_kernel
 from .triton_implementation import add_tensor_forward_triton_kernel
 
 
@@ -60,17 +60,22 @@ def _forward(
             add_tensor_forward_cuda_kernel(
                 x=x, y=y, output=output, vector_instruction_width=vector_instruction_width, BLOCK_SIZE=BLOCK_SIZE
             )
-    elif kernel_backend == KernelBackend.triton:
+    else:
         assert vector_instruction_width is None
 
         num_elements = x.numel()
-        grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE"]),)
+        num_programs = ceil_divide(num_elements, BLOCK_SIZE)
 
-        with torch.device(x.device):
-            add_tensor_forward_triton_kernel[grid](
-                x_ptr=x, y_ptr=y, output_ptr=output, num_elements=num_elements, BLOCK_SIZE=BLOCK_SIZE
+        if kernel_backend == KernelBackend.triton:
+            with torch.device(x.device):
+                add_tensor_forward_triton_kernel[num_programs,](
+                    x_ptr=x, y_ptr=y, output_ptr=output, num_elements=num_elements, BLOCK_SIZE=BLOCK_SIZE
+                )
+        elif kernel_backend == KernelBackend.naive:
+            add_tensor_forward_naive_kernel(
+                num_programs=num_programs, x=x, y=y, output=output, num_elements=num_elements, BLOCK_SIZE=BLOCK_SIZE
             )
-    else:
-        raise ValueError(f"unexpected kernel_backend ({kernel_backend})")
+        else:
+            raise ValueError(f"unexpected kernel_backend ({kernel_backend})")
 
     return output

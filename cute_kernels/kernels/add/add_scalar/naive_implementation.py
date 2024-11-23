@@ -8,4 +8,4 @@ def add_scalar_forward_naive_kernel(
         start = pid * BLOCK_SIZE
         end = min(start + BLOCK_SIZE, num_elements)
 
-        output[start:end] = x[start:end] + y[start:end]
+        output[start:end] = x[start:end] + y

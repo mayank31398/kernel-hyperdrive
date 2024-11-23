@@ -1,5 +1,4 @@
 import torch
-import triton
 
 from ....constants import CUDA_BLOCK_SIZES_POWERS_OF_2, TRITON_BLOCK_SIZES_POWERS_OF_2
 from ....enums import KernelBackend
@@ -71,15 +70,9 @@ def _forward(
                     x_ptr=x, y=y, output_ptr=output, num_elements=num_elements, BLOCK_SIZE=BLOCK_SIZE
                 )
         elif kernel_backend == KernelBackend.naive:
-            with torch.device(x.device):
-                add_scalar_forward_naive_kernel(
-                    num_programs=num_programs,
-                    x_ptr=x,
-                    y=y,
-                    output_ptr=output,
-                    num_elements=num_elements,
-                    BLOCK_SIZE=BLOCK_SIZE,
-                )
+            add_scalar_forward_naive_kernel(
+                num_programs=num_programs, x=x, y=y, output=output, num_elements=num_elements, BLOCK_SIZE=BLOCK_SIZE
+            )
         else:
             raise ValueError(f"unexpected kernel_backend ({kernel_backend})")
 
