@@ -42,9 +42,9 @@ def contiguous_count_cute(
             )
     elif kernel_backend == KernelBackend.naive:
         contiguous_count_naive_kernel(
+            num_programs=num_programs,
             x=x.view(-1),
             output=output,
-            num_programs=num_programs,
             B=B,
             C=C,
             BLOCK_SIZE_B=BLOCK_SIZE_B,

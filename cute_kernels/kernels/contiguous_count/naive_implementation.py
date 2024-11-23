@@ -4,7 +4,7 @@ from ...utils import ceil_divide
 
 
 def contiguous_count_naive_kernel(
-    x: torch.Tensor, output: torch.Tensor, num_programs: int, B: int, C: int, BLOCK_SIZE_B: int, BLOCK_SIZE_C: int
+    num_programs: int, x: torch.Tensor, output: torch.Tensor, B: int, C: int, BLOCK_SIZE_B: int, BLOCK_SIZE_C: int
 ) -> None:
     num_elements_per_program = ceil_divide(B, num_programs)
     indices_c = torch.arange(0, BLOCK_SIZE_C, device=x.device)
