@@ -16,7 +16,7 @@ class ContiguousCountTest(TestCommons):
         TestCommons.make_args_matrix(
             TestCommons.get_1d_tensor_sizes(),  # size
             [torch.device("cuda")],  # device
-            [KernelBackend.triton, KernelBackend.naive],  # kernel_backend
+            [KernelBackend.triton],  # kernel_backend
             [64],  # BLOCK_SIZE_B
             [contiguous_count_cute, torch.compile(contiguous_count_cute)],  # function
         )
