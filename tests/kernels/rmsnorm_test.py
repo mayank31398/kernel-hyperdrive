@@ -1,9 +1,10 @@
 from typing import Callable
 
 import torch
-from cute import rmsnorm_cute, rmsnorm_torch
 from parameterized import parameterized
 from transformers import set_seed
+
+from cute_kernels import rmsnorm_cute, rmsnorm_torch
 
 from ..test_commons import TestCommons
 

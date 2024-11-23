@@ -1,8 +1,9 @@
 from typing import Callable
 
 import torch
-from cute import KernelBackend, add_scalar_cute, add_scalar_torch
 from parameterized import parameterized
+
+from cute_kernels import KernelBackend, add_scalar_cute, add_scalar_torch
 
 from ...test_commons import TestCommons
 

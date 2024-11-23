@@ -1,8 +1,9 @@
 from typing import Callable
 
 import torch
-from cute import KernelBackend, embedding_cute, embedding_torch
 from parameterized import parameterized
+
+from cute_kernels import KernelBackend, embedding_cute, embedding_torch
 
 from ..test_commons import TestCommons
 

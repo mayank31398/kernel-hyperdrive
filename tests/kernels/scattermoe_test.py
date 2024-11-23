@@ -1,8 +1,9 @@
 import torch
 import torch.nn as nn
-from cute import MoE_Torch, MoE_Triton
 from parameterized import parameterized
 from transformers import set_seed
+
+from cute_kernels import MoE_Torch, MoE_Triton
 
 from ..test_commons import TestCommons
 

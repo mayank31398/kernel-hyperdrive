@@ -1,8 +1,9 @@
 from typing import Callable
 
 import torch
-from cute import KernelBackend, contiguous_count_cute
 from parameterized import parameterized
+
+from cute_kernels import KernelBackend, contiguous_count_cute
 
 from ..test_commons import TestCommons
 
