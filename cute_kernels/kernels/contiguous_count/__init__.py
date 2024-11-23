@@ -3,7 +3,6 @@ import triton
 
 from ...enums import KernelBackend
 from ...utils import ceil_divide, get_sm_count
-from .naive_implementation import contiguous_count_naive_kernel
 from .triton_implementation import contiguous_count_triton_kernel
 
 
@@ -40,15 +39,7 @@ def contiguous_count_cute(
                 BLOCK_SIZE_B=BLOCK_SIZE_B,
                 BLOCK_SIZE_C=BLOCK_SIZE_C,
             )
-    elif kernel_backend == KernelBackend.naive:
-        contiguous_count_naive_kernel(
-            num_programs=num_programs,
-            x=x.view(-1),
-            output=output,
-            B=B,
-            C=C,
-            BLOCK_SIZE_B=BLOCK_SIZE_B,
-            BLOCK_SIZE_C=BLOCK_SIZE_C,
-        )
+    else:
+        raise ValueError(f"unexpected kernel_backend ({kernel_backend})")
 
     return output.sum(dim=0)
