@@ -1,9 +1,8 @@
 from typing import Callable
 
 import torch
+from cute import KernelBackend, swiglu_cute, swiglu_torch
 from parameterized import parameterized
-
-from khd import KernelBackend, swiglu_khd, swiglu_torch
 
 from ..test_commons import TestCommons
 
@@ -20,7 +19,7 @@ class SwigluTest(TestCommons):
             [1, 2, 4],  # vector_instruction_width_backward
             [1024],  # BLOCK_SIZE_forward
             [1024],  # BLOCK_SIZE_backward
-            [swiglu_khd, torch.compile(swiglu_khd)],  # function
+            [swiglu_cute, torch.compile(swiglu_cute)],  # function
         )
         + TestCommons.make_args_matrix(
             TestCommons.get_2d_tensor_sizes(),  # size
@@ -32,7 +31,7 @@ class SwigluTest(TestCommons):
             [1, 2, 4, 8],  # vector_instruction_width_backward
             [1024],  # BLOCK_SIZE_forward
             [1024],  # BLOCK_SIZE_backward
-            [swiglu_khd, torch.compile(swiglu_khd)],  # function
+            [swiglu_cute, torch.compile(swiglu_cute)],  # function
         )
         + TestCommons.make_args_matrix(
             TestCommons.get_2d_tensor_sizes(),  # size
@@ -44,7 +43,7 @@ class SwigluTest(TestCommons):
             [None],  # vector_instruction_width_backward
             [1024],  # BLOCK_SIZE_forward
             [1024],  # BLOCK_SIZE_backward
-            [swiglu_khd, torch.compile(swiglu_khd)],  # function
+            [swiglu_cute, torch.compile(swiglu_cute)],  # function
         )
         + TestCommons.make_args_matrix(
             TestCommons.get_2d_tensor_sizes(),  # size
@@ -56,7 +55,7 @@ class SwigluTest(TestCommons):
             [None],  # vector_instruction_width_backward
             [1024],  # BLOCK_SIZE_forward
             [1024],  # BLOCK_SIZE_backward
-            [swiglu_khd, torch.compile(swiglu_khd)],  # function
+            [swiglu_cute, torch.compile(swiglu_cute)],  # function
         )
         + TestCommons.make_args_matrix(
             TestCommons.get_2d_tensor_sizes(),  # size
@@ -68,7 +67,7 @@ class SwigluTest(TestCommons):
             [None],  # vector_instruction_width_backward
             [1024],  # BLOCK_SIZE_forward
             [1024],  # BLOCK_SIZE_backward
-            [swiglu_khd, torch.compile(swiglu_khd)],  # function
+            [swiglu_cute, torch.compile(swiglu_cute)],  # function
         )
         + TestCommons.make_args_matrix(
             TestCommons.get_2d_tensor_sizes(),  # size
@@ -80,7 +79,7 @@ class SwigluTest(TestCommons):
             [1, 2, 4],  # vector_instruction_width_backward
             [1024],  # BLOCK_SIZE_forward
             [1024],  # BLOCK_SIZE_backward
-            [swiglu_khd, torch.compile(swiglu_khd)],  # function
+            [swiglu_cute, torch.compile(swiglu_cute)],  # function
         )
         + TestCommons.make_args_matrix(
             TestCommons.get_2d_tensor_sizes(),  # size
@@ -92,7 +91,7 @@ class SwigluTest(TestCommons):
             [1, 2, 4, 8],  # vector_instruction_width_backward
             [1024],  # BLOCK_SIZE_forward
             [1024],  # BLOCK_SIZE_backward
-            [swiglu_khd, torch.compile(swiglu_khd)],  # function
+            [swiglu_cute, torch.compile(swiglu_cute)],  # function
         )
     )
     def test_swiglu(

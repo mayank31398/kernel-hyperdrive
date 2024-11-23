@@ -1,9 +1,8 @@
 from typing import Callable
 
 import torch
+from cute import KernelBackend, embedding_cute, embedding_torch
 from parameterized import parameterized
-
-from khd import KernelBackend, embedding_khd, embedding_torch
 
 from ..test_commons import TestCommons
 
@@ -18,7 +17,7 @@ class EmbeddingTest(TestCommons):
             [KernelBackend.triton],  # kernel_backend
             [64],  # BLOCK_SIZE_B
             [64],  # BLOCK_SIZE_H
-            [embedding_khd, torch.compile(embedding_khd)],  # function
+            [embedding_cute, torch.compile(embedding_cute)],  # function
         )
     )
     def test_embedding(

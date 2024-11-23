@@ -1,9 +1,8 @@
 from typing import Callable
 
 import torch
+from cute import KernelBackend, add_tensor_cute, add_tensor_torch
 from parameterized import parameterized
-
-from khd import KernelBackend, add_tensor_khd, add_tensor_torch
 
 from ...test_commons import TestCommons
 
@@ -17,7 +16,7 @@ class AddTensorTest(TestCommons):
             [KernelBackend.cuda],  # kernel_backend
             [1, 2, 4],  # vector_instruction_width
             [1024],  # BLOCK_SIZE
-            [add_tensor_khd, torch.compile(add_tensor_khd)],  # function
+            [add_tensor_cute, torch.compile(add_tensor_cute)],  # function
         )
         + TestCommons.make_args_matrix(
             TestCommons.get_2d_tensor_sizes(),  # size
@@ -26,7 +25,7 @@ class AddTensorTest(TestCommons):
             [KernelBackend.cuda],  # kernel_backend
             [8],  # vector_instruction_width
             [1024],  # BLOCK_SIZE
-            [add_tensor_khd, torch.compile(add_tensor_khd)],  # function
+            [add_tensor_cute, torch.compile(add_tensor_cute)],  # function
         )
         + TestCommons.make_args_matrix(
             TestCommons.get_2d_tensor_sizes(),  # size
@@ -35,7 +34,7 @@ class AddTensorTest(TestCommons):
             [KernelBackend.triton],  # kernel_backend
             [None],  # vector_instruction_width
             [1024],  # BLOCK_SIZE
-            [add_tensor_khd, torch.compile(add_tensor_khd)],  # function
+            [add_tensor_cute, torch.compile(add_tensor_cute)],  # function
         )
     )
     def test_add_tensor(

@@ -7,7 +7,7 @@ from .forward import _forward
 from .torch_implementation import rmsnorm_torch
 
 
-class _RMSNorm_KHD(torch.autograd.Function):
+class _RMSNorm_Cute(torch.autograd.Function):
     @staticmethod
     def forward(
         ctx,
@@ -80,7 +80,7 @@ class _RMSNorm_KHD(torch.autograd.Function):
         return x_grad, weight_grad, *[None] * 8
 
 
-def rmsnorm_khd(
+def rmsnorm_cute(
     x: torch.Tensor,
     weight: torch.Tensor,
     eps: float,
@@ -92,7 +92,7 @@ def rmsnorm_khd(
     BLOCK_SIZE_H_forward: int | CutoTuneParameter = CutoTuneParameter(),
     BLOCK_SIZE_H_backward: int | CutoTuneParameter = CutoTuneParameter(),
 ) -> torch.Tensor:
-    return _RMSNorm_KHD.apply(
+    return _RMSNorm_Cute.apply(
         x,
         weight,
         eps,

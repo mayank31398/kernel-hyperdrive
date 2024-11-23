@@ -6,7 +6,7 @@ from .forward import _forward
 from .torch_implementation import add_scalar_torch
 
 
-class _AddScalar_KHD(torch.autograd.Function):
+class _AddScalar_Cute(torch.autograd.Function):
     @staticmethod
     def forward(
         ctx,
@@ -29,11 +29,11 @@ class _AddScalar_KHD(torch.autograd.Function):
         return output_grad, *[None] * 4
 
 
-def add_scalar_khd(
+def add_scalar_cute(
     x: torch.Tensor,
     y: torch.Tensor,
     kernel_backend: KernelBackend | CutoTuneParameter = CutoTuneParameter(),
     vector_instruction_width: int | CutoTuneParameter = CutoTuneParameter(),
     BLOCK_SIZE: int | CutoTuneParameter = CutoTuneParameter(),
 ) -> torch.Tensor:
-    return _AddScalar_KHD.apply(x, y, kernel_backend, vector_instruction_width, BLOCK_SIZE)
+    return _AddScalar_Cute.apply(x, y, kernel_backend, vector_instruction_width, BLOCK_SIZE)
