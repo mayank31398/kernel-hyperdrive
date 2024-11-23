@@ -1,9 +1,8 @@
 import torch
-import triton
 
 from ....constants import CUDA_BLOCK_SIZES_POWERS_OF_2, TRITON_BLOCK_SIZES_POWERS_OF_2
 from ....enums import KernelBackend
-from ....utils import cutotune, get_cartesian_product_cutotune_configs
+from ....utils import ceil_divide, cutotune, get_cartesian_product_cutotune_configs
 from .cuda_implementation import add_scalar_forward_cuda_kernel, add_scalar_forward_cuda_kernel_compileable
 from .triton_implementation import add_scalar_forward_triton_kernel
 
@@ -62,10 +61,10 @@ def _forward(
         assert vector_instruction_width is None
 
         num_elements = x.numel()
-        grid = lambda meta: (triton.cdiv(num_elements, meta["BLOCK_SIZE"]),)
+        num_programs = ceil_divide(num_elements, BLOCK_SIZE)
 
         with torch.device(x.device):
-            add_scalar_forward_triton_kernel[grid](
+            add_scalar_forward_triton_kernel[num_programs,](
                 x_ptr=x, y=y, output_ptr=output, num_elements=num_elements, BLOCK_SIZE=BLOCK_SIZE
             )
     else:
