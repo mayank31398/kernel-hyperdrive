@@ -32,7 +32,7 @@ class AddTensorTest(TestCommons):
             TestCommons.get_2d_tensor_sizes(),  # size
             [torch.device("cuda")],  # device
             TestCommons.get_dtypes(),  # dtype
-            [KernelBackend.triton],  # kernel_backend
+            [KernelBackend.triton, KernelBackend.naive],  # kernel_backend
             [None],  # vector_instruction_width
             [1024],  # BLOCK_SIZE
             [add_tensor_cute, torch.compile(add_tensor_cute)],  # function
