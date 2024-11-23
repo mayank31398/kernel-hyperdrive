@@ -23,13 +23,13 @@ class ContiguousCountTest(TestCommons):
     )
     def test_contiguous_count(
         self,
-        size: tuple[int],
+        size: int,
         device: torch.device,
         kernel_backend: KernelBackend,
         BLOCK_SIZE_B: int,
         function: Callable,
     ) -> None:
-        x = torch.randint(0, MAX_EXPERTS, size, device=device, dtype=torch.long)
+        x = torch.randint(0, MAX_EXPERTS, (size,), device=device, dtype=torch.long)
 
         z_kernel = function(x=x, start=0, end=MAX_EXPERTS, kernel_backend=kernel_backend, BLOCK_SIZE_B=BLOCK_SIZE_B)
         z_expected = x.view(-1).bincount(minlength=MAX_EXPERTS)
