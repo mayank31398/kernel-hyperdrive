@@ -14,7 +14,7 @@ MAX_EXPERTS = 72
 class ContiguousCountTest(TestCommons):
     @parameterized.expand(
         TestCommons.make_args_matrix(
-            TestCommons.get_2d_tensor_sizes(),  # size
+            TestCommons.get_1d_tensor_sizes(),  # size
             [torch.device("cuda")],  # device
             [KernelBackend.triton],  # kernel_backend
             [64],  # BLOCK_SIZE_B
