@@ -68,7 +68,7 @@ def _triton_backward(
         )
 
     if has_weight:
-        weight_grad = weight_grad.sum(dim=0).type_as(x_grad)
+        weight_grad = weight_grad.sum(dim=0)
 
     return weight_grad
 
