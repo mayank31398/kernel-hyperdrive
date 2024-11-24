@@ -3,7 +3,7 @@ import triton
 
 from ...constants import MAX_TRITON_BLOCK_SIZE, TORCH_TO_TRITON_DTYPE, TRITON_BLOCK_SIZES_POWERS_OF_2
 from ...enums import KernelBackend
-from ...utils import CutoTuneConfig, CutoTuneParameter, ceil_divide, cutotune, ensure_same_strides
+from ...utils import CutoTuneConfig, CutoTuneParameter, ceil_divide, cutotune, ensure_same_strides, get_sm_count
 from .triton_implementation import rmsnorm_backward_triton_kernel
 
 
@@ -35,15 +35,16 @@ def _triton_backward(
     if BLOCK_SIZE_H < hidden_size:
         raise ValueError(f"hidden_size should be more than the BLOCK_SIZE_H")
 
-    num_blocks_b = ceil_divide(num_elements, BLOCK_SIZE_B)
+    sm_count = get_sm_count(x_view.device)
+    num_programs = min(sm_count, ceil_divide(num_elements, BLOCK_SIZE_B))
 
     has_weight = weight is not None
     weight_grad = (
-        torch.empty(num_blocks_b, hidden_size, device=x_grad.device, dtype=torch.float32) if has_weight else None
+        torch.empty(num_programs, hidden_size, device=x_grad.device, dtype=torch.float32) if has_weight else None
     )
 
     with torch.device(x_view.device):
-        rmsnorm_backward_triton_kernel[(num_blocks_b,)](
+        rmsnorm_backward_triton_kernel[(num_programs,)](
             x_ptr=x_view,
             x_stride_b=x_view.stride(0),
             x_stride_h=x_view.stride(1),
