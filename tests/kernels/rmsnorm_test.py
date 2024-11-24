@@ -4,7 +4,7 @@ import torch
 from parameterized import parameterized
 from transformers import set_seed
 
-from khd import rmsnorm_khd, rmsnorm_torch
+from cute_kernels import rmsnorm_cute, rmsnorm_torch
 
 from ..test_commons import TestCommons
 
@@ -21,7 +21,7 @@ class RMSNormTest(TestCommons):
             TestCommons.get_dtypes(),  # dtype
             [True],  # memory_efficient
             [True, False],  # has_weight
-            [rmsnorm_khd, torch.compile(rmsnorm_khd)],  # function
+            [rmsnorm_cute, torch.compile(rmsnorm_cute)],  # function
         )
     )
     def test_rmsnorm(
