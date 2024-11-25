@@ -52,7 +52,7 @@ class RMSNormTest(TestCommons):
         self.assert_equal_tensors(z_kernel, z_expected, False, atol_float16=8e-3, rtol_float16=0)
         self.assert_equal_tensors(x_kernel.grad, x_expected.grad, False, atol_float16=0.07, rtol_float16=0)
 
-        # if has_weight:
-        #     self.assert_equal_tensors(
-        #         weight_kernel.grad, weight_expected.grad, False, atol_float32=8.5e-5, rtol_float32=0
-        #     )
+        if has_weight:
+            self.assert_equal_tensors(
+                weight_kernel.grad, weight_expected.grad, False, atol_float32=8.5e-5, rtol_float32=0
+            )
