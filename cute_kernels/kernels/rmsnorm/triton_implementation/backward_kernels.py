@@ -55,8 +55,11 @@ def rmsnorm_backward_triton_kernel(
         x_ptrs = x_ptr + indices_b[:, None] * x_stride_b + indices_h[None, :] * x_stride_h
         x = tl.load(x_ptrs, mask=mask_bh).to(tl.float32)
 
-        squared_sum = tl.sum(x * x, axis=1)
-        inverse_rms = tl.rsqrt(squared_sum / H + eps)
+        if memory_efficient:
+            squared_sum = tl.sum(x * x, axis=1)
+            inverse_rms = tl.rsqrt(squared_sum / H + eps)
+        else:
+            inverse_rms = tl.load(rmsnorm_denominator_ptr + indices_b, mask=mask_b)
 
         output_grad_ptrs = (
             output_grad_ptr + indices_b[:, None] * output_grad_stride_b + indices_h[None, :] * output_grad_stride_h
