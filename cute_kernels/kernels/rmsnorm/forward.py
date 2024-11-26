@@ -20,7 +20,7 @@ from .triton_implementation import rmsnorm_forward_triton_kernel
     triggers={"x_view.dtype", "BLOCK_SIZE_H"},
 )
 def _triton_forward(
-    x_view: torch.Tensor,
+    x: torch.Tensor,
     weight: torch.Tensor,
     output: torch.Tensor,
     rmsnorm_denominator: torch.Tensor,
@@ -29,17 +29,17 @@ def _triton_forward(
     BLOCK_SIZE_B: int,
     BLOCK_SIZE_H: int,
 ) -> None:
-    num_elements, hidden_size = x_view.size()
+    num_elements, hidden_size = x.size()
 
     if BLOCK_SIZE_H < hidden_size:
         raise ValueError(f"hidden_size should be more than the BLOCK_SIZE_H")
 
-    with torch.device(x_view.device):
+    with torch.device(x.device):
         rmsnorm_forward_triton_kernel[(ceil_divide(num_elements, BLOCK_SIZE_B),)](
-            x_ptr=x_view,
-            x_stride_b=x_view.stride(0),
-            x_stride_h=x_view.stride(1),
-            x_dtype=TORCH_TO_TRITON_DTYPE[x_view.dtype],
+            x_ptr=x,
+            x_stride_b=x.stride(0),
+            x_stride_h=x.stride(1),
+            x_dtype=TORCH_TO_TRITON_DTYPE[x.dtype],
             has_weight=weight is not None,
             weight_ptr=weight,
             output_ptr=output,
