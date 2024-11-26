@@ -19,6 +19,7 @@ $$= \frac{\partial L}{\partial y_{ij}} \frac{w_h}{r_i} - \sum_{h=1}^{H} \frac{\p
 $$= \frac{\partial L}{\partial y_{ij}} \frac{w_h}{r_i} - \frac{1}{Hr_i^3} x_{ij} \sum_{h=1}^{H} \frac{\partial L}{\partial y_{ih}} w_h x_{ih}$$
 
 Finally, we have
+
 $$\frac{\partial L}{\partial w_j} = \sum_{b=1}^{B} \frac{\partial L}{\partial y_{bj}} \frac{x_{bj}}{r_b}$$
 
 $$\frac{\partial L}{\partial x_{ij}} = \frac{\partial L}{\partial y_{ij}} \frac{w_h}{r_i} - \frac{1}{Hr_i^3} x_{ij} \sum_{h=1}^{H} \frac{\partial L}{\partial y_{ih}} w_h x_{ih}$$
