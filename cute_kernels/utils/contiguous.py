@@ -12,9 +12,12 @@ def make_contiguous(x: Any) -> Any:
 
 
 def ensure_contiguous(func: Callable) -> Callable:
+    def _contiguous(x):
+        return x.contiguous() if isinstance(x, torch.Tensor) else x
+
     def inner(*args, **kwargs):
-        args = [arg.contiguous() if isinstance(arg, torch.Tensor) else arg for arg in args]
-        kwargs = {k: (v.contiguous() if isinstance(v, torch.Tensor) else v) for k, v in kwargs.items()}
+        args = [_contiguous(arg) for arg in args]
+        kwargs = {k: _contiguous(v) for k, v in kwargs.items()}
         return func(*args, **kwargs)
 
     return inner
