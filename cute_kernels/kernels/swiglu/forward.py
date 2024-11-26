@@ -38,10 +38,6 @@ from .triton_implementation import swiglu_forward_triton_kernel
 def _forward(
     gate: torch.Tensor, up: torch.Tensor, kernel_backend: KernelBackend, vector_instruction_width: int, BLOCK_SIZE: int
 ) -> torch.Tensor:
-    assert gate.size() == up.size(), "tensors gate and up should have same shape"
-    assert gate.type() == up.type(), "tensors gate and up should have same dtype"
-
-    gate, up = ensure_same_strides(gate, up)
     output = torch.empty_like(gate)
 
     if kernel_backend == KernelBackend.cuda:
