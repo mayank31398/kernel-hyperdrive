@@ -26,7 +26,6 @@ def _triton_backward(
     rmsnorm_denominator: torch.Tensor,
     x_grad: torch.Tensor,
     eps: float,
-    memory_efficient: bool,
     BLOCK_SIZE_B: int,
     BLOCK_SIZE_H: int,
 ) -> torch.Tensor | None:
@@ -59,7 +58,7 @@ def _triton_backward(
             weight_grad_stride_b=weight_grad.stride(0) if has_weight else None,
             weight_grad_stride_h=weight_grad.stride(1) if has_weight else None,
             eps=eps,
-            memory_efficient=memory_efficient,
+            memory_efficient=rmsnorm_denominator is None,
             rmsnorm_denominator_ptr=rmsnorm_denominator,
             B=num_elements,
             H=hidden_size,
@@ -99,7 +98,6 @@ def _backward(
             rmsnorm_denominator=rmsnorm_denominator,
             x_grad=x_grad,
             eps=eps,
-            memory_efficient=rmsnorm_denominator is None,
             BLOCK_SIZE_B=BLOCK_SIZE_B,
             BLOCK_SIZE_H=BLOCK_SIZE_H,
         )
