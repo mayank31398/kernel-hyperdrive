@@ -44,20 +44,17 @@ class _RMSNorm_Cute(torch.autograd.Function):
             BLOCK_SIZE_H=BLOCK_SIZE_H_forward,
         )
 
-        ctx.memory_efficient = memory_efficient
+        ctx.save_for_backward(x, weight, rmsnorm_denominator)
+
         ctx.kernel_backend_backward = kernel_backend_backward
         ctx.eps = eps
         ctx.BLOCK_SIZE_B_backward = BLOCK_SIZE_B_backward
         ctx.BLOCK_SIZE_H_backward = BLOCK_SIZE_H_backward
 
-        ctx.save_for_backward(x, weight, rmsnorm_denominator)
-
         return output
 
     @staticmethod
     def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor | None]:
-        memory_efficient = ctx.memory_efficient
-
         x, weight, rmsnorm_denominator = ctx.saved_tensors
         x, output_grad = ensure_same_strides(x, output_grad)
 
@@ -67,7 +64,6 @@ class _RMSNorm_Cute(torch.autograd.Function):
             eps=ctx.eps,
             rmsnorm_denominator=rmsnorm_denominator,
             output_grad=output_grad,
-            memory_efficient=memory_efficient,
             kernel_backend=ctx.kernel_backend_backward,
             BLOCK_SIZE_B=ctx.BLOCK_SIZE_B_backward,
             BLOCK_SIZE_H=ctx.BLOCK_SIZE_H_backward,
