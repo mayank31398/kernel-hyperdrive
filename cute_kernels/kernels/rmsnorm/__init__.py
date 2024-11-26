@@ -1,7 +1,7 @@
 import torch
 
 from ...enums import KernelBackend
-from ...utils import CutoTuneParameter, ensure_same_strides
+from ...utils import CutoTuneParameter, ensure_contiguous
 from .backward import _backward
 from .forward import _forward
 from .torch_implementation import rmsnorm_torch
@@ -9,6 +9,7 @@ from .torch_implementation import rmsnorm_torch
 
 class _RMSNorm_Cute(torch.autograd.Function):
     @staticmethod
+    @ensure_contiguous
     def forward(
         ctx,
         x: torch.Tensor,
@@ -54,9 +55,9 @@ class _RMSNorm_Cute(torch.autograd.Function):
         return output
 
     @staticmethod
+    @ensure_contiguous
     def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor | None]:
         x, weight, rmsnorm_denominator = ctx.saved_tensors
-        x, output_grad = ensure_same_strides(x, output_grad)
 
         x_grad, weight_grad = _backward(
             x=x,
