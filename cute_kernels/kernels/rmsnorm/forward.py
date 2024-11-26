@@ -17,7 +17,7 @@ from .triton_implementation import rmsnorm_forward_triton_kernel
         )
         for BLOCK_SIZE_B in [1, 2, 4, 8, 16, 32] + TRITON_BLOCK_SIZES_POWERS_OF_2
     ],
-    triggers={"x_view.dtype", "BLOCK_SIZE_H"},
+    triggers={"x.dtype", "BLOCK_SIZE_H"},
 )
 def _triton_forward(
     x: torch.Tensor,
@@ -68,8 +68,6 @@ def _forward(
     hidden_size = x.size(-1)
     num_elements = x.numel() // hidden_size
 
-    x_view = x.view(-1, hidden_size)
-
     output = torch.empty_like(x)
     rmsnorm_denominator = None if memory_efficient else torch.empty(num_elements, device=x.device, dtype=torch.float32)
 
@@ -78,7 +76,7 @@ def _forward(
         assert BLOCK_SIZE_H <= MAX_TRITON_BLOCK_SIZE
 
         _triton_forward(
-            x_view=x_view,
+            x=x,
             weight=weight,
             output=output,
             rmsnorm_denominator=rmsnorm_denominator,
