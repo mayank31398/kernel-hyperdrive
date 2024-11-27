@@ -74,7 +74,6 @@ class _CutoTune:
         override_cutotune_parameters = self._check_all_or_no_args_are_cutotune_parameters(*args, **kwargs)
 
         if _DISABLE_CUTOTUNE:
-            self._check_no_args_are_cutotune_parameters(*args, **kwargs)
             best_config = self.default_config
         else:
             lookup_key = self._get_lookup_key(*args, **kwargs)
