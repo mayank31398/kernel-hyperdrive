@@ -78,7 +78,7 @@ class MoE_Triton(MoE_Torch):
     ) -> torch.Tensor:
         with torch.no_grad():
             sorted_expert_idxs, sorted_scattered_idxs = selected_experts.flatten().sort()
-            expert_offsets = contiguous_count_cute(x=sorted_expert_idxs, start=0, end=self.num_experts).cumsum(-1)
+            expert_offsets = contiguous_count_cute(x=sorted_expert_idxs, size=self.num_experts).cumsum(-1)
 
         hidden_states = self.c_fc(
             hidden_states,

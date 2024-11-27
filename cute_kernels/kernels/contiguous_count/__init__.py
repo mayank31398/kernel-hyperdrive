@@ -10,8 +10,7 @@ from .triton_implementation import contiguous_count_triton_kernel
 @ensure_contiguous
 def contiguous_count_cute(
     x: torch.Tensor,
-    start: int,
-    end: int,
+    size: int,
     kernel_backend: KernelBackend = KernelBackend.triton,
     BLOCK_SIZE_B: int = 64,
 ) -> torch.Tensor:
@@ -19,7 +18,7 @@ def contiguous_count_cute(
     assert x.dtype in [torch.int32, torch.long]
 
     B = x.numel()
-    C = end - start
+    C = size
     BLOCK_SIZE_C = triton.next_power_of_2(C)
 
     sm_count = get_sm_count(x.device)
