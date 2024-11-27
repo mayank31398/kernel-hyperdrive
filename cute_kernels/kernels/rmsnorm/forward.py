@@ -10,13 +10,14 @@ from .triton_implementation import rmsnorm_forward_triton_kernel
 @cutotune(
     configs=[
         CutoTuneConfig(
-            config={"BLOCK_SIZE_B": BLOCK_SIZE_B},
+            {"BLOCK_SIZE_B": BLOCK_SIZE_B},
             condition=lambda **kwargs: 1024
             <= kwargs["BLOCK_SIZE_B"] * kwargs["BLOCK_SIZE_H"]
             <= MAX_TRITON_BLOCK_SIZE,
         )
         for BLOCK_SIZE_B in [1, 2, 4, 8, 16, 32] + TRITON_BLOCK_SIZES_POWERS_OF_2
     ],
+    default_config=CutoTuneConfig({"BLOCK_SIZE_B": 1}),
     triggers={"x_view.dtype", "BLOCK_SIZE_H"},
 )
 def _triton_forward(
@@ -55,7 +56,11 @@ def _triton_forward(
         )
 
 
-@cutotune(configs=[CutoTuneConfig(config={"kernel_backend": KernelBackend.triton})], triggers={"x.dtype"})
+@cutotune(
+    configs=[CutoTuneConfig({"kernel_backend": KernelBackend.triton})],
+    default_config=CutoTuneConfig({"kernel_backend": KernelBackend.triton}),
+    triggers={"x.dtype"},
+)
 def _forward(
     x: torch.Tensor,
     weight: torch.Tensor,
