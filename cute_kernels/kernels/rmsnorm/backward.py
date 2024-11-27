@@ -3,7 +3,7 @@ import triton
 
 from ...constants import MAX_TRITON_BLOCK_SIZE, TORCH_TO_TRITON_DTYPE, TRITON_BLOCK_SIZES_POWERS_OF_2
 from ...enums import KernelBackend
-from ...utils import CutoTuneConfig, CutoTuneParameter, ceil_divide, cutotune, ensure_same_strides, get_sm_count
+from ...utils import CutoTuneConfig, ceil_divide, cutotune, ensure_same_strides, get_sm_count
 from .triton_implementation import rmsnorm_backward_triton_kernel
 
 
@@ -82,8 +82,8 @@ def _backward(
     output_grad: torch.Tensor,
     memory_efficient: bool,
     kernel_backend: KernelBackend,
-    BLOCK_SIZE_B: int | CutoTuneParameter,
-    BLOCK_SIZE_H: int | CutoTuneParameter,
+    BLOCK_SIZE_B: int,
+    BLOCK_SIZE_H: int,
 ) -> tuple[torch.Tensor | None]:
     hidden_size = x.size(-1)
 
