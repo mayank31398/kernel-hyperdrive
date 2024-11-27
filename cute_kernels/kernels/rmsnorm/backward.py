@@ -3,20 +3,21 @@ import triton
 
 from ...constants import MAX_TRITON_BLOCK_SIZE, TORCH_TO_TRITON_DTYPE, TRITON_BLOCK_SIZES_POWERS_OF_2
 from ...enums import KernelBackend
-from ...utils import CutoTuneConfig, CutoTuneParameter, ceil_divide, cutotune, ensure_same_strides, get_sm_count
+from ...utils import CutoTuneConfig, ceil_divide, cutotune, ensure_same_strides, get_sm_count
 from .triton_implementation import rmsnorm_backward_triton_kernel
 
 
 @cutotune(
     configs=[
         CutoTuneConfig(
-            config={"BLOCK_SIZE_B": BLOCK_SIZE_B},
+            {"BLOCK_SIZE_B": BLOCK_SIZE_B},
             condition=lambda **kwargs: 1024
             <= kwargs["BLOCK_SIZE_B"] * kwargs["BLOCK_SIZE_H"]
             <= MAX_TRITON_BLOCK_SIZE,
         )
         for BLOCK_SIZE_B in [1, 2, 4, 8, 16, 32] + TRITON_BLOCK_SIZES_POWERS_OF_2
     ],
+    default_config=CutoTuneConfig({"BLOCK_SIZE_B": 1}),
     triggers={"x_view.dtype", "BLOCK_SIZE_H"},
 )
 def _triton_backward(
@@ -73,7 +74,11 @@ def _triton_backward(
     return weight_grad
 
 
-@cutotune(configs=[CutoTuneConfig(config={"kernel_backend": KernelBackend.triton})], triggers={"x.dtype"})
+@cutotune(
+    configs=[CutoTuneConfig({"kernel_backend": KernelBackend.triton})],
+    default_config=CutoTuneConfig({"kernel_backend": KernelBackend.triton}),
+    triggers={"x.dtype"},
+)
 def _backward(
     x: torch.Tensor,
     weight: torch.Tensor,
@@ -82,8 +87,8 @@ def _backward(
     output_grad: torch.Tensor,
     memory_efficient: bool,
     kernel_backend: KernelBackend,
-    BLOCK_SIZE_B: int | CutoTuneParameter,
-    BLOCK_SIZE_H: int | CutoTuneParameter,
+    BLOCK_SIZE_B: int,
+    BLOCK_SIZE_H: int,
 ) -> tuple[torch.Tensor | None]:
     hidden_size = x.size(-1)
 

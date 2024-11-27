@@ -16,12 +16,12 @@ class _RMSNorm_Cute(torch.autograd.Function):
         weight: torch.Tensor,
         eps: float,
         memory_efficient: bool,
-        kernel_backend_forward: KernelBackend | CutoTuneParameter,
-        kernel_backend_backward: KernelBackend | CutoTuneParameter,
-        BLOCK_SIZE_B_forward: int | CutoTuneParameter,
-        BLOCK_SIZE_B_backward: int | CutoTuneParameter,
-        BLOCK_SIZE_H_forward: int | CutoTuneParameter,
-        BLOCK_SIZE_H_backward: int | CutoTuneParameter,
+        kernel_backend_forward: KernelBackend,
+        kernel_backend_backward: KernelBackend,
+        BLOCK_SIZE_B_forward: int,
+        BLOCK_SIZE_B_backward: int,
+        BLOCK_SIZE_H_forward: int,
+        BLOCK_SIZE_H_backward: int,
     ) -> torch.Tensor:
         assert x.dim() > 1, "x should have more than 1 dimensions"
 
@@ -77,12 +77,12 @@ def rmsnorm_cute(
     weight: torch.Tensor,
     eps: float,
     memory_efficient: bool = False,
-    kernel_backend_forward: KernelBackend | CutoTuneParameter = CutoTuneParameter(),
-    kernel_backend_backward: KernelBackend | CutoTuneParameter = CutoTuneParameter(),
-    BLOCK_SIZE_B_forward: int | CutoTuneParameter = CutoTuneParameter(),
-    BLOCK_SIZE_B_backward: int | CutoTuneParameter = CutoTuneParameter(),
-    BLOCK_SIZE_H_forward: int | CutoTuneParameter = CutoTuneParameter(),
-    BLOCK_SIZE_H_backward: int | CutoTuneParameter = CutoTuneParameter(),
+    kernel_backend_forward: KernelBackend = CutoTuneParameter(),
+    kernel_backend_backward: KernelBackend = CutoTuneParameter(),
+    BLOCK_SIZE_B_forward: int = CutoTuneParameter(),
+    BLOCK_SIZE_B_backward: int = CutoTuneParameter(),
+    BLOCK_SIZE_H_forward: int = CutoTuneParameter(),
+    BLOCK_SIZE_H_backward: int = CutoTuneParameter(),
 ) -> torch.Tensor:
     return _RMSNorm_Cute.apply(
         x,

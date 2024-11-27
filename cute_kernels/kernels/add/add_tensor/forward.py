@@ -2,7 +2,7 @@ import torch
 
 from ....constants import CUDA_BLOCK_SIZES_POWERS_OF_2, TRITON_BLOCK_SIZES_POWERS_OF_2
 from ....enums import KernelBackend
-from ....utils import ceil_divide, cutotune, get_cartesian_product_cutotune_configs
+from ....utils import CutoTuneConfig, ceil_divide, cutotune, get_cartesian_product_cutotune_configs
 from .cuda_implementation import add_tensor_forward_cuda_kernel, add_tensor_forward_cuda_kernel_compileable
 from .triton_implementation import add_tensor_forward_triton_kernel
 
@@ -31,6 +31,9 @@ from .triton_implementation import add_tensor_forward_triton_kernel
         kernel_backend=[KernelBackend.triton],
         vector_instruction_width=[None],
         BLOCK_SIZE=TRITON_BLOCK_SIZES_POWERS_OF_2,
+    ),
+    default_config=CutoTuneConfig(
+        {"kernel_backend": KernelBackend.triton, "vector_instruction_width": None, "BLOCK_SIZE": 1024}
     ),
     triggers={"x.dtype"},
 )

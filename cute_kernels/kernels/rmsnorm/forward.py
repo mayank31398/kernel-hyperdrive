@@ -3,26 +3,27 @@ import triton
 
 from ...constants import MAX_TRITON_BLOCK_SIZE, TORCH_TO_TRITON_DTYPE, TRITON_BLOCK_SIZES_POWERS_OF_2
 from ...enums import KernelBackend
-from ...utils import CutoTuneConfig, CutoTuneParameter, ceil_divide, cutotune
+from ...utils import CutoTuneConfig, ceil_divide, cutotune
 from .triton_implementation import rmsnorm_forward_triton_kernel
 
 
 @cutotune(
     configs=[
         CutoTuneConfig(
-            config={"BLOCK_SIZE_B": BLOCK_SIZE_B},
+            {"BLOCK_SIZE_B": BLOCK_SIZE_B},
             condition=lambda **kwargs: 1024
             <= kwargs["BLOCK_SIZE_B"] * kwargs["BLOCK_SIZE_H"]
             <= MAX_TRITON_BLOCK_SIZE,
         )
         for BLOCK_SIZE_B in [1, 2, 4, 8, 16, 32] + TRITON_BLOCK_SIZES_POWERS_OF_2
     ],
+    default_config=CutoTuneConfig({"BLOCK_SIZE_B": 1}),
     triggers={"x_view.dtype", "BLOCK_SIZE_H"},
 )
 def _triton_forward(
     x_view: torch.Tensor,
     weight: torch.Tensor,
-    output: torch.Tensor,
+    output_view: torch.Tensor,
     rmsnorm_denominator: torch.Tensor,
     eps: float,
     memory_efficient: bool,
@@ -42,9 +43,9 @@ def _triton_forward(
             x_dtype=TORCH_TO_TRITON_DTYPE[x_view.dtype],
             has_weight=weight is not None,
             weight_ptr=weight,
-            output_ptr=output,
-            output_stride_b=output.stride(0),
-            output_stride_h=output.stride(1),
+            output_ptr=output_view,
+            output_stride_b=output_view.stride(0),
+            output_stride_h=output_view.stride(1),
             eps=eps,
             memory_efficient=memory_efficient,
             rmsnorm_denominator_ptr=rmsnorm_denominator,
@@ -55,20 +56,22 @@ def _triton_forward(
         )
 
 
-@cutotune(configs=[CutoTuneConfig(config={"kernel_backend": KernelBackend.triton})], triggers={"x.dtype"})
+@cutotune(
+    configs=[CutoTuneConfig({"kernel_backend": KernelBackend.triton})],
+    default_config=CutoTuneConfig({"kernel_backend": KernelBackend.triton}),
+    triggers={"x.dtype"},
+)
 def _forward(
     x: torch.Tensor,
     weight: torch.Tensor,
     eps: float,
     memory_efficient: bool,
     kernel_backend: KernelBackend,
-    BLOCK_SIZE_B: int | CutoTuneParameter,
-    BLOCK_SIZE_H: int | CutoTuneParameter,
+    BLOCK_SIZE_B: int,
+    BLOCK_SIZE_H: int,
 ) -> tuple[torch.Tensor | None]:
     hidden_size = x.size(-1)
     num_elements = x.numel() // hidden_size
-
-    x_view = x.view(-1, hidden_size)
 
     output = torch.empty_like(x)
     rmsnorm_denominator = None if memory_efficient else torch.empty(num_elements, device=x.device, dtype=torch.float32)
@@ -78,9 +81,9 @@ def _forward(
         assert BLOCK_SIZE_H <= MAX_TRITON_BLOCK_SIZE
 
         _triton_forward(
-            x_view=x_view,
+            x_view=x.view(-1, hidden_size),
             weight=weight,
-            output=output,
+            output_view=output.view(-1, hidden_size),
             rmsnorm_denominator=rmsnorm_denominator,
             eps=eps,
             memory_efficient=memory_efficient,

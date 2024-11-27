@@ -12,9 +12,9 @@ class _AddTensor_Cute(torch.autograd.Function):
         ctx,
         x: torch.Tensor,
         y: torch.Tensor,
-        kernel_backend: KernelBackend | CutoTuneParameter,
-        vector_instruction_width: int | CutoTuneParameter,
-        BLOCK_SIZE: int | CutoTuneParameter,
+        kernel_backend: KernelBackend,
+        vector_instruction_width: int,
+        BLOCK_SIZE: int,
     ) -> torch.Tensor:
         assert x.size() == y.size(), "tensors x and y should have same shape"
         assert x.type() == y.type(), "tensors x and y should have same dtype"
@@ -37,8 +37,8 @@ class _AddTensor_Cute(torch.autograd.Function):
 def add_tensor_cute(
     x: torch.Tensor,
     y: torch.Tensor,
-    kernel_backend: KernelBackend | CutoTuneParameter = CutoTuneParameter(),
-    vector_instruction_width: int | CutoTuneParameter = CutoTuneParameter(),
-    BLOCK_SIZE: int | CutoTuneParameter = CutoTuneParameter(),
+    kernel_backend: KernelBackend = CutoTuneParameter(),
+    vector_instruction_width: int = CutoTuneParameter(),
+    BLOCK_SIZE: int = CutoTuneParameter(),
 ) -> torch.Tensor:
     return _AddTensor_Cute.apply(x, y, kernel_backend, vector_instruction_width, BLOCK_SIZE)

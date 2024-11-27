@@ -44,6 +44,7 @@ class _CutoTune:
         self,
         function: Callable,
         configs: list[CutoTuneConfig],
+        default_config: CutoTuneConfig,
         triggers: set[str],
         warmup_iterations: int,
         benchmark_iterations: int,
@@ -53,6 +54,7 @@ class _CutoTune:
 
         self.function = function
         self.configs = configs
+        self.default_config = default_config
         self.warmup_iterations = warmup_iterations
         self.benchmark_iterations = benchmark_iterations
         self.in_place_op = in_place_op
@@ -69,15 +71,16 @@ class _CutoTune:
         self.best_configs = {}
 
     def __call__(self, *args, **kwargs) -> Any:
-        if _DISABLE_CUTOTUNE:
-            self._check_no_args_are_cutotune_parameters(*args, **kwargs)
-            output = self.function(*args, **kwargs)
-        else:
-            override_cutotune_parameters = self._check_all_or_no_args_are_cutotune_parameters(*args, **kwargs)
+        override_cutotune_parameters = self._check_all_or_no_args_are_cutotune_parameters(*args, **kwargs)
 
+        if _DISABLE_CUTOTUNE:
+            best_config = self.default_config
+        else:
             lookup_key = self._get_lookup_key(*args, **kwargs)
 
-            if lookup_key not in self.best_configs:
+            if lookup_key in self.best_configs:
+                best_config = self.best_configs[lookup_key]
+            else:
                 best_config, best_time = self._cutotune(*args, **kwargs)
 
                 if _DEBUG_CUTOTUNE and (not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0):
@@ -87,14 +90,14 @@ class _CutoTune:
 
                 self.best_configs[lookup_key] = best_config
 
-            output = self.function(
-                **self._get_function_arguments(
-                    config=self.best_configs[lookup_key],
-                    args=args,
-                    kwargs=kwargs,
-                    override_allowed=override_cutotune_parameters,
-                )
+        output = self.function(
+            **self._get_function_arguments(
+                config=best_config,
+                args=args,
+                kwargs=kwargs,
+                override_allowed=override_cutotune_parameters,
             )
+        )
 
         return output
 
@@ -292,6 +295,7 @@ class _CutoTune:
 
 def cutotune(
     configs: list[CutoTuneConfig],
+    default_config: CutoTuneConfig,
     triggers: set[str] = set(),
     warmup_iterations: int = _DEFAULT_WARMUP_ITERATIONS,
     benchmark_iterations: int = _BENCHMARK_ITERATIONS,
@@ -301,6 +305,7 @@ def cutotune(
         return _CutoTune(
             function=function,
             configs=configs,
+            default_config=default_config,
             triggers=triggers,
             warmup_iterations=warmup_iterations,
             benchmark_iterations=benchmark_iterations,
