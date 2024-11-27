@@ -23,7 +23,7 @@ from .triton_implementation import rmsnorm_forward_triton_kernel
 def _triton_forward(
     x_view: torch.Tensor,
     weight: torch.Tensor,
-    output: torch.Tensor,
+    output_view: torch.Tensor,
     rmsnorm_denominator: torch.Tensor,
     eps: float,
     memory_efficient: bool,
@@ -43,9 +43,9 @@ def _triton_forward(
             x_dtype=TORCH_TO_TRITON_DTYPE[x_view.dtype],
             has_weight=weight is not None,
             weight_ptr=weight,
-            output_ptr=output,
-            output_stride_b=output.stride(0),
-            output_stride_h=output.stride(1),
+            output_ptr=output_view,
+            output_stride_b=output_view.stride(0),
+            output_stride_h=output_view.stride(1),
             eps=eps,
             memory_efficient=memory_efficient,
             rmsnorm_denominator_ptr=rmsnorm_denominator,
@@ -73,8 +73,6 @@ def _forward(
     hidden_size = x.size(-1)
     num_elements = x.numel() // hidden_size
 
-    x_view = x.view(-1, hidden_size)
-
     output = torch.empty_like(x)
     rmsnorm_denominator = None if memory_efficient else torch.empty(num_elements, device=x.device, dtype=torch.float32)
 
@@ -83,9 +81,9 @@ def _forward(
         assert BLOCK_SIZE_H <= MAX_TRITON_BLOCK_SIZE
 
         _triton_forward(
-            x_view=x_view,
+            x_view=x.view(-1, hidden_size),
             weight=weight,
-            output=output,
+            output_view=output.view(-1, hidden_size),
             rmsnorm_denominator=rmsnorm_denominator,
             eps=eps,
             memory_efficient=memory_efficient,
