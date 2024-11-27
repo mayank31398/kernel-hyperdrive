@@ -65,20 +65,6 @@ def _forward(
     BLOCK_SIZE_B: int | CutoTuneParameter,
     BLOCK_SIZE_H: int | CutoTuneParameter,
 ) -> tuple[torch.Tensor | None]:
-    if x.stride(-1) != 1:
-        x = x.contiguous()
-
-    assert x.dim() > 1, "x should have more than 1 dimensions"
-
-    has_weight = weight is not None
-
-    if has_weight:
-        assert weight.dim() == 1, "weight should be 1D"
-        assert weight.size(-1) == x.size(-1), "hidden size for x and weight tensor is different"
-        assert weight.type() == x.type(), "tensors weight and y should have same dtype"
-
-        weight = weight.contiguous()
-
     hidden_size = x.size(-1)
     num_elements = x.numel() // hidden_size
 

@@ -2,25 +2,23 @@ import torch
 import triton
 
 from ...enums import KernelBackend
-from ...utils import ceil_divide, get_sm_count
+from ...utils import ceil_divide, ensure_contiguous, get_sm_count
 from .triton_implementation import contiguous_count_triton_kernel
 
 
 @torch.no_grad()
+@ensure_contiguous
 def contiguous_count_cute(
     x: torch.Tensor,
-    start: int,
-    end: int,
+    size: int,
     kernel_backend: KernelBackend = KernelBackend.triton,
     BLOCK_SIZE_B: int = 64,
 ) -> torch.Tensor:
     assert x.dim() == 1, "x should be 1-dimensional"
     assert x.dtype in [torch.int32, torch.long]
 
-    x = x.contiguous()
-
     B = x.numel()
-    C = end - start
+    C = size
     BLOCK_SIZE_C = triton.next_power_of_2(C)
 
     sm_count = get_sm_count(x.device)

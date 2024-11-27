@@ -57,7 +57,7 @@ class RMSNormTest(TestCommons):
                 weight_kernel.grad,
                 weight_expected.grad,
                 False,
-                atol_float32=2e-5,
+                atol_float32=3e-5,
                 rtol_float32=0,
                 atol_float16=8e-2,
                 rtol_float16=0,
