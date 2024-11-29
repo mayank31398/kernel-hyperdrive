@@ -1,7 +1,7 @@
 import torch
 
 from ...enums import KernelBackend
-from ...utils import ensure_contiguous
+from ...utils import CutoTuneParameter, ensure_contiguous
 from .backward import _backward
 from .forward import _forward
 from .torch_implementation import embedding_torch
@@ -59,12 +59,12 @@ class _Embedding_Cute(torch.autograd.Function):
 def embedding_cute(
     input_ids: torch.Tensor,
     weight: torch.Tensor,
-    kernel_backend_forward: KernelBackend,
-    kernel_backend_backward: KernelBackend,
-    BLOCK_SIZE_B_forward: int,
-    BLOCK_SIZE_B_backward: int,
-    BLOCK_SIZE_H_forward: int,
-    BLOCK_SIZE_H_backward: int,
+    kernel_backend_forward: KernelBackend = CutoTuneParameter(),
+    kernel_backend_backward: KernelBackend = CutoTuneParameter(),
+    BLOCK_SIZE_B_forward: int = CutoTuneParameter(),
+    BLOCK_SIZE_B_backward: int = CutoTuneParameter(),
+    BLOCK_SIZE_H_forward: int = CutoTuneParameter(),
+    BLOCK_SIZE_H_backward: int = CutoTuneParameter(),
 ) -> torch.Tensor:
     return _Embedding_Cute.apply(
         input_ids,
