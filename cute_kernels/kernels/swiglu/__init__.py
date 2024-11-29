@@ -24,8 +24,8 @@ class _Swiglu_Cute(torch.autograd.Function):
         assert gate.type() == up.type(), "tensors gate and up should have same dtype"
 
         gate, up = ensure_same_strides(gate, up)
-        ctx.save_for_backward(gate, up)
 
+        ctx.save_for_backward(gate, up)
         ctx.kernel_backend_backward = kernel_backend_backward
         ctx.vector_instruction_width_backward = vector_instruction_width_backward
         ctx.BLOCK_SIZE_backward = BLOCK_SIZE_backward

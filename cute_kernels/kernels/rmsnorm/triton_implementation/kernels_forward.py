@@ -5,14 +5,10 @@ import triton.language as tl
 @triton.jit
 def rmsnorm_forward_triton_kernel(
     x_ptr,
-    x_stride_b,
-    x_stride_h,
     x_dtype: tl.constexpr,
     has_weight: tl.constexpr,
     weight_ptr,
     output_ptr,
-    output_stride_b,
-    output_stride_h,
     eps,
     memory_efficient: tl.constexpr,
     rmsnorm_denominator_ptr,
@@ -33,7 +29,7 @@ def rmsnorm_forward_triton_kernel(
 
     mask_bh = mask_b[:, None] & mask_h[None, :]
 
-    x_ptrs = x_ptr + indices_b[:, None] * x_stride_b + indices_h[None, :] * x_stride_h
+    x_ptrs = x_ptr + indices_b[:, None] * H + indices_h[None, :]
     x = tl.load(x_ptrs, mask=mask_bh).to(tl.float32)
 
     squared_sum = tl.sum(x * x, axis=1)
@@ -48,5 +44,5 @@ def rmsnorm_forward_triton_kernel(
         weight = tl.load(weight_ptr + indices_h, mask=mask_h)
         x = x.to(x_dtype) * weight[None, :]
 
-    output_ptrs = output_ptr + indices_b[:, None] * output_stride_b + indices_h[None, :] * output_stride_h
+    output_ptrs = output_ptr + indices_b[:, None] * H + indices_h[None, :]
     tl.store(output_ptrs, x, mask=mask_bh)
