@@ -35,6 +35,9 @@ def _backward(
     weight_grad = torch.zeros_like(weight)
 
     if kernel_backend == KernelBackend.triton:
+        if weight.dtype == torch.bfloat16:
+            raise NotImplementedError("bf16 is not supported with triton backend for backward for embeddings")
+
         with torch.device(input_ids.device):
             embedding_backward_triton_kernel[
                 (ceil_divide(num_elements, BLOCK_SIZE_B), ceil_divide(hidden_size, BLOCK_SIZE_H))
