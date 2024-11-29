@@ -32,11 +32,7 @@ class _Embedding_Cute(torch.autograd.Function):
                 ](
                     x_ptr=input_ids,
                     weight_ptr=weight,
-                    weight_stride_v=weight.stride(0),
-                    weight_stride_h=weight.stride(1),
                     output_ptr=output,
-                    output_stride_b=output.stride(0),
-                    output_stride_h=output.stride(1),
                     B=num_elements,
                     H=hidden_size,
                     BLOCK_SIZE_B=BLOCK_SIZE_B_forward,
