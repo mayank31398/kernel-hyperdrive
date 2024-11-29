@@ -3,7 +3,7 @@ import torch
 from ...constants import CUDA_BLOCK_SIZES_POWERS_OF_2, TRITON_BLOCK_SIZES_POWERS_OF_2
 from ...enums import KernelBackend
 from ...utils import CutoTuneConfig, ceil_divide, cutotune, get_cartesian_product_cutotune_configs
-from .cuda_implementation import swiglu_backward_cuda_kernel, swiglu_backward_cuda_kernel_compileable
+from .cuda_implementation import swiglu_backward_cuda_kernel
 from .triton_implementation import swiglu_backward_triton_kernel
 
 
@@ -49,26 +49,15 @@ def _backward(
     up_grad = torch.empty_like(up)
 
     if kernel_backend == KernelBackend.cuda:
-        if torch.compiler.is_compiling():
-            swiglu_backward_cuda_kernel_compileable(
-                gate=gate,
-                up=up,
-                output_grad=output_grad,
-                gate_grad=gate_grad,
-                up_grad=up_grad,
-                vector_instruction_width=vector_instruction_width,
-                BLOCK_SIZE=BLOCK_SIZE,
-            )
-        else:
-            swiglu_backward_cuda_kernel(
-                gate=gate,
-                up=up,
-                output_grad=output_grad,
-                gate_grad=gate_grad,
-                up_grad=up_grad,
-                vector_instruction_width=vector_instruction_width,
-                BLOCK_SIZE=BLOCK_SIZE,
-            )
+        swiglu_backward_cuda_kernel(
+            gate=gate,
+            up=up,
+            output_grad=output_grad,
+            gate_grad=gate_grad,
+            up_grad=up_grad,
+            vector_instruction_width=vector_instruction_width,
+            BLOCK_SIZE=BLOCK_SIZE,
+        )
     elif kernel_backend == KernelBackend.triton:
         num_elements = gate.numel()
 
