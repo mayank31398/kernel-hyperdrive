@@ -3,7 +3,7 @@ import torch
 from ....constants import CUDA_BLOCK_SIZES_POWERS_OF_2, TRITON_BLOCK_SIZES_POWERS_OF_2
 from ....enums import KernelBackend
 from ....utils import CutoTuneConfig, ceil_divide, cutotune, get_cartesian_product_cutotune_configs
-from .cuda_implementation import add_tensor_forward_cuda_kernel, add_tensor_forward_cuda_kernel_compileable
+from .cuda_implementation import add_tensor_forward_cuda
 from .triton_implementation import add_tensor_forward_triton_kernel
 
 
@@ -50,14 +50,9 @@ def _forward(
         assert x.is_cuda, "tensor x is not on GPU"
         assert y.is_cuda, "tensor y is not on GPU"
 
-        if torch.compiler.is_compiling():
-            add_tensor_forward_cuda_kernel_compileable(
-                x=x, y=y, output=output, vector_instruction_width=vector_instruction_width, BLOCK_SIZE=BLOCK_SIZE
-            )
-        else:
-            add_tensor_forward_cuda_kernel(
-                x=x, y=y, output=output, vector_instruction_width=vector_instruction_width, BLOCK_SIZE=BLOCK_SIZE
-            )
+        add_tensor_forward_cuda(
+            x=x, y=y, output=output, vector_instruction_width=vector_instruction_width, BLOCK_SIZE=BLOCK_SIZE
+        )
     elif kernel_backend == KernelBackend.triton:
         assert vector_instruction_width is None
 
