@@ -14,7 +14,7 @@ def torch_custom_op(
     fake_fn: Callable | None = None,
 ) -> Callable:
     compileable_fn = torch.library.custom_op(
-        name, fn=fn, mutates_args=mutates_args, device_types=device_types, schema=schema
+        name, fn, mutates_args=mutates_args, device_types=device_types, schema=schema
     )
 
     if fake_fn is not None:
