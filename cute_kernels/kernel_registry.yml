@@ -2,13 +2,13 @@
     - add_tensor_forward_cuda
   sources:
     - kernels/add/add_tensor/cuda_implementation/ops.cpp
-    - kernels/add/add_tensor/cuda_implementation/kernels.cu
+    - kernels/add/add_tensor/cuda_implementation/kernels_forward.cu
 
 - functions:
     - add_scalar_forward_cuda
   sources:
     - kernels/add/add_scalar/cuda_implementation/ops.cpp
-    - kernels/add/add_scalar/cuda_implementation/kernels.cu
+    - kernels/add/add_scalar/cuda_implementation/kernels_forward.cu
 
 - functions:
     - swiglu_forward_cuda
