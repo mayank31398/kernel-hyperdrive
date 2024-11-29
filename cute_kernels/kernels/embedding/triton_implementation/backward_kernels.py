@@ -6,11 +6,7 @@ import triton.language as tl
 def embedding_backward_triton_kernel(
     x_ptr,
     output_grad_ptr,
-    output_grad_stride_b,
-    output_grad_stride_h,
     weight_grad_ptr,
-    weight_grad_stride_v,
-    weight_grad_stride_h,
     B,
     H,
     BLOCK_SIZE_B: tl.constexpr,
@@ -29,10 +25,8 @@ def embedding_backward_triton_kernel(
     x_ptrs = x_ptr + indices_b
     x = tl.load(x_ptrs, mask=mask_b)
 
-    output_grad_ptrs = (
-        output_grad_ptr + indices_b[:, None] * output_grad_stride_b + indices_h[None, :] * output_grad_stride_h
-    )
+    output_grad_ptrs = output_grad_ptr + indices_b[:, None] * H + indices_h[None, :]
     output_grad = tl.load(output_grad_ptrs, mask=mask_bh)
 
-    weight_grad_ptrs = weight_grad_ptr + x[:, None] * weight_grad_stride_v + indices_h[None, :] * weight_grad_stride_h
+    weight_grad_ptrs = weight_grad_ptr + x[:, None] * H + indices_h[None, :]
     tl.atomic_add(weight_grad_ptrs, output_grad, mask=mask_bh)

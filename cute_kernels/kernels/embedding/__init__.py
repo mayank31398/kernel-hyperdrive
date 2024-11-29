@@ -67,12 +67,12 @@ class _Embedding_Cute(torch.autograd.Function):
                     (ceil_divide(num_elements, BLOCK_SIZE_B_backward), ceil_divide(hidden_size, BLOCK_SIZE_H_backward))
                 ](
                     x_ptr=input_ids,
-                    weight_ptr=weight,
-                    output_ptr=output,
+                    output_grad_ptr=output_grad,
+                    weight_grad_ptr=weight_grad,
                     B=num_elements,
                     H=hidden_size,
-                    BLOCK_SIZE_B=BLOCK_SIZE_B,
-                    BLOCK_SIZE_H=BLOCK_SIZE_H,
+                    BLOCK_SIZE_B=BLOCK_SIZE_B_backward,
+                    BLOCK_SIZE_H=BLOCK_SIZE_H_backward,
                 )
         else:
             raise ValueError(f"unexpected kernel_backend ({kernel_backend})")
