@@ -1,0 +1,1 @@
+from .forward_kernels import embedding_forward_triton_kernel
