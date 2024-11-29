@@ -15,9 +15,12 @@ class EmbeddingTest(TestCommons):
             [(7153, 937), (27153, 1937), (97153, 2937), (17153, 31937)],  # weight_size
             [torch.device("cuda")],  # device
             TestCommons.get_dtypes(),  # dtype
-            [KernelBackend.triton],  # kernel_backend
-            [64],  # BLOCK_SIZE_B
-            [64],  # BLOCK_SIZE_H
+            [KernelBackend.triton],  # kernel_backend_forward
+            [KernelBackend.triton],  # kernel_backend_backward
+            [64],  # BLOCK_SIZE_B_forward
+            [64],  # BLOCK_SIZE_B_backward
+            [64],  # BLOCK_SIZE_H_forward
+            [64],  # BLOCK_SIZE_H_backward
             [embedding_cute, torch.compile(embedding_cute)],  # function
         )
     )
@@ -27,9 +30,12 @@ class EmbeddingTest(TestCommons):
         weight_size: tuple[int],
         device: torch.device,
         dtype: torch.dtype,
-        kernel_backend: KernelBackend,
-        BLOCK_SIZE_B: int,
-        BLOCK_SIZE_H: int,
+        kernel_backend_forward: KernelBackend,
+        kernel_backend_backward: KernelBackend,
+        BLOCK_SIZE_B_forward: int,
+        BLOCK_SIZE_B_backward: int,
+        BLOCK_SIZE_H_forward: int,
+        BLOCK_SIZE_H_backward: int,
         function: Callable,
     ) -> None:
         vocab_size = weight_size[0] - 1
@@ -40,9 +46,12 @@ class EmbeddingTest(TestCommons):
         z_kernel = function(
             input_ids,
             weight_kernel,
-            kernel_backend=kernel_backend,
-            BLOCK_SIZE_B=BLOCK_SIZE_B,
-            BLOCK_SIZE_H=BLOCK_SIZE_H,
+            kernel_backend_forward=kernel_backend_forward,
+            kernel_backend_backward=kernel_backend_backward,
+            BLOCK_SIZE_B_forward=BLOCK_SIZE_B_forward,
+            BLOCK_SIZE_B_backward=BLOCK_SIZE_B_backward,
+            BLOCK_SIZE_H_forward=BLOCK_SIZE_H_forward,
+            BLOCK_SIZE_H_backward=BLOCK_SIZE_H_backward,
         )
         z_expected = embedding_torch(input_ids, weight_expected)
 
@@ -50,5 +59,4 @@ class EmbeddingTest(TestCommons):
         z_expected.mean().backward()
 
         self.assert_equal_tensors(z_kernel, z_expected, True)
-        self.assert_equal_tensors(x_kernel.grad, x_expected.grad, True)
-        self.assert_equal_tensors(y_kernel.grad, y_expected.grad, True)
+        self.assert_equal_tensors(weight_kernel.grad, weight_expected.grad, True)
