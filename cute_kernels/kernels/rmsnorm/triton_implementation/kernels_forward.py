@@ -17,8 +17,6 @@ def rmsnorm_forward_triton_kernel(
     BLOCK_SIZE_B: tl.constexpr,
     BLOCK_SIZE_H: tl.constexpr,
 ):
-    tl.device_assert(BLOCK_SIZE_H >= H, "BLOCK_SIZE_H should be more than H")
-
     pid_b = tl.program_id(axis=0)
 
     indices_b = pid_b * BLOCK_SIZE_B + tl.arange(0, BLOCK_SIZE_B)
