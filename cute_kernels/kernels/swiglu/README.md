@@ -1,4 +1,4 @@
-# RMSNorm
+# SwiGLU
 
 ## Forward
 $$y_i = u_i g_i \sigma(g_i)$$
