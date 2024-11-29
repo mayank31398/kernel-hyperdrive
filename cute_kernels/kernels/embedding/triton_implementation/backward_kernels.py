@@ -5,13 +5,13 @@ import triton.language as tl
 @triton.jit
 def embedding_backward_triton_kernel(
     x_ptr,
-    wte_ptr,
-    wte_stride_v,
-    wte_stride_h,
+    weight_ptr,
+    weight_stride_v,
+    weight_stride_h,
     output_ptr,
     output_stride_b,
     output_stride_h,
-    wte_grad_ptr,
+    weight_grad_ptr,
     B,
     H,
     BLOCK_SIZE_B: tl.constexpr,
@@ -29,8 +29,8 @@ def embedding_backward_triton_kernel(
     x_ptrs = x_ptr + indices_b
     x = tl.load(x_ptrs, mask=mask_b)
 
-    wte_ptrs = wte_ptr + x[:, None] * wte_stride_v + indices_h[None, :] * wte_stride_h
-    word_embeddings = tl.load(wte_ptrs, mask=mask_h[None, :])
+    weight_ptrs = weight_ptr + x[:, None] * weight_stride_v + indices_h[None, :] * weight_stride_h
+    word_embeddings = tl.load(weight_ptrs, mask=mask_h[None, :])
 
     output_ptrs = output_ptr + indices_b[:, None] * output_stride_b + indices_h[None, :] * output_stride_h
     tl.store(output_ptrs, word_embeddings, mask=mask_b[:, None] & mask_h[None, :])
