@@ -13,7 +13,6 @@ def embedding_backward_triton_kernel(
     weight_grad_stride_h,
     B,
     H,
-    V,
     BLOCK_SIZE_B: tl.constexpr,
     BLOCK_SIZE_H: tl.constexpr,
 ):
