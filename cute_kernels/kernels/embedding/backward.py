@@ -2,7 +2,7 @@ import torch
 
 from ...enums import KernelBackend
 from ...utils import ceil_divide, cutotune, get_block_sizes_powers_of_2, get_cartesian_product_cutotune_configs
-from .triton_implementation import embedding_forward_triton_kernel
+from .triton_implementation import embedding_backward_triton_kernel
 
 
 @cutotune(
@@ -13,26 +13,27 @@ from .triton_implementation import embedding_forward_triton_kernel
         condition=lambda **kwargs: 1024 <= kwargs["BLOCK_SIZE_B"] * kwargs["BLOCK_SIZE_H"] <= 65536,
     )
 )
-def _forward(
+def _backward(
     input_ids: torch.Tensor,
     weight: torch.Tensor,
+    output_grad: torch.Tensor,
     kernel_backend: KernelBackend,
     BLOCK_SIZE_B: int,
     BLOCK_SIZE_H: int,
 ) -> torch.Tensor:
-    num_elements = input_ids.numel()
     hidden_size = weight.size(-1)
+    num_elements = input_ids.numel()
 
-    output = torch.empty(num_elements, hidden_size, dtype=weight.dtype, device=input_ids.device)
+    weight_grad = torch.zeros_like(weight)
 
     if kernel_backend == KernelBackend.triton:
         with torch.device(input_ids.device):
-            embedding_forward_triton_kernel[
+            embedding_backward_triton_kernel[
                 (ceil_divide(num_elements, BLOCK_SIZE_B), ceil_divide(hidden_size, BLOCK_SIZE_H))
             ](
                 x_ptr=input_ids,
-                weight_ptr=weight,
-                output_ptr=output,
+                output_grad_ptr=output_grad,
+                weight_grad_ptr=weight_grad,
                 B=num_elements,
                 H=hidden_size,
                 BLOCK_SIZE_B=BLOCK_SIZE_B,
@@ -41,4 +42,4 @@ def _forward(
     else:
         raise ValueError(f"unexpected kernel_backend ({kernel_backend})")
 
-    return output.view(*input_ids.size(), hidden_size)
+    return weight_grad
