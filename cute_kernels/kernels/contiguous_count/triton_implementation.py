@@ -3,9 +3,7 @@ import triton.language as tl
 
 
 @triton.jit
-def contiguous_count_triton_kernel(
-    x_ptr, output_ptr, output_stride_b, B, C, BLOCK_SIZE_B: tl.constexpr, BLOCK_SIZE_C: tl.constexpr
-):
+def contiguous_count_triton_kernel(x_ptr, output_ptr, B, C, BLOCK_SIZE_B: tl.constexpr, BLOCK_SIZE_C: tl.constexpr):
     pid = tl.program_id(axis=0)
     num_programs = tl.num_programs(axis=0)
 
@@ -30,5 +28,5 @@ def contiguous_count_triton_kernel(
         equal = (x[:, None] == indices_c[None, :]) * 1
         counts += tl.sum(equal, axis=0)
 
-    output_ptrs = output_ptr + pid * output_stride_b + indices_c
+    output_ptrs = output_ptr + pid * C + indices_c
     tl.store(output_ptrs, counts, mask=mask_c)
