@@ -2,6 +2,7 @@ import torch
 
 from ...enums import KernelBackend
 from ...utils import ceil_divide, ensure_contiguous
+from .forward import _forward
 from .torch_implementation import embedding_torch
 from .triton_implementation import embedding_backward_triton_kernel, embedding_forward_triton_kernel
 
@@ -20,33 +21,20 @@ class _Embedding_Cute(torch.autograd.Function):
         BLOCK_SIZE_H_forward: int,
         BLOCK_SIZE_H_backward: int,
     ) -> torch.Tensor:
-        num_elements = input_ids.numel()
-        hidden_size = weight.size(-1)
-
-        output = torch.empty(num_elements, hidden_size, dtype=weight.dtype, device=input_ids.device)
-
-        if kernel_backend_forward == KernelBackend.triton:
-            with torch.device(input_ids.device):
-                embedding_forward_triton_kernel[
-                    (ceil_divide(num_elements, BLOCK_SIZE_B_forward), ceil_divide(hidden_size, BLOCK_SIZE_H_forward))
-                ](
-                    x_ptr=input_ids,
-                    weight_ptr=weight,
-                    output_ptr=output,
-                    B=num_elements,
-                    H=hidden_size,
-                    BLOCK_SIZE_B=BLOCK_SIZE_B_forward,
-                    BLOCK_SIZE_H=BLOCK_SIZE_H_forward,
-                )
-        else:
-            raise ValueError(f"unexpected kernel_backend_forward ({kernel_backend_forward})")
+        output = _forward(
+            input_ids=input_ids,
+            weight=weight,
+            kernel_backend=kernel_backend_forward,
+            BLOCK_SIZE_B=BLOCK_SIZE_B_forward,
+            BLOCK_SIZE_H=BLOCK_SIZE_H_forward,
+        )
 
         ctx.save_for_backward(input_ids, weight)
         ctx.kernel_backend_backward = kernel_backend_backward
         ctx.BLOCK_SIZE_B_backward = BLOCK_SIZE_B_backward
         ctx.BLOCK_SIZE_H_backward = BLOCK_SIZE_H_backward
 
-        return output.view(*input_ids.size(), hidden_size)
+        return output
 
     @staticmethod
     @ensure_contiguous
