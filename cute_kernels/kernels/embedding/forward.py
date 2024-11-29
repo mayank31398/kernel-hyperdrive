@@ -1,7 +1,13 @@
 import torch
 
 from ...enums import KernelBackend
-from ...utils import ceil_divide, cutotune, get_block_sizes_powers_of_2, get_cartesian_product_cutotune_configs
+from ...utils import (
+    CutoTuneConfig,
+    ceil_divide,
+    cutotune,
+    get_block_sizes_powers_of_2,
+    get_cartesian_product_cutotune_configs,
+)
 from .triton_implementation import embedding_forward_triton_kernel
 
 
@@ -11,7 +17,9 @@ from .triton_implementation import embedding_forward_triton_kernel
         BLOCK_SIZE_B=get_block_sizes_powers_of_2(128, 65536),
         BLOCK_SIZE_H=get_block_sizes_powers_of_2(128, 65536),
         condition=lambda **kwargs: 1024 <= kwargs["BLOCK_SIZE_B"] * kwargs["BLOCK_SIZE_H"] <= 65536,
-    )
+    ),
+    default_config=CutoTuneConfig({"kernel_backend": KernelBackend.triton, "BLOCK_SIZE_B": 128, "BLOCK_SIZE_H": 128}),
+    triggers={"weight.dtype"},
 )
 def _forward(
     input_ids: torch.Tensor,
