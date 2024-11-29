@@ -38,7 +38,7 @@ class _Embedding_Cute(torch.autograd.Function):
 
     @staticmethod
     @ensure_contiguous
-    def forward(ctx, output_grad: torch.Tensor) -> torch.Tensor:
+    def backward(ctx, output_grad: torch.Tensor) -> torch.Tensor:
         input_ids, weight = ctx.saved_tensors
         kernel_backend_backward = ctx.kernel_backend_backward
         BLOCK_SIZE_B_backward = ctx.BLOCK_SIZE_B_backward
