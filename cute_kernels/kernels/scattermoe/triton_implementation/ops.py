@@ -3,7 +3,7 @@ import triton
 import triton.language as tl
 
 from .....constants import LIBRARY_NAME
-from .....utils import torch_custom_op
+from .....utils import cute_op
 from ..kernels import group_triton_kernel, groupXtY_triton_kernel, scatter2scatter_triton_kernel
 
 
@@ -12,7 +12,7 @@ torch._dynamo.config.capture_scalar_outputs = True
 
 
 # custom op is needed because of https://github.com/pytorch/pytorch/issues/136394
-@torch_custom_op(f"{LIBRARY_NAME}::scatter2scatter", mutates_args={"out"})
+@cute_op(f"{LIBRARY_NAME}::scatter2scatter", mutates_args={"out"})
 def scatter2scatter(
     X: torch.Tensor,
     W: torch.Tensor,
@@ -63,7 +63,7 @@ def scatter2scatter(
 
 
 # custom op is needed because of https://github.com/pytorch/pytorch/issues/136394
-@torch_custom_op(f"{LIBRARY_NAME}::group_bwd_W", mutates_args={"DW"})
+@cute_op(f"{LIBRARY_NAME}::group_bwd_W", mutates_args={"DW"})
 def group_bwd_W(DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor, DW: torch.Tensor, E: int) -> None:
     grid = lambda meta: (E * triton.cdiv(meta["K"], meta["BLOCK_K"]), triton.cdiv(meta["N"], meta["BLOCK_N"]))
 
@@ -94,7 +94,7 @@ def group_bwd_W(DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor,
 
 
 # custom op is needed because of https://github.com/pytorch/pytorch/issues/136394
-@torch_custom_op(f"{LIBRARY_NAME}::group", mutates_args={"out"})
+@cute_op(f"{LIBRARY_NAME}::group", mutates_args={"out"})
 def group(
     A: torch.Tensor,
     sorted_expert_idxs: torch.Tensor,

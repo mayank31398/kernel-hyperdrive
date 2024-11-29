@@ -2,14 +2,14 @@ import torch
 
 from ....constants import LIBRARY_NAME
 from ....kernel_registry import KernelRegistry
-from ....utils import torch_custom_op
+from ....utils import cute_op
 
 
 _FORWARD_KERNEL_NAME = "embedding_forward_cuda"
 _BACKWARD_KERNEL_NAME = "embedding_backward_cuda"
 
 
-@torch_custom_op(f"{LIBRARY_NAME}::{_FORWARD_KERNEL_NAME}", mutates_args={"output"})
+@cute_op(f"{LIBRARY_NAME}::{_FORWARD_KERNEL_NAME}", mutates_args={"output"})
 def embedding_forward_cuda_kernel(
     input_ids: torch.Tensor,
     weight: torch.Tensor,
@@ -23,7 +23,7 @@ def embedding_forward_cuda_kernel(
     )
 
 
-@torch_custom_op(f"{LIBRARY_NAME}::{_BACKWARD_KERNEL_NAME}", mutates_args={"gate_grad", "up_grad"})
+@cute_op(f"{LIBRARY_NAME}::{_BACKWARD_KERNEL_NAME}", mutates_args={"gate_grad", "up_grad"})
 def embedding_backward_cuda_kernel(
     gate: torch.Tensor,
     up: torch.Tensor,

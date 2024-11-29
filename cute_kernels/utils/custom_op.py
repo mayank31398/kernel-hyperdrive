@@ -12,7 +12,7 @@ def _dispatch(func: Callable, compileable_fn: Callable, *args, **kwargs):
     return output
 
 
-def torch_custom_op(
+def cute_op(
     name: str = None,
     mutates_args: str | Iterable[str] = None,
     device_types: str | Sequence[str] | None = None,
