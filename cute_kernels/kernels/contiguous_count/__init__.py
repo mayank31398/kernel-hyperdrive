@@ -31,7 +31,6 @@ def contiguous_count_cute(
             contiguous_count_triton_kernel[(num_programs,)](
                 x_ptr=x,
                 output_ptr=output,
-                output_stride_b=output.stride(0),
                 B=B,
                 C=C,
                 BLOCK_SIZE_B=BLOCK_SIZE_B,

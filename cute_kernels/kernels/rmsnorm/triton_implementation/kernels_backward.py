@@ -5,18 +5,12 @@ import triton.language as tl
 @triton.jit
 def rmsnorm_backward_triton_kernel(
     x_ptr,
-    x_stride_b,
-    x_stride_h,
     x_dtype: tl.constexpr,
     has_weight: tl.constexpr,
     weight_ptr,
     output_grad_ptr,
-    output_grad_stride_b,
-    output_grad_stride_h,
     x_grad_ptr,
     weight_grad_ptr,
-    weight_grad_stride_b,
-    weight_grad_stride_h,
     eps,
     memory_efficient: tl.constexpr,
     rmsnorm_denominator_ptr,
@@ -52,7 +46,7 @@ def rmsnorm_backward_triton_kernel(
 
         mask_bh = mask_b[:, None] & mask_h[None, :]
 
-        x_ptrs = x_ptr + indices_b[:, None] * x_stride_b + indices_h[None, :] * x_stride_h
+        x_ptrs = x_ptr + indices_b[:, None] * H + indices_h[None, :]
         x = tl.load(x_ptrs, mask=mask_bh).to(tl.float32)
 
         if memory_efficient:
@@ -61,9 +55,7 @@ def rmsnorm_backward_triton_kernel(
         else:
             inverse_rms = tl.load(rmsnorm_denominator_ptr + indices_b, mask=mask_b)
 
-        output_grad_ptrs = (
-            output_grad_ptr + indices_b[:, None] * output_grad_stride_b + indices_h[None, :] * output_grad_stride_h
-        )
+        output_grad_ptrs = output_grad_ptr + indices_b[:, None] * H + indices_h[None, :]
         output_grad = tl.load(output_grad_ptrs, mask=mask_bh)
 
         output_grad_weight = (output_grad * weight).to(tl.float32)
@@ -79,12 +71,12 @@ def rmsnorm_backward_triton_kernel(
         )
         x_grad = x_grad.to(x_dtype)
 
-        x_grad_ptrs = x_grad_ptr + indices_b[:, None] * x_stride_b + indices_h[None, :] * x_stride_h
+        x_grad_ptrs = x_grad_ptr + indices_b[:, None] * H + indices_h[None, :]
         tl.store(x_grad_ptrs, x_grad, mask=mask_bh)
 
         if has_weight:
             weight_grad += tl.sum(output_grad * (x * inverse_rms[:, None]).to(x_dtype), axis=0)
 
     if has_weight:
-        weight_grad_ptrs = weight_grad_ptr + pid * weight_grad_stride_b + indices_h * weight_grad_stride_h
+        weight_grad_ptrs = weight_grad_ptr + pid * H + indices_h
         tl.store(weight_grad_ptrs, weight_grad, mask=mask_h)

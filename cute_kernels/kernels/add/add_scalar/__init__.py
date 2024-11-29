@@ -16,6 +16,9 @@ class _AddScalar_Cute(torch.autograd.Function):
         vector_instruction_width: int,
         BLOCK_SIZE: int,
     ) -> torch.Tensor:
+        if y == 0:
+            return x
+
         return _forward(
             x=x,
             y=y,

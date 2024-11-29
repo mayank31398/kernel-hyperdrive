@@ -44,9 +44,6 @@ def _forward(
     vector_instruction_width: int,
     BLOCK_SIZE: int,
 ) -> torch.Tensor:
-    if y == 0:
-        return x
-
     output = torch.empty_like(x)
 
     if kernel_backend == KernelBackend.cuda:

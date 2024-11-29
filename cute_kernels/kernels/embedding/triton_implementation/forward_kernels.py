@@ -6,11 +6,7 @@ import triton.language as tl
 def embedding_forward_triton_kernel(
     x_ptr,
     weight_ptr,
-    weight_stride_v,
-    weight_stride_h,
     output_ptr,
-    output_stride_b,
-    output_stride_h,
     B,
     H,
     BLOCK_SIZE_B: tl.constexpr,
@@ -28,8 +24,8 @@ def embedding_forward_triton_kernel(
     x_ptrs = x_ptr + indices_b
     x = tl.load(x_ptrs, mask=mask_b)
 
-    weight_ptrs = weight_ptr + x[:, None] * weight_stride_v + indices_h[None, :] * weight_stride_h
+    weight_ptrs = weight_ptr + x[:, None] * H + indices_h[None, :]
     word_embeddings = tl.load(weight_ptrs, mask=mask_h[None, :])
 
-    output_ptrs = output_ptr + indices_b[:, None] * output_stride_b + indices_h[None, :] * output_stride_h
+    output_ptrs = output_ptr + indices_b[:, None] * H + indices_h[None, :]
     tl.store(output_ptrs, word_embeddings, mask=mask_b[:, None] & mask_h[None, :])
