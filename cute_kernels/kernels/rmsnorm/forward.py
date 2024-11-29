@@ -18,34 +18,30 @@ from .triton_implementation import rmsnorm_forward_triton_kernel
         for BLOCK_SIZE_B in [1, 2, 4, 8, 16, 32] + TRITON_BLOCK_SIZES_POWERS_OF_2
     ],
     default_config=CutoTuneConfig({"BLOCK_SIZE_B": 1}),
-    triggers={"x_view.dtype", "BLOCK_SIZE_H"},
+    triggers={"x.dtype", "BLOCK_SIZE_H"},
 )
 def _triton_forward(
-    x_view: torch.Tensor,
+    x: torch.Tensor,
     weight: torch.Tensor,
-    output_view: torch.Tensor,
+    output: torch.Tensor,
     rmsnorm_denominator: torch.Tensor,
     eps: float,
     memory_efficient: bool,
     BLOCK_SIZE_B: int,
     BLOCK_SIZE_H: int,
 ) -> None:
-    num_elements, hidden_size = x_view.size()
+    num_elements, hidden_size = x.size()
 
     if BLOCK_SIZE_H < hidden_size:
         raise ValueError(f"hidden_size should be more than the BLOCK_SIZE_H")
 
-    with torch.device(x_view.device):
+    with torch.device(x.device):
         rmsnorm_forward_triton_kernel[(ceil_divide(num_elements, BLOCK_SIZE_B),)](
-            x_ptr=x_view,
-            x_stride_b=x_view.stride(0),
-            x_stride_h=x_view.stride(1),
-            x_dtype=TORCH_TO_TRITON_DTYPE[x_view.dtype],
+            x_ptr=x,
+            x_dtype=TORCH_TO_TRITON_DTYPE[x.dtype],
             has_weight=weight is not None,
             weight_ptr=weight,
-            output_ptr=output_view,
-            output_stride_b=output_view.stride(0),
-            output_stride_h=output_view.stride(1),
+            output_ptr=output,
             eps=eps,
             memory_efficient=memory_efficient,
             rmsnorm_denominator_ptr=rmsnorm_denominator,
@@ -81,9 +77,9 @@ def _forward(
         assert BLOCK_SIZE_H <= MAX_TRITON_BLOCK_SIZE
 
         _triton_forward(
-            x_view=x.view(-1, hidden_size),
+            x=x.view(-1, hidden_size),
             weight=weight,
-            output_view=output.view(-1, hidden_size),
+            output=output.view(-1, hidden_size),
             rmsnorm_denominator=rmsnorm_denominator,
             eps=eps,
             memory_efficient=memory_efficient,
