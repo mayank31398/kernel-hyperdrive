@@ -20,7 +20,7 @@ def embedding_forward_cuda_kernel(
     KernelRegistry.get_kernel(_FORWARD_KERNEL_NAME)(input_ids, weight, output, BLOCK_SIZE_B, BLOCK_SIZE_H)
 
 
-@cute_op(f"{LIBRARY_NAME}::{_BACKWARD_KERNEL_NAME}", mutates_args={"gate_grad", "up_grad"})
+@cute_op(f"{LIBRARY_NAME}::{_BACKWARD_KERNEL_NAME}", mutates_args={"weight_grad"})
 def embedding_backward_cuda_kernel(
     input_ids: torch.Tensor,
     output_grad: torch.Tensor,
