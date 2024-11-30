@@ -14,6 +14,12 @@ from .triton_implementation import embedding_forward_triton_kernel
 
 @cutotune(
     configs=get_cartesian_product_cutotune_configs(
+        kernel_backend=[KernelBackend.cuda],
+        BLOCK_SIZE_B=get_block_sizes_powers_of_2(1, 32),
+        BLOCK_SIZE_H=get_block_sizes_powers_of_2(32, 1024),
+        condition=lambda **kwargs: kwargs["BLOCK_SIZE_B"] * kwargs["BLOCK_SIZE_H"] <= 1024,
+    )
+    + get_cartesian_product_cutotune_configs(
         kernel_backend=[KernelBackend.triton],
         BLOCK_SIZE_B=get_block_sizes_powers_of_2(128, 65536),
         BLOCK_SIZE_H=get_block_sizes_powers_of_2(128, 65536),
