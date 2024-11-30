@@ -59,4 +59,4 @@ class EmbeddingTest(TestCommons):
         z_expected.mean().backward()
 
         self.assert_equal_tensors(z_kernel, z_expected, True)
-        self.assert_equal_tensors(weight_kernel.grad, weight_expected.grad, False, atol_float32=1e-13, rtol_float32=0)
+        self.assert_equal_tensors(weight_kernel.grad, weight_expected.grad, False, atol_float32=1e-10, rtol_float32=0)

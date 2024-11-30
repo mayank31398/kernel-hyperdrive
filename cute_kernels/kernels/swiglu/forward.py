@@ -2,8 +2,8 @@ import torch
 
 from ...constants import CUDA_BLOCK_SIZES_POWERS_OF_2, TRITON_BLOCK_SIZES_POWERS_OF_2
 from ...enums import KernelBackend
-from ...utils import CutoTuneConfig, ceil_divide, cutotune, ensure_same_strides, get_cartesian_product_cutotune_configs
-from .cuda_implementation import swiglu_forward_cuda_kernel, swiglu_forward_cuda_kernel_compileable
+from ...utils import CutoTuneConfig, ceil_divide, cutotune, get_cartesian_product_cutotune_configs
+from .cuda_implementation import swiglu_forward_cuda_kernel
 from .triton_implementation import swiglu_forward_triton_kernel
 
 
@@ -46,22 +46,13 @@ def _forward(
         assert gate.is_cuda, "tensor gate is not on GPU"
         assert up.is_cuda, "tensor up is not on GPU"
 
-        if torch.compiler.is_compiling():
-            swiglu_forward_cuda_kernel_compileable(
-                gate=gate,
-                up=up,
-                output=output,
-                vector_instruction_width=vector_instruction_width,
-                BLOCK_SIZE=BLOCK_SIZE,
-            )
-        else:
-            swiglu_forward_cuda_kernel(
-                gate=gate,
-                up=up,
-                output=output,
-                vector_instruction_width=vector_instruction_width,
-                BLOCK_SIZE=BLOCK_SIZE,
-            )
+        swiglu_forward_cuda_kernel(
+            gate=gate,
+            up=up,
+            output=output,
+            vector_instruction_width=vector_instruction_width,
+            BLOCK_SIZE=BLOCK_SIZE,
+        )
     elif kernel_backend == KernelBackend.triton:
         num_elements = gate.numel()
 
