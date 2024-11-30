@@ -38,7 +38,7 @@ def _forward(
             embedding_forward_triton_kernel[
                 (ceil_divide(num_elements, BLOCK_SIZE_B), ceil_divide(hidden_size, BLOCK_SIZE_H))
             ](
-                x_ptr=input_ids,
+                input_ids_ptr=input_ids,
                 weight_ptr=weight,
                 output_ptr=output,
                 B=num_elements,
