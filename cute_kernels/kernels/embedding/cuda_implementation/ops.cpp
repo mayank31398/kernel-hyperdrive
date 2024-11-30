@@ -3,7 +3,6 @@
 void embedding_forward_cuda(const torch::Tensor &input_ids,
                             const torch::Tensor &weight,
                             torch::Tensor output,
-                            const int &vector_instruction_width,
                             const int &BLOCK_SIZE_B,
                             const int &BLOCK_SIZE_H);
 
