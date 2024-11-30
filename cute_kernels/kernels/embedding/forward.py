@@ -8,6 +8,7 @@ from ...utils import (
     get_block_sizes_powers_of_2,
     get_cartesian_product_cutotune_configs,
 )
+from .cuda_implementation import embedding_forward_cuda_kernel
 from .triton_implementation import embedding_forward_triton_kernel
 
 
@@ -33,7 +34,18 @@ def _forward(
 
     output = torch.empty(num_elements, hidden_size, dtype=weight.dtype, device=input_ids.device)
 
-    if kernel_backend == KernelBackend.triton:
+    if kernel_backend == KernelBackend.cuda:
+        assert input_ids.is_cuda
+        assert weight.is_cuda
+
+        embedding_forward_cuda_kernel(
+            input_ids=input_ids,
+            weight=weight,
+            output=output,
+            BLOCK_SIZE_B=BLOCK_SIZE_B,
+            BLOCK_SIZE_H=BLOCK_SIZE_H,
+        )
+    elif kernel_backend == KernelBackend.triton:
         with torch.device(input_ids.device):
             embedding_forward_triton_kernel[
                 (ceil_divide(num_elements, BLOCK_SIZE_B), ceil_divide(hidden_size, BLOCK_SIZE_H))
