@@ -26,6 +26,7 @@ def _forward(
     input_ids: torch.Tensor,
     weight: torch.Tensor,
     kernel_backend: KernelBackend,
+    vector_instruction_width: int | None,
     BLOCK_SIZE_B: int,
     BLOCK_SIZE_H: int,
 ) -> torch.Tensor:
@@ -42,10 +43,13 @@ def _forward(
             input_ids=input_ids,
             weight=weight,
             output=output,
+            vector_instruction_width=vector_instruction_width,
             BLOCK_SIZE_B=BLOCK_SIZE_B,
             BLOCK_SIZE_H=BLOCK_SIZE_H,
         )
     elif kernel_backend == KernelBackend.triton:
+        assert vector_instruction_width is None
+
         with torch.device(input_ids.device):
             embedding_forward_triton_kernel[
                 (ceil_divide(num_elements, BLOCK_SIZE_B), ceil_divide(hidden_size, BLOCK_SIZE_H))
