@@ -97,7 +97,7 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
 
 void add_tensor_forward_cuda(const torch::Tensor &x,
                              const torch::Tensor &y,
-                             torch::Tensor output,
+                             torch::Tensor &output,
                              const int &vector_instruction_width,
                              const int &BLOCK_SIZE) {
     assert(BLOCK_SIZE % WARP_SIZE == 0);
