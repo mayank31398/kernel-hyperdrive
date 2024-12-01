@@ -97,12 +97,12 @@ void add_scalar_forward_cuda(const torch::Tensor &x,
                              torch::Tensor output,
                              const int &vector_instruction_width,
                              const int &BLOCK_SIZE) {
+    assert(BLOCK_SIZE % WARP_SIZE == 0);
+
     const int64_t num_elements = x.numel();
 
     const int num_elements_per_block = BLOCK_SIZE * vector_instruction_width;
     const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
-
-    assert(BLOCK_SIZE % WARP_SIZE == 0);
 
     AT_DISPATCH_CUSTOM_FLOAT_TYPES(
         x.scalar_type(), "add_scalar_forward_cuda_kernel", ([&] {
