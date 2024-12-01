@@ -2,8 +2,9 @@ from functools import partial
 from time import perf_counter
 
 import torch
-from cute import KernelBackend, add_tensor_cute, add_tensor_torch
 from tabulate import tabulate
+
+from cute_kernels import KernelBackend, add_tensor_cute, add_tensor_torch
 
 
 n = 100

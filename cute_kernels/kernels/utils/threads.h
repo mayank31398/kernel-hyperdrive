@@ -1,5 +1,8 @@
 #pragma once
 
+#define WARP_SIZE 32
+#define LOG_WARP_SIZE 5
+
 #include <cuda.h>
 #include <cuda_runtime.h>
 
