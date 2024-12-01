@@ -12,6 +12,9 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
                                                 scalar_t *output,
                                                 const int64_t num_elements) {
     constexpr int vector_instruction_width = sizeof(vector_t) / sizeof(scalar_t);
+    static_assert(vector_instruction_width == 1 || vector_instruction_width == 2 || vector_instruction_width == 4 ||
+                  vector_instruction_width == 8);
+
     const int64_t thread_id = get_global_thread_id();
 
     if constexpr (vector_instruction_width == 1) {
@@ -20,11 +23,9 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
         }
     } else {
         using dtype = DType<scalar_t>;
-
-        const int64_t start = thread_id * vector_instruction_width;
         const int64_t end = (thread_id + 1) * vector_instruction_width - 1;  // inclusive of last element
 
-        if (start < num_elements && end < num_elements) {
+        if (end < num_elements) {
             vector_t *output_vec = (vector_t *)output;
 
             if constexpr (std::is_same_v<scalar_t, fp32>) {
@@ -78,12 +79,14 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
                     }
                 }
             }
-        } else if (start < num_elements) {
-            // clang-format off
-            #pragma unroll
-            // clang-format on
-            for (int64_t i = start; i < num_elements; i++) {
-                output[i] = x[i] + y;
+        }
+
+        // use first warp for computing the last elements
+        if (thread_id < WARP_SIZE) {
+            // NOTE end is same as start since we don't use vector load stores here
+            end = (num_elements / vector_instruction_width) * vector_instruction_width + thread_id;
+            if (end < num_elements) {
+                output[end] = x[end] + y;
             }
         }
     }
@@ -96,11 +99,13 @@ void add_scalar_forward_cuda(const torch::Tensor &x,
                              const int &BLOCK_SIZE) {
     const int64_t num_elements = x.numel();
 
+    const int num_elements_per_block = BLOCK_SIZE * vector_instruction_width;
+    const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
+
+    assert(BLOCK_SIZE % WARP_SIZE == 0);
+
     AT_DISPATCH_CUSTOM_FLOAT_TYPES(
         x.scalar_type(), "add_scalar_forward_cuda_kernel", ([&] {
-            const int num_elements_per_block = BLOCK_SIZE * vector_instruction_width;
-            const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
-
             switch (vector_instruction_width) {
                 case 1:
                     _add_scalar_forward_cuda_kernel<scalar_t, scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(
