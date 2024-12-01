@@ -23,7 +23,7 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
         }
     } else {
         using dtype = DType<scalar_t>;
-        const int64_t end = (thread_id + 1) * vector_instruction_width - 1;  // inclusive of last element
+        int64_t end = (thread_id + 1) * vector_instruction_width - 1;  // inclusive of last element
 
         if (end < num_elements) {
             vector_t *output_vec = (vector_t *)output;
