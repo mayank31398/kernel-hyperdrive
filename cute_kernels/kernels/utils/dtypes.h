@@ -24,18 +24,24 @@ using fp16_2 = half2;
 using bf16 = __nv_bfloat16;
 using bf16_2 = __nv_bfloat162;
 
-inline __device__ std::tuple<uint16_t, uint16_t> get_upper_and_lower_16_bits_from_fp32(const fp32 &value) {
-    uint32_t int_value = __float_as_int(value);
+using int16 = short;
+using uint16 = ushort;
 
-    uint16_t lower_16 = int_value & 0xFFFF;
-    uint16_t upper_16 = int_value >> 16;
+using int32 = int;
+using uint32 = uint;
+
+inline __device__ std::tuple<uint16, uint16> get_upper_and_lower_16_bits_from_fp32(const fp32 &value) {
+    uint32 int_value = __float_as_uint(value);
+
+    uint16 lower_16 = int_value & 0xFFFF;
+    uint16 upper_16 = int_value >> 16;
 
     return std::make_tuple(lower_16, upper_16);
 }
 
-inline __device__ fp32 get_fp32_from_upper_and_lower_16_bits(const uint16_t &upper_16, const uint16_t &lower_16) {
-    uint32_t int_value = (static_cast<uint32_t>(upper_16) << 16) | lower_16;
-    return __int_as_float(int_value);
+inline __device__ fp32 get_fp32_from_upper_and_lower_16_bits(const uint16 &upper_16, const uint16 &lower_16) {
+    uint int_value = (static_cast<uint>(upper_16) << 16) | lower_16;
+    return __uint_as_float(int_value);
 }
 
 // base struct for converting torch ScalarType to NVIDIA's dtype
@@ -91,8 +97,8 @@ struct DType<c10::Half> {
     }
 
     inline __device__ static fp32 reinterpret_2x16_as_32_bits(const nv_dtype &lower_half, const nv_dtype &upper_half) {
-        uint16_t lower_16 = __half_as_short(lower_half);
-        uint16_t upper_16 = __half_as_short(upper_half);
+        uint16 lower_16 = __half_as_ushort(lower_half);
+        uint16 upper_16 = __half_as_ushort(upper_half);
 
         return get_fp32_from_upper_and_lower_16_bits(upper_16, lower_16);
     }
@@ -137,8 +143,8 @@ struct DType<c10::BFloat16> {
     }
 
     inline __device__ static fp32 reinterpret_2x16_as_32_bits(const nv_dtype &lower_half, const nv_dtype &upper_half) {
-        uint16_t lower_16 = __bfloat16_as_short(lower_half);
-        uint16_t upper_16 = __bfloat16_as_short(upper_half);
+        uint16 lower_16 = __bfloat16_as_ushort(lower_half);
+        uint16 upper_16 = __bfloat16_as_ushort(upper_half);
 
         return get_fp32_from_upper_and_lower_16_bits(upper_16, lower_16);
     }
