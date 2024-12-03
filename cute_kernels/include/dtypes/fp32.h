@@ -6,10 +6,10 @@
 #include <torch/extension.h>
 
 #include "common.h"
+#include "fp64.h"
 
-// struct for c10::Float
 template <>
-struct DType<fp32> {
+struct DType<fp32> : public DType<fp64> {
     using c10_dtype = fp32;
     using nv_dtype = fp32;
     using nv_dtype2 = fp32_2;
@@ -21,7 +21,7 @@ struct DType<fp32> {
         nv_dtype left = __uint_as_float(left_int);
         nv_dtype right = __uint_as_float(right_int);
 
-        return make_float2(lower_half, upper_half);
+        return make_float2(left, right);
     }
 
     inline __device__ static fp64 reinterpret_2x32_as_64_bits(const nv_dtype &lower_half, const nv_dtype &upper_half) {
@@ -34,14 +34,6 @@ struct DType<fp32> {
     inline __device__ static fp32 reinterpret_2x32_as_64_bits(const nv_dtype2 &value) {
         return reinterpret_2x32_as_64_bits(value.x, value.y);
     }
-
-    inline __device__ static fp32 upcast(const nv_dtype &value) { return value; }
-    inline __device__ static fp32_2 upcast(const nv_dtype2 &value) { return value; }
-    inline __device__ static fp32_4 upcast(const nv_dtype4 &value) { return value; }
-
-    inline __device__ static nv_dtype downcast(const nv_dtype &value) { return value; }
-    inline __device__ static nv_dtype2 downcast(const nv_dtype2 &value) { return value; }
-    inline __device__ static nv_dtype4 downcast(const nv_dtype4 &value) { return value; }
 
     inline __device__ static nv_dtype2 make2(const nv_dtype &x, const nv_dtype &y) { return make_float2(x, y); }
     inline __device__ static nv_dtype2 make2(const nv_dtype *array) { return make_float2(array[0], array[1]); }
