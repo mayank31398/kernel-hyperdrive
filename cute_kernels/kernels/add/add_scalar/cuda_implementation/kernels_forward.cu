@@ -30,7 +30,7 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
 
             if constexpr (std::is_same_v<scalar_t, fp32>) {
                 if constexpr (vector_instruction_width == 8) {
-                    const fp64 *x_vec = (fp64 *)&((vector_t *)x)[thread_id];
+                    const double *x_vec = (double *)&((vector_t *)x)[thread_id];
 
                     constexpr int n = vector_instruction_width >> 1;
                     fp64 output_buffer[n];
@@ -41,7 +41,14 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
                     for (int i = 0; i < n; i++) {
                         fp32_2 _x_upcast = dtype::reinterpret_64_bits_as_2x32(x_vec[i]);
                         _x_upcast = dtype::make2(_x_upcast.x + y, _x_upcast.y + y);
-                        output_buffer[i] = dtype::reinterpret_2x32_as_64_bits(_x_upcast);
+                        if (thread_id == 0 && i == 0) {
+                            printf("%lf %lf\n", _x_upcast.x, _x_upcast.y);
+                        }
+                        fp64 q = dtype::reinterpret_2x32_as_64_bits(_x_upcast);
+                        _x_upcast = dtype::reinterpret_64_bits_as_2x32(q);
+                        if (thread_id == 0 && i == 0) {
+                            printf("%lf %lf\n", _x_upcast.x, _x_upcast.y);
+                        }
                     }
 
                     output_vec[thread_id] = DType<fp64>::make4(output_buffer);
@@ -145,7 +152,7 @@ void add_scalar_forward_cuda(const torch::Tensor &x,
                     break;
                 case 8:
                     if constexpr (std::is_same_v<scalar_t, fp32>) {
-                        _add_scalar_forward_cuda_kernel<scalar_t, fp64_4><<<NUM_BLOCKS, BLOCK_SIZE>>>(
+                        _add_scalar_forward_cuda_kernel<scalar_t, double4><<<NUM_BLOCKS, BLOCK_SIZE>>>(
                             x.data_ptr<scalar_t>(), y, output.data_ptr<scalar_t>(), num_elements);
                     } else {
                         _add_scalar_forward_cuda_kernel<scalar_t, fp32_4><<<NUM_BLOCKS, BLOCK_SIZE>>>(

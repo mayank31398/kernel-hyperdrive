@@ -5,6 +5,8 @@
 #include <cuda_runtime.h>
 #include <torch/extension.h>
 
+#include <bitset>
+
 #define AT_DISPATCH_CASE_CUSTOM_FLOAT_TYPES(...)            \
     AT_DISPATCH_CASE(at::ScalarType::Half, __VA_ARGS__)     \
     AT_DISPATCH_CASE(at::ScalarType::BFloat16, __VA_ARGS__) \
@@ -42,15 +44,21 @@ using uint64 = uint64_t;
 inline __device__ std::tuple<uint32, uint32> get_upper_and_lower_32_bits_from_fp64(const fp64 &value) {
     uint64 int_value = __double_as_longlong(value);
 
-    uint32 lower_16 = int_value & 0xFFFF;
-    uint32 upper_16 = int_value >> 16;
+    uint32 lower_16 = int_value & 0xFFFFFFFF;
+    uint32 upper_16 = int_value >> 32;
 
     return std::make_tuple(lower_16, upper_16);
 }
 
 inline __device__ fp64 get_fp64_from_upper_and_lower_32_bits(const uint32 &upper_16, const uint32 &lower_16) {
-    uint64 int_value = (static_cast<uint64>(upper_16) << 16) | lower_16;
-    return __longlong_as_double(static_cast<int64>(int_value));
+    printf("%d %d\n", upper_16, lower_16);
+    int64 u = static_cast<uint64>(upper_16) << 32;
+    uint64 l = static_cast<uint64>(lower_16);
+
+    printf("%d %d\n", static_cast<uint32>(u >> 32), static_cast<uint32>(l));
+
+    uint64 int_value = (static_cast<uint64>(upper_16) << 32) | lower_16;
+    return __longlong_as_double(int_value);
 }
 
 inline __device__ std::tuple<uint16, uint16> get_upper_and_lower_16_bits_from_fp32(const fp32 &value) {
@@ -121,10 +129,10 @@ struct DType<fp32> {
     }
 
     inline __device__ static fp64 reinterpret_2x32_as_64_bits(const nv_dtype &lower_half, const nv_dtype &upper_half) {
-        uint32 lower_16 = __float_as_uint(lower_half);
-        uint32 upper_16 = __float_as_uint(upper_half);
+        uint32 lower_32 = __float_as_uint(lower_half);
+        uint32 upper_32 = __float_as_uint(upper_half);
 
-        return get_fp64_from_upper_and_lower_32_bits(upper_16, lower_16);
+        return get_fp64_from_upper_and_lower_32_bits(upper_32, lower_32);
     }
 
     inline __device__ static fp32 reinterpret_2x32_as_64_bits(const nv_dtype2 &value) {
