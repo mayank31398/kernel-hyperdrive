@@ -28,11 +28,14 @@ using fp16_2 = half2;
 using bf16 = __nv_bfloat16;
 using bf16_2 = __nv_bfloat162;
 
-using int16 = short;
-using uint16 = ushort;
+using int64 = long;
+using uint64 = unsigned long;
 
 using int32 = int;
 using uint32 = uint;
+
+using int16 = short;
+using uint16 = ushort;
 
 inline __device__ std::tuple<uint16, uint16> split_fp32_into_16_bits(const fp32 &value) {
     uint32 left_right_int = __float_as_uint(value);
