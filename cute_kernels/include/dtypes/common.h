@@ -14,6 +14,10 @@
     AT_DISPATCH_SWITCH(TYPE, NAME, AT_DISPATCH_CASE_CUSTOM_FLOAT_TYPES(__VA_ARGS__))
 
 // define dtype aliases
+using fp64 = double;
+using fp64_2 = double2;
+using fp64_4 = double4;
+
 using fp32 = float;
 using fp32_2 = float2;
 using fp32_4 = float4;
