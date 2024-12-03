@@ -3,6 +3,7 @@
 #include <cuda_runtime.h>
 #include <torch/extension.h>
 
+#include "../../../include/activations.h"
 #include "../../../include/dtypes/all.h"
 #include "../../../include/threads.h"
 
