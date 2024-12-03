@@ -40,7 +40,7 @@ inline __device__ std::tuple<uint16, uint16> get_upper_and_lower_16_bits_from_fp
 }
 
 inline __device__ fp32 get_fp32_from_upper_and_lower_16_bits(const uint16 &upper_16, const uint16 &lower_16) {
-    uint int_value = (static_cast<uint>(upper_16) << 16) | lower_16;
+    uint32 int_value = (static_cast<uint32>(upper_16) << 16) | lower_16;
     return __uint_as_float(int_value);
 }
 
