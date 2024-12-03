@@ -30,18 +30,18 @@ using uint16 = ushort;
 using int32 = int;
 using uint32 = uint;
 
-inline __device__ std::tuple<uint16, uint16> get_upper_and_lower_16_bits_from_fp32(const fp32 &value) {
-    uint32 int_value = __float_as_uint(value);
+inline __device__ std::tuple<uint16, uint16> split_fp32_into_16_bits(const fp32 &value) {
+    uint32 left_right_int = __float_as_uint(value);
 
-    uint16 lower_16 = int_value & 0xFFFF;
-    uint16 upper_16 = int_value >> 16;
+    uint16 right = left_right_int & 0xFFFF;
+    uint16 left = left_right_int >> 16;
 
-    return std::make_tuple(lower_16, upper_16);
+    return std::make_tuple(left, right);
 }
 
-inline __device__ fp32 get_fp32_from_upper_and_lower_16_bits(const uint16 &upper_16, const uint16 &lower_16) {
-    uint32 int_value = (static_cast<uint32>(upper_16) << 16) | lower_16;
-    return __uint_as_float(int_value);
+inline __device__ fp32 combine_16_bits_into_fp32(const uint16 &left_int, const uint16 &right_int) {
+    uint32 left_right_int = (static_cast<uint32>(left_int) << 16) | right_int;
+    return __uint_as_float(left_right_int);
 }
 
 // base struct for converting torch ScalarType to NVIDIA's dtype

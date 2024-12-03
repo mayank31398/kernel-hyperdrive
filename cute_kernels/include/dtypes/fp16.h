@@ -14,26 +14,23 @@ struct DType<c10::Half> {
     using nv_dtype2 = fp16_2;
 
     inline __device__ static nv_dtype2 reinterpret_32_bits_as_2x16(const fp32 &value) {
-        auto [lower_16, upper_16] = get_upper_and_lower_16_bits_from_fp32(value);
+        auto [left_int, right_int] = split_fp32_into_16_bits(value);
 
-        nv_dtype lower_half = __ushort_as_half(lower_16);
-        nv_dtype upper_half = __ushort_as_half(upper_16);
+        nv_dtype left = __ushort_as_half(left_int);
+        nv_dtype right = __ushort_as_half(right_int);
 
-        return __halves2half2(lower_half, upper_half);
-    }
-
-    inline __device__ static fp32 reinterpret_2x16_as_32_bits(const nv_dtype &lower_half, const nv_dtype &upper_half) {
-        uint16 lower_16 = __half_as_ushort(lower_half);
-        uint16 upper_16 = __half_as_ushort(upper_half);
-
-        return get_fp32_from_upper_and_lower_16_bits(upper_16, lower_16);
+        return __halves2half2(left, right);
     }
 
     inline __device__ static fp32 reinterpret_2x16_as_32_bits(const nv_dtype2 &value) {
-        nv_dtype lower_half = __low2half(value);
-        nv_dtype upper_half = __high2half(value);
+        return reinterpret_2x16_as_32_bits(value.x, value.y);
+    }
 
-        return reinterpret_2x16_as_32_bits(lower_half, upper_half);
+    inline __device__ static fp32 reinterpret_2x16_as_32_bits(const nv_dtype &left, const nv_dtype &right) {
+        uint16 left_int = __half_as_ushort(left);
+        uint16 right_int = __half_as_ushort(right);
+
+        return combine_16_bits_into_fp32(left_int, right_int);
     }
 
     inline __device__ static fp32 upcast(const c10_dtype &value) { return upcast(static_cast<nv_dtype>(value)); }
