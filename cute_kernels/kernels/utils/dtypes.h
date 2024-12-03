@@ -128,7 +128,7 @@ struct DType<fp32> {
     }
 
     inline __device__ static fp32 reinterpret_2x32_as_64_bits(const nv_dtype2 &value) {
-        return reinterpret_2x16_as_32_bits(value.x, value.y);
+        return reinterpret_2x32_as_64_bits(value.x, value.y);
     }
 
     inline __device__ static fp32 upcast(const nv_dtype &value) { return value; }
