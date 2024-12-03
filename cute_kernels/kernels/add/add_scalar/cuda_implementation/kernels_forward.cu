@@ -3,7 +3,7 @@
 #include <cuda_runtime.h>
 #include <torch/extension.h>
 
-#include "../../../../include/dtypes.h"
+#include "../../../../include/dtypes/all.h"
 #include "../../../../include/threads.h"
 
 template <typename scalar_t, typename vector_t>
