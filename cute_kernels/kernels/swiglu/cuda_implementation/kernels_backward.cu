@@ -3,9 +3,9 @@
 #include <cuda_runtime.h>
 #include <torch/extension.h>
 
-#include "../../utils/activations.h"
-#include "../../utils/dtypes.h"
-#include "../../utils/threads.h"
+#include "../../../include/activations.h"
+#include "../../../include/dtypes/all.h"
+#include "../../../include/threads.h"
 
 __device__ void _swiglu_backward_helper_bf16_fp16_vectorized(fp32_2 &_gate_upcast,
                                                              fp32_2 &_up_upcast,
