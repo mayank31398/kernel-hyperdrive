@@ -29,22 +29,40 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
             vector_t *output_vec = (vector_t *)output;
 
             if constexpr (std::is_same_v<scalar_t, fp32>) {
-                const fp32 *x_vec = (fp32 *)&((vector_t *)x)[thread_id];
-                fp32 output_buffer[vector_instruction_width];
+                if constexpr (vector_instruction_width == 8) {
+                    const fp64 *x_vec = (fp64 *)&((vector_t *)x)[thread_id];
 
-                // clang-format off
-                #pragma unroll
-                // clang-format on
-                for (int i = 0; i < vector_instruction_width; i++) {
-                    output_buffer[i] = x_vec[i] + y;
-                }
+                    constexpr int n = vector_instruction_width >> 1;
+                    fp64 output_buffer[n];
 
-                if constexpr (vector_instruction_width == 2) {
-                    output_vec[thread_id] = dtype::make2(output_buffer);
-                } else if constexpr (vector_instruction_width == 4) {
-                    output_vec[thread_id] = dtype::make4(output_buffer);
+                    // clang-format off
+                    #pragma unroll
+                    // clang-format on
+                    for (int i = 0; i < n; i++) {
+                        fp32_2 _x_upcast = dtype::reinterpret_64_bits_as_2x32(x_vec[i]);
+                        _x_upcast = dtype::make2(_x_upcast.x + y, _x_upcast.y + y);
+                        output_buffer[i] = dtype::reinterpret_2x32_as_64_bits(_x_upcast);
+                    }
+
+                    output_vec[thread_id] = DType<fp64>::make4(output_buffer);
                 } else {
-                    static_assert("vector_instruction_width is invalid for fp32");
+                    const fp32 *x_vec = (fp32 *)&((vector_t *)x)[thread_id];
+                    fp32 output_buffer[vector_instruction_width];
+
+                    // clang-format off
+                    #pragma unroll
+                    // clang-format on
+                    for (int i = 0; i < vector_instruction_width; i++) {
+                        output_buffer[i] = x_vec[i] + y;
+                    }
+
+                    if constexpr (vector_instruction_width == 2) {
+                        output_vec[thread_id] = dtype::make2(output_buffer);
+                    } else if constexpr (vector_instruction_width == 4) {
+                        output_vec[thread_id] = dtype::make4(output_buffer);
+                    } else {
+                        static_assert("vector_instruction_width is invalid for fp32");
+                    }
                 }
             } else {
                 using T2 = typename dtype::nv_dtype2;
@@ -58,7 +76,7 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
                 } else {
                     const fp32 *x_vec = (fp32 *)&((vector_t *)x)[thread_id];
 
-                    const int n = vector_instruction_width >> 1;
+                    constexpr int n = vector_instruction_width >> 1;
                     fp32 output_buffer[n];
 
                     // clang-format off
