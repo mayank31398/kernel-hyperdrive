@@ -3,9 +3,8 @@
 #include <cuda_runtime.h>
 #include <torch/extension.h>
 
-#include "../../utils/activations.h"
-#include "../../utils/dtypes.h"
-#include "../../utils/threads.h"
+#include "../../../../include/dtypes/all.h"
+#include "../../../../include/threads.h"
 
 template <typename scalar_t, typename vector_t>
 __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
