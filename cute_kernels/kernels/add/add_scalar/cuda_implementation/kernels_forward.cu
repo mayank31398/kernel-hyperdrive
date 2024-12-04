@@ -174,7 +174,7 @@ void add_scalar_forward_cuda(const torch::Tensor &x,
                     }
                     break;
                 case 16:
-                    if constexpr (std::is_same_v<scalar_t, fp16> || std::is_same_v<scalar_t, bf16>) {
+                    if constexpr (std::is_same_v<scalar_t, c10::Half> || std::is_same_v<scalar_t, c10::BFloat16>) {
                         _add_scalar_forward_cuda_kernel<scalar_t, fp64_4><<<NUM_BLOCKS, BLOCK_SIZE>>>(
                             x.data_ptr<scalar_t>(), y, output.data_ptr<scalar_t>(), num_elements);
                     } else {
