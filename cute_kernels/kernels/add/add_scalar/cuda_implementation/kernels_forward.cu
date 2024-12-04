@@ -41,14 +41,7 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
                     for (int i = 0; i < n; i++) {
                         fp32_2 _x_upcast = dtype::reinterpret_64_bits_as_2x32(x_vec[i]);
                         _x_upcast = dtype::make2(_x_upcast.x + y, _x_upcast.y + y);
-                        if (thread_id == 0 && i == 0) {
-                            printf("%lf %lf\n", _x_upcast.x, _x_upcast.y);
-                        }
-                        fp64 q = dtype::reinterpret_2x32_as_64_bits(_x_upcast);
-                        _x_upcast = dtype::reinterpret_64_bits_as_2x32(q);
-                        if (thread_id == 0 && i == 0) {
-                            printf("%lf %lf\n", _x_upcast.x, _x_upcast.y);
-                        }
+                        output_buffer[i] = dtype::reinterpret_2x32_as_64_bits(_x_upcast);
                     }
 
                     output_vec[thread_id] = DType<fp64>::make4(output_buffer);
