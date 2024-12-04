@@ -87,8 +87,8 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
                         fp32_2 left_upcast = dtype::upcast(left);
                         fp32_2 right_upcast = dtype::upcast(right);
 
-                        left_upcast = DType<fp32>::make2(left.x + y, left.y + y);
-                        right_upcast = DType<fp32>::make2(right.x + y, right.y + y);
+                        left_upcast = DType<fp32>::make2(left_upcast.x + y, left_upcast.y + y);
+                        right_upcast = DType<fp32>::make2(right_upcast.x + y, right_upcast.y + y);
 
                         left = dtype::downcast(left_upcast);
                         right = dtype::downcast(right_upcast);
