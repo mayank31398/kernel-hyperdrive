@@ -30,7 +30,7 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
 
             if constexpr (std::is_same_v<scalar_t, fp32>) {
                 if constexpr (vector_instruction_width == 8) {
-                    const double *x_vec = (double *)&((vector_t *)x)[thread_id];
+                    const fp64 *x_vec = (fp64 *)&((vector_t *)x)[thread_id];
 
                     constexpr int n = vector_instruction_width >> 1;
                     fp64 output_buffer[n];
@@ -144,7 +144,7 @@ void add_scalar_forward_cuda(const torch::Tensor &x,
                     break;
                 case 8:
                     if constexpr (std::is_same_v<scalar_t, fp32>) {
-                        _add_scalar_forward_cuda_kernel<scalar_t, double4><<<NUM_BLOCKS, BLOCK_SIZE>>>(
+                        _add_scalar_forward_cuda_kernel<scalar_t, fp64_4><<<NUM_BLOCKS, BLOCK_SIZE>>>(
                             x.data_ptr<scalar_t>(), y, output.data_ptr<scalar_t>(), num_elements);
                     } else {
                         _add_scalar_forward_cuda_kernel<scalar_t, fp32_4><<<NUM_BLOCKS, BLOCK_SIZE>>>(
