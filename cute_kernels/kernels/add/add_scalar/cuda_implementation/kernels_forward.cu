@@ -82,7 +82,10 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
                     #pragma unroll
                     // clang-format on
                     for (int i = 0; i < n; i++) {
-                        auto [left, right] = dtype::upcast(dtype::reinterpret_64_bits_as_4x16(x_vec[i]));
+                        auto [left, right] = dtype::reinterpret_64_bits_as_4x16(x_vec[i]);
+
+                        fp32_2 left_upcast = dtype::upcast(left);
+                        fp32_2 right_upcast = dtype::upcast(right);
 
                         fp32_2 left_upcast = DType<fp32>::make2(left.x + y, left.y + y);
                         fp32_2 right_upcast = DType<fp32>::make2(right.x + y, right.y + y);
