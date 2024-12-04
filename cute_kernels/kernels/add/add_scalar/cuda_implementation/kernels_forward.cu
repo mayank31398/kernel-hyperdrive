@@ -4,7 +4,6 @@
 #include <torch/extension.h>
 
 #include "../../../../include/dtypes/all.h"
-#include "../../../../include/math.h"
 #include "../../../../include/threads.h"
 
 template <typename scalar_t, typename vector_t>
@@ -13,8 +12,8 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
                                                 scalar_t *output,
                                                 const int64_t num_elements) {
     constexpr int vector_instruction_width = sizeof(vector_t) / sizeof(scalar_t);
-    static_assert(vector_instruction_width >= 1 && vector_instruction_width <= 16 &&
-                  check_power_of_2(vector_instruction_width));
+    static_assert(vector_instruction_width == 1 || vector_instruction_width == 2 || vector_instruction_width == 4 ||
+                  vector_instruction_width == 8 || vector_instruction_width == 16);
 
     const uint64 thread_id = get_global_thread_id();
 
@@ -175,11 +174,11 @@ void add_scalar_forward_cuda(const torch::Tensor &x,
                     }
                     break;
                 case 16:
-                    if constexpr (std::is_same_v<scalar_t, fp32>) {
-                        throw std::runtime_error("invalid vector_instruction_width = 16 for fp32");
-                    } else {
+                    if constexpr (std::is_same_v<scalar_t, fp16> || std::is_same_v<scalar_t, bf16>) {
                         _add_scalar_forward_cuda_kernel<scalar_t, fp64_4><<<NUM_BLOCKS, BLOCK_SIZE>>>(
                             x.data_ptr<scalar_t>(), y, output.data_ptr<scalar_t>(), num_elements);
+                    } else {
+                        throw std::runtime_error("invalid vector_instruction_width = 16 for fp32");
                     }
                     break;
                 default:
