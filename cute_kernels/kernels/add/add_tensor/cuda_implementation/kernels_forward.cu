@@ -23,6 +23,8 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
         }
     } else {
         using dtype = DType<scalar_t>;
+        using T2 = typename dtype::nv_dtype2;
+
         int64_t end = (thread_id + 1) * vector_instruction_width - 1;  // inclusive of last element
 
         if (end < num_elements) {
@@ -68,8 +70,6 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
                     }
                 }
             } else {
-                using T2 = typename dtype::nv_dtype2;
-
                 if constexpr (vector_instruction_width == 2) {
                     const T2 _x = ((vector_t *)x)[thread_id];
                     const T2 _y = ((vector_t *)y)[thread_id];
