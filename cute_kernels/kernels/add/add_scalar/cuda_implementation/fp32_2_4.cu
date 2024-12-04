@@ -7,10 +7,10 @@
 #include "../../../../include/threads.h"
 
 template <typename vector_t>
-__global__ void _add_scalar_forward_cuda_kernel(const fp32 *x,
-                                                const fp32 y,
-                                                fp32 *output,
-                                                const int64_t num_elements) {
+__global__ void _add_scalar_forward_cuda_kernel_fp32_2_4(const fp32 *x,
+                                                         const fp32 y,
+                                                         fp32 *output,
+                                                         const int64_t num_elements) {
     constexpr int vector_instruction_width = sizeof(vector_t) >> 2;
     static_assert(vector_instruction_width == 2 || vector_instruction_width == 4);
 
