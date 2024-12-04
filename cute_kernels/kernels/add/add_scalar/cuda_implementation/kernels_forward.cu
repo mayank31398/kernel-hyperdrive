@@ -4,6 +4,7 @@
 #include <torch/extension.h>
 
 #include "../../../../include/dtypes/all.h"
+#include "../../../../include/math.h"
 #include "../../../../include/threads.h"
 
 template <typename scalar_t, typename vector_t>
@@ -12,10 +13,10 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
                                                 scalar_t *output,
                                                 const int64_t num_elements) {
     constexpr int vector_instruction_width = sizeof(vector_t) / sizeof(scalar_t);
-    static_assert(vector_instruction_width == 1 || vector_instruction_width == 2 || vector_instruction_width == 4 ||
-                  vector_instruction_width == 8);
+    static_assert(vector_instruction_width >= 1 && vector_instruction_width <= 16 &&
+                  check_power_of_2(vector_instruction_width));
 
-    const int64_t thread_id = get_global_thread_id();
+    const uint64 thread_id = get_global_thread_id();
 
     if constexpr (vector_instruction_width == 1) {
         if (thread_id < num_elements) {
@@ -23,7 +24,7 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
         }
     } else {
         using dtype = DType<scalar_t>;
-        int64_t end = (thread_id + 1) * vector_instruction_width - 1;  // inclusive of last element
+        uint64 end = (thread_id + 1) * vector_instruction_width - 1;  // inclusive of last element
 
         if (end < num_elements) {
             vector_t *output_vec = (vector_t *)output;
@@ -72,6 +73,28 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
 
                     _x_upcast = DType<fp32>::make2(_x_upcast.x + y, _x_upcast.y + y);
                     output_vec[thread_id] = dtype::downcast(_x_upcast);
+                } else if constexpr (vector_instruction_width == 16) {
+                    const fp64 *x_vec = (fp64 *)&((vector_t *)x)[thread_id];
+
+                    constexpr int n = vector_instruction_width >> 2;
+                    fp64 output_buffer[n];
+
+                    // clang-format off
+                    #pragma unroll
+                    // clang-format on
+                    for (int i = 0; i < n; i++) {
+                        auto [left, right] = dtype::upcast(dtype::reinterpret_64_bits_as_4x16(x_vec[i]));
+
+                        fp32_2 left_upcast = DType<fp32>::make2(left.x + y, left.y + y);
+                        fp32_2 right_upcast = DType<fp32>::make2(right.x + y, right.y + y);
+
+                        left = dtype::downcast(left_upcast);
+                        right = dtype::downcast(right_upcast);
+
+                        output_buffer[i] = dtype::reinterpret_2x16_as_32_bits(left, right);
+                    }
+
+                    output_vec[thread_id] = DType<fp64>::make4(output_buffer);
                 } else {
                     const fp32 *x_vec = (fp32 *)&((vector_t *)x)[thread_id];
 
@@ -148,6 +171,14 @@ void add_scalar_forward_cuda(const torch::Tensor &x,
                             x.data_ptr<scalar_t>(), y, output.data_ptr<scalar_t>(), num_elements);
                     } else {
                         _add_scalar_forward_cuda_kernel<scalar_t, fp32_4><<<NUM_BLOCKS, BLOCK_SIZE>>>(
+                            x.data_ptr<scalar_t>(), y, output.data_ptr<scalar_t>(), num_elements);
+                    }
+                    break;
+                case 16:
+                    if constexpr (std::is_same_v<scalar_t, fp32>) {
+                        throw std::runtime_error("invalid vector_instruction_width = 16 for fp32");
+                    } else {
+                        _add_scalar_forward_cuda_kernel<scalar_t, fp64_4><<<NUM_BLOCKS, BLOCK_SIZE>>>(
                             x.data_ptr<scalar_t>(), y, output.data_ptr<scalar_t>(), num_elements);
                     }
                     break;
