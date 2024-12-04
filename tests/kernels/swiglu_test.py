@@ -13,11 +13,11 @@ class SwigluTest(TestCommons):
         TestCommons.make_args_matrix(
             TestCommons.get_2d_tensor_sizes(),  # size
             [torch.device("cuda")],  # device
-            [torch.float32],  # dtype
+            TestCommons.get_dtypes(),  # dtype
             [KernelBackend.cuda],  # kernel_backend_forward
             [KernelBackend.cuda],  # kernel_backend_backward
-            [1, 2, 4],  # vector_instruction_width_forward
-            [1, 2, 4],  # vector_instruction_width_backward
+            [1, 2, 4, 8],  # vector_instruction_width_forward
+            [1, 2, 4, 8],  # vector_instruction_width_backward
             [1024],  # BLOCK_SIZE_forward
             [1024],  # BLOCK_SIZE_backward
             [swiglu_cute, torch.compile(swiglu_cute)],  # function
@@ -28,8 +28,8 @@ class SwigluTest(TestCommons):
             [torch.bfloat16, torch.float16],  # dtype
             [KernelBackend.cuda],  # kernel_backend_forward
             [KernelBackend.cuda],  # kernel_backend_backward
-            [1, 2, 4, 8],  # vector_instruction_width_forward
-            [1, 2, 4, 8],  # vector_instruction_width_backward
+            [16],  # vector_instruction_width_forward
+            [16],  # vector_instruction_width_backward
             [1024],  # BLOCK_SIZE_forward
             [1024],  # BLOCK_SIZE_backward
             [swiglu_cute, torch.compile(swiglu_cute)],  # function
@@ -49,19 +49,7 @@ class SwigluTest(TestCommons):
         + TestCommons.make_args_matrix(
             TestCommons.get_2d_tensor_sizes(),  # size
             [torch.device("cuda")],  # device
-            [torch.float32],  # dtype
-            [KernelBackend.cuda],  # kernel_backend_forward
-            [KernelBackend.triton],  # kernel_backend_backward
-            [1, 2, 4],  # vector_instruction_width_forward
-            [None],  # vector_instruction_width_backward
-            [1024],  # BLOCK_SIZE_forward
-            [1024],  # BLOCK_SIZE_backward
-            [swiglu_cute, torch.compile(swiglu_cute)],  # function
-        )
-        + TestCommons.make_args_matrix(
-            TestCommons.get_2d_tensor_sizes(),  # size
-            [torch.device("cuda")],  # device
-            [torch.bfloat16, torch.float16],  # dtype
+            TestCommons.get_dtypes(),  # dtype
             [KernelBackend.cuda],  # kernel_backend_forward
             [KernelBackend.triton],  # kernel_backend_backward
             [1, 2, 4, 8],  # vector_instruction_width_forward
@@ -73,11 +61,23 @@ class SwigluTest(TestCommons):
         + TestCommons.make_args_matrix(
             TestCommons.get_2d_tensor_sizes(),  # size
             [torch.device("cuda")],  # device
-            [torch.float32],  # dtype
+            [torch.bfloat16, torch.float16],  # dtype
+            [KernelBackend.cuda],  # kernel_backend_forward
+            [KernelBackend.triton],  # kernel_backend_backward
+            [16],  # vector_instruction_width_forward
+            [None],  # vector_instruction_width_backward
+            [1024],  # BLOCK_SIZE_forward
+            [1024],  # BLOCK_SIZE_backward
+            [swiglu_cute, torch.compile(swiglu_cute)],  # function
+        )
+        + TestCommons.make_args_matrix(
+            TestCommons.get_2d_tensor_sizes(),  # size
+            [torch.device("cuda")],  # device
+            TestCommons.get_dtypes(),  # dtype
             [KernelBackend.triton],  # kernel_backend_forward
             [KernelBackend.cuda],  # kernel_backend_backward
             [None],  # vector_instruction_width_forward
-            [1, 2, 4],  # vector_instruction_width_backward
+            [1, 2, 4, 8],  # vector_instruction_width_backward
             [1024],  # BLOCK_SIZE_forward
             [1024],  # BLOCK_SIZE_backward
             [swiglu_cute, torch.compile(swiglu_cute)],  # function
@@ -89,7 +89,7 @@ class SwigluTest(TestCommons):
             [KernelBackend.triton],  # kernel_backend_forward
             [KernelBackend.cuda],  # kernel_backend_backward
             [None],  # vector_instruction_width_forward
-            [1, 2, 4, 8],  # vector_instruction_width_backward
+            [16],  # vector_instruction_width_backward
             [1024],  # BLOCK_SIZE_forward
             [1024],  # BLOCK_SIZE_backward
             [swiglu_cute, torch.compile(swiglu_cute)],  # function
