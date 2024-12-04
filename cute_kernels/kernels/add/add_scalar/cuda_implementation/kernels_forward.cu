@@ -93,7 +93,7 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
                         left = dtype::downcast(left_upcast);
                         right = dtype::downcast(right_upcast);
 
-                        output_buffer[i] = dtype::reinterpret_2x16_as_32_bits(left, right);
+                        output_buffer[i] = dtype::reinterpret_2x32_as_64_bits(left, right);
                     }
 
                     output_vec[thread_id] = DType<fp64>::make4(output_buffer);
