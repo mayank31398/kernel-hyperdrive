@@ -28,11 +28,11 @@ struct DType<fp32> : public DType<fp64> {
         return reinterpret_2x32_as_64_bits(value.x, value.y);
     }
 
-    inline __device__ static fp64 reinterpret_2x32_as_64_bits(const nv_dtype &lower_half, const nv_dtype &upper_half) {
-        uint32 lower_32 = __float_as_uint(lower_half);
-        uint32 upper_32 = __float_as_uint(upper_half);
+    inline __device__ static fp64 reinterpret_2x32_as_64_bits(const nv_dtype &left, const nv_dtype &right) {
+        uint32 left_int = __float_as_uint(left);
+        uint32 right_int = __float_as_uint(right);
 
-        return combine_32_bits_into_fp64(upper_32, lower_32);
+        return combine_32_bits_into_fp64(left_int, right_int);
     }
 
     inline __device__ static nv_dtype2 make2(const nv_dtype &x, const nv_dtype &y) { return make_float2(x, y); }
