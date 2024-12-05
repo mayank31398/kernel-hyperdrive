@@ -16,6 +16,7 @@ from .kernels import (
     swiglu_torch,
 )
 from .utils import (
+    CuteInductor,
     CutoTuneConfig,
     CutoTuneParameter,
     cutotune,
