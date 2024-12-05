@@ -1,14 +1,13 @@
 import torch
 
 from ....enums import KernelBackend
-from ....utils import CutoTuneParameter, ensure_contiguous
+from ....utils import CutoTuneParameter, ensure_same_strides
 from .forward import _forward
 from .torch_implementation import add_tensor_torch
 
 
 class _AddTensor_Cute(torch.autograd.Function):
     @staticmethod
-    @ensure_contiguous
     def forward(
         ctx,
         x: torch.Tensor,
@@ -19,6 +18,8 @@ class _AddTensor_Cute(torch.autograd.Function):
     ) -> torch.Tensor:
         assert x.size() == y.size(), "tensors x and y should have same shape"
         assert x.type() == y.type(), "tensors x and y should have same dtype"
+
+        x, y = ensure_same_strides(x, y)
 
         return _forward(
             x=x,

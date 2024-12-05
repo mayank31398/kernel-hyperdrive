@@ -1,4 +1,4 @@
-from .contiguous import ensure_contiguous
+from .contiguous import ensure_contiguous, ensure_same_strides
 from .custom_op import cute_op
 from .cutotune import CutoTuneConfig, CutoTuneParameter, cutotune, get_cartesian_product_cutotune_configs
 from .device import device_synchronize, get_sm_count
