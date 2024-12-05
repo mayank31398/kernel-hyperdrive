@@ -1,3 +1,4 @@
+from .compiler import CuteInductor
 from .contiguous import ensure_contiguous, ensure_same_strides
 from .custom_op import cute_op
 from .cutotune import CutoTuneConfig, CutoTuneParameter, cutotune, get_cartesian_product_cutotune_configs
