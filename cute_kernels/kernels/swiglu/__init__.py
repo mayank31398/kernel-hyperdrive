@@ -1,7 +1,7 @@
 import torch
 
 from ...enums import KernelBackend
-from ...utils import CutoTuneParameter, ensure_same_strides
+from ...utils import CutoTuneParameter, ensure_contiguous
 from .backward import _backward
 from .forward import _forward
 from .torch_implementation import swiglu_torch
@@ -9,6 +9,7 @@ from .torch_implementation import swiglu_torch
 
 class _Swiglu_Cute(torch.autograd.Function):
     @staticmethod
+    @ensure_contiguous
     def forward(
         ctx,
         gate: torch.Tensor,
@@ -22,8 +23,6 @@ class _Swiglu_Cute(torch.autograd.Function):
     ) -> torch.Tensor:
         assert gate.size() == up.size(), "tensors gate and up should have same shape"
         assert gate.type() == up.type(), "tensors gate and up should have same dtype"
-
-        gate, up = ensure_same_strides(gate, up)
 
         ctx.save_for_backward(gate, up)
         ctx.kernel_backend_backward = kernel_backend_backward
@@ -39,9 +38,9 @@ class _Swiglu_Cute(torch.autograd.Function):
         )
 
     @staticmethod
+    @ensure_contiguous
     def backward(ctx, output_grad: torch.Tensor) -> tuple[torch.Tensor | None]:
         gate, up = ctx.saved_tensors
-        gate, up, output_grad = ensure_same_strides(gate, up, output_grad)
 
         gate_grad, up_grad = _backward(
             gate=gate,

@@ -20,7 +20,6 @@ from .utils import (
     CutoTuneParameter,
     cutotune,
     device_synchronize,
-    ensure_same_strides,
     get_cartesian_product_cutotune_configs,
     get_triton_num_warps,
 )
