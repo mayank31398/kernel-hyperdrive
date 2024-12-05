@@ -6,10 +6,10 @@
 #include "../../../../include/dtypes/all.h"
 #include "../../../../include/threads.h"
 
-__global__ void _add_scalar_forward_cuda_kernel(const fp32 *x,
-                                                const fp32 y,
-                                                fp32 *output,
-                                                const int64_t num_elements) {
+__global__ void _add_scalar_forward_cuda_kernel_fp32_8(const fp32 *x,
+                                                       const fp32 y,
+                                                       fp32 *output,
+                                                       const int64_t num_elements) {
     const int vector_instruction_width = 8;
 
     const uint64 thread_id = get_global_thread_id();
