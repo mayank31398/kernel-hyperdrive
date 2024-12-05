@@ -90,7 +90,7 @@ class _Embedding_Cute(torch.autograd.Function):
                 "BLOCK_SIZE_H_backward": 128,
             }
         ),
-        triggers={"weight.dtype"},
+        triggers={"output_grad.dtype"},
     )
     def backward(ctx, output_grad: torch.Tensor) -> torch.Tensor:
         input_ids, weight = ctx.saved_tensors
