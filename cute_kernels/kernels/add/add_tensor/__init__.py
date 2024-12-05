@@ -11,6 +11,7 @@ from ....utils import (
     get_cartesian_product_cutotune_configs,
 )
 from .cuda_implementation import add_tensor_forward_cuda_kernel
+from .torch_implementation import add_tensor_torch
 from .triton_implementation import add_tensor_forward_triton_kernel
 
 
