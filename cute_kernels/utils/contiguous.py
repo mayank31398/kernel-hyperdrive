@@ -1,14 +1,10 @@
-from typing import Any, Callable
+from typing import Callable
 
 import torch
 
 
 def is_hip() -> bool:
     return torch.version.hip is not None
-
-
-def make_contiguous(x: Any) -> Any:
-    return x.contiguous() if isinstance(x, torch.Tensor) else x
 
 
 def ensure_contiguous(func: Callable) -> Callable:
