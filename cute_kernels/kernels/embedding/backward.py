@@ -1,21 +1,15 @@
 import torch
 
 from ...enums import KernelBackend
-from ...utils import (
-    CutoTuneConfig,
-    ceil_divide,
-    cutotune,
-    get_block_sizes_powers_of_2,
-    get_cartesian_product_cutotune_configs,
-)
+from ...utils import CutoTuneConfig, ceil_divide, cutotune, get_cartesian_product_cutotune_configs, get_powers_of_2
 from .triton_implementation import embedding_backward_triton_kernel
 
 
 @cutotune(
     configs=get_cartesian_product_cutotune_configs(
         kernel_backend=[KernelBackend.triton],
-        BLOCK_SIZE_B=get_block_sizes_powers_of_2(128, 65536),
-        BLOCK_SIZE_H=get_block_sizes_powers_of_2(128, 65536),
+        BLOCK_SIZE_B=get_powers_of_2(128, 65536),
+        BLOCK_SIZE_H=get_powers_of_2(128, 65536),
         condition=lambda **kwargs: 1024 <= kwargs["BLOCK_SIZE_B"] * kwargs["BLOCK_SIZE_H"] <= 65536,
     ),
     default_config=CutoTuneConfig({"kernel_backend": KernelBackend.triton, "BLOCK_SIZE_B": 128, "BLOCK_SIZE_H": 128}),

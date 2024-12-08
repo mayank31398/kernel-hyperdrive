@@ -23,33 +23,53 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
         }
     } else {
         using dtype = DType<scalar_t>;
+        using T2 = typename dtype::nv_dtype2;
+
         int64_t end = (thread_id + 1) * vector_instruction_width - 1;  // inclusive of last element
 
         if (end < num_elements) {
             vector_t *output_vec = (vector_t *)output;
 
             if constexpr (std::is_same_v<scalar_t, fp32>) {
-                const fp32 *x_vec = (fp32 *)&((vector_t *)x)[thread_id];
-                const fp32 *y_vec = (fp32 *)&((vector_t *)y)[thread_id];
-                fp32 output_buffer[vector_instruction_width];
+                if constexpr (vector_instruction_width == 8) {
+                    const fp64 *x_vec = (fp64 *)&((vector_t *)x)[thread_id];
+                    const fp64 *y_vec = (fp64 *)&((vector_t *)y)[thread_id];
 
-                // clang-format off
-                #pragma unroll
-                // clang-format on
-                for (int i = 0; i < vector_instruction_width; i++) {
-                    output_buffer[i] = x_vec[i] + y_vec[i];
-                }
+                    constexpr int n = vector_instruction_width >> 1;
+                    fp64 output_buffer[n];
 
-                if constexpr (vector_instruction_width == 2) {
-                    output_vec[thread_id] = dtype::make2(output_buffer);
-                } else if constexpr (vector_instruction_width == 4) {
-                    output_vec[thread_id] = dtype::make4(output_buffer);
+                    // clang-format off
+                    #pragma unroll
+                    // clang-format on
+                    for (int i = 0; i < n; i++) {
+                        T2 _x = dtype::reinterpret_64_bits_as_2x32(x_vec[i]);
+                        T2 _y = dtype::reinterpret_64_bits_as_2x32(y_vec[i]);
+
+                        output_buffer[i] = dtype::reinterpret_2x32_as_64_bits(_x.x + _y.x, _x.y + _y.y);
+                    }
+
+                    output_vec[thread_id] = DType<fp64>::make4(output_buffer);
                 } else {
-                    static_assert("vector_instruction_width is invalid for fp32");
+                    const fp32 *x_vec = (fp32 *)&((vector_t *)x)[thread_id];
+                    const fp32 *y_vec = (fp32 *)&((vector_t *)y)[thread_id];
+                    fp32 output_buffer[vector_instruction_width];
+
+                    // clang-format off
+                    #pragma unroll
+                    // clang-format on
+                    for (int i = 0; i < vector_instruction_width; i++) {
+                        output_buffer[i] = x_vec[i] + y_vec[i];
+                    }
+
+                    if constexpr (vector_instruction_width == 2) {
+                        output_vec[thread_id] = dtype::make2(output_buffer);
+                    } else if constexpr (vector_instruction_width == 4) {
+                        output_vec[thread_id] = dtype::make4(output_buffer);
+                    } else {
+                        static_assert("vector_instruction_width is invalid for fp32");
+                    }
                 }
             } else {
-                using T2 = typename dtype::nv_dtype2;
-
                 if constexpr (vector_instruction_width == 2) {
                     const T2 _x = ((vector_t *)x)[thread_id];
                     const T2 _y = ((vector_t *)y)[thread_id];
@@ -130,7 +150,8 @@ void add_tensor_forward_cuda(const torch::Tensor &x,
                     break;
                 case 8:
                     if constexpr (std::is_same_v<scalar_t, fp32>) {
-                        throw std::runtime_error("fp32 doesn't support vector_instruction_width = 8");
+                        _add_tensor_forward_cuda_kernel<scalar_t, fp64_4><<<NUM_BLOCKS, BLOCK_SIZE>>>(
+                            x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
                     } else {
                         _add_tensor_forward_cuda_kernel<scalar_t, fp32_4><<<NUM_BLOCKS, BLOCK_SIZE>>>(
                             x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);

@@ -1,3 +1,4 @@
+from .constants import COMMON_VECTOR_INSTRUCTION_WIDTHS, MAX_FP16_BF16_INSTRUCTION_WIDTH
 from .enums import KernelBackend
 from .kernel_registry import KernelRegistry
 from .kernels import (
@@ -22,5 +23,6 @@ from .utils import (
     cutotune,
     device_synchronize,
     get_cartesian_product_cutotune_configs,
+    get_powers_of_2,
     get_triton_num_warps,
 )
