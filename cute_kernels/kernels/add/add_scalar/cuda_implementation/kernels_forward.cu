@@ -64,6 +64,7 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
                     }
                 }
             } else {
+                using T = typename dtype::nv_dtype;
                 using T2 = typename dtype::nv_dtype2;
 
                 if constexpr (vector_instruction_width == 2) {
@@ -82,7 +83,10 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
                     #pragma unroll
                     // clang-format on
                     for (int i = 0; i < n; i++) {
-                        auto [left, right] = dtype::reinterpret_64_bits_as_4x16(x_vec[i]);
+                        auto [first, second, third, fourth] = dtype::reinterpret_64_bits_as_4x16(x_vec[i]);
+
+                        T2 left = dtype::make2(first, second);
+                        T2 right = dtype::make2(third, fourth);
 
                         fp32_2 left_upcast = dtype::upcast(left);
                         fp32_2 right_upcast = dtype::upcast(right);

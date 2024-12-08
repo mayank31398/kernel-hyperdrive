@@ -37,7 +37,8 @@ struct DType<c10::BFloat16> {
     }
 
     // fp64 -> bf16_2, bf16_2
-    inline __device__ static std::tuple<nv_dtype2, nv_dtype2> reinterpret_64_bits_as_4x16(const fp64 &value) {
+    inline __device__ static std::tuple<nv_dtype, nv_dtype, nv_dtype, nv_dtype> reinterpret_64_bits_as_4x16(
+        const fp64 &value) {
         auto [first_int, second_int, third_int, fourth_int] = split_fp64_into_16_bits(value);
 
         nv_dtype first = __ushort_as_bfloat16(first_int);
@@ -45,10 +46,7 @@ struct DType<c10::BFloat16> {
         nv_dtype third = __ushort_as_bfloat16(third_int);
         nv_dtype fourth = __ushort_as_bfloat16(fourth_int);
 
-        nv_dtype2 left = __halves2bfloat162(first, second);
-        nv_dtype2 right = __halves2bfloat162(third, fourth);
-
-        return std::make_tuple(left, right);
+        return std::make_tuple(first, second, third, fourth);
     }
 
     // bf16_2, bf16_2 -> fp64
