@@ -15,19 +15,19 @@ class AddTensorTest(TestCommons):
             [torch.device("cuda")],  # device
             TestCommons.get_dtypes(),  # dtype
             [KernelBackend.cuda],  # kernel_backend
-            [1, 2, 4, 8],  # vector_instruction_width
+            [1, 2, 4],  # vector_instruction_width
             [1024],  # BLOCK_SIZE
             [add_tensor_cute, torch.compile(add_tensor_cute)],  # function
         )
-        # + TestCommons.make_args_matrix(
-        #     TestCommons.get_2d_tensor_sizes(),  # size
-        #     [torch.device("cuda")],  # device
-        #     [torch.bfloat16, torch.float16],  # dtype
-        #     [KernelBackend.cuda],  # kernel_backend
-        #     [16],  # vector_instruction_width
-        #     [1024],  # BLOCK_SIZE
-        #     [add_tensor_cute, torch.compile(add_tensor_cute)],  # function
-        # )
+        + TestCommons.make_args_matrix(
+            TestCommons.get_2d_tensor_sizes(),  # size
+            [torch.device("cuda")],  # device
+            [torch.bfloat16, torch.float16],  # dtype
+            [KernelBackend.cuda],  # kernel_backend
+            [8],  # vector_instruction_width
+            [1024],  # BLOCK_SIZE
+            [add_tensor_cute, torch.compile(add_tensor_cute)],  # function
+        )
         + TestCommons.make_args_matrix(
             TestCommons.get_2d_tensor_sizes(),  # size
             [torch.device("cuda")],  # device
