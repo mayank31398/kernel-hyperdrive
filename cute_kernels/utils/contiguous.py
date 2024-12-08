@@ -1,6 +1,7 @@
 from typing import Any, Callable
 
 import torch
+from torch.utils._pytree import tree_map
 
 
 def is_hip() -> bool:
@@ -13,8 +14,8 @@ def make_contiguous(x: Any) -> Any:
 
 def ensure_contiguous(func: Callable) -> Callable:
     def inner(*args, **kwargs):
-        args = [make_contiguous(arg) for arg in args]
-        kwargs = {k: make_contiguous(v) for k, v in kwargs.items()}
+        args = tree_map(make_contiguous, args)
+        kwargs = tree_map(make_contiguous, kwargs)
         return func(*args, **kwargs)
 
     return inner
@@ -22,7 +23,7 @@ def ensure_contiguous(func: Callable) -> Callable:
 
 def ensure_same_strides(*args, force_contiguous: bool = False) -> list[torch.Tensor]:
     if force_contiguous:
-        output = [make_contiguous(arg) for arg in args]
+        output = tree_map(make_contiguous, args)
     else:
         mismatch = False
         expected_stride = None
