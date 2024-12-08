@@ -28,8 +28,8 @@ class SwigluTest(TestCommons):
             [torch.bfloat16, torch.float16],  # dtype
             [KernelBackend.cuda],  # kernel_backend_forward
             [KernelBackend.cuda],  # kernel_backend_backward
-            [8],  # vector_instruction_width_forward
-            [8],  # vector_instruction_width_backward
+            [1, 2, 4, 8],  # vector_instruction_width_forward
+            [1, 2, 4, 8],  # vector_instruction_width_backward
             [1024],  # BLOCK_SIZE_forward
             [1024],  # BLOCK_SIZE_backward
             [swiglu_cute, torch.compile(swiglu_cute)],  # function
