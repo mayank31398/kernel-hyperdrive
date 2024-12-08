@@ -15,6 +15,5 @@
     - swiglu_backward_cuda
   sources:
     - kernels/swiglu/cuda_implementation/ops.cpp
-    - kernels/swiglu/cuda_implementation/fp32_fp16_bf16_1.cu
     - kernels/swiglu/cuda_implementation/kernels_forward.cu
     - kernels/swiglu/cuda_implementation/kernels_backward.cu
