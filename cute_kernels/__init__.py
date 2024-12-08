@@ -16,6 +16,7 @@ from .kernels import (
     swiglu_cute,
     swiglu_torch,
 )
+from .tensor import CuteTensor
 from .utils import (
     CuteInductor,
     CutoTuneConfig,
