@@ -23,7 +23,7 @@ def ensure_contiguous(func: Callable) -> Callable:
 
 def ensure_same_strides(*args, force_contiguous: bool = False) -> list[torch.Tensor]:
     if force_contiguous:
-        output = [make_contiguous(arg) for arg in args]
+        output = tree_map(make_contiguous, args)
     else:
         mismatch = False
         expected_stride = None
