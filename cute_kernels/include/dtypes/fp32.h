@@ -14,14 +14,6 @@ struct DType<fp32> {
     using nv_dtype2 = fp32_2;
     using nv_dtype4 = fp32_4;
 
-    inline __device__ static nv_dtype upcast(const nv_dtype &value) { return value; }
-    inline __device__ static nv_dtype2 upcast(const nv_dtype2 &value) { return value; }
-    inline __device__ static nv_dtype4 upcast(const nv_dtype4 &value) { return value; }
-
-    inline __device__ static nv_dtype downcast(const nv_dtype &value) { return value; }
-    inline __device__ static nv_dtype2 downcast(const nv_dtype2 &value) { return value; }
-    inline __device__ static nv_dtype4 downcast(const nv_dtype4 &value) { return value; }
-
     inline __device__ static nv_dtype2 reinterpret_64_bits_as_2x32(const fp64 &value) {
         auto [left_int, right_int] = split_fp64_into_32_bits(value);
 
@@ -54,4 +46,12 @@ struct DType<fp32> {
     inline __device__ static nv_dtype4 make4(const nv_dtype *array) {
         return make_float4(array[0], array[1], array[2], array[3]);
     }
+
+    inline __device__ static nv_dtype upcast(const nv_dtype &value) { return value; }
+    inline __device__ static nv_dtype2 upcast(const nv_dtype2 &value) { return value; }
+    inline __device__ static nv_dtype4 upcast(const nv_dtype4 &value) { return value; }
+
+    inline __device__ static nv_dtype downcast(const nv_dtype &value) { return value; }
+    inline __device__ static nv_dtype2 downcast(const nv_dtype2 &value) { return value; }
+    inline __device__ static nv_dtype4 downcast(const nv_dtype4 &value) { return value; }
 };
