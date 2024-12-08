@@ -6,10 +6,9 @@
 #include <torch/extension.h>
 
 #include "common.h"
-#include "fp64.h"
 
 template <>
-struct DType<fp32> : public DType<fp64> {
+struct DType<fp32> {
     using c10_dtype = fp32;
     using nv_dtype = fp32;
     using nv_dtype2 = fp32_2;
