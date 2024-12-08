@@ -1,4 +1,4 @@
-from .constants import VECTOR_INSTRUCTION_WIDTHS
+from .constants import COMMON_VECTOR_INSTRUCTION_WIDTHS, MAX_FP16_BF16_INSTRUCTION_WIDTH
 from .enums import KernelBackend
 from .kernel_registry import KernelRegistry
 from .kernels import (
