@@ -139,7 +139,7 @@ class _CutoTune:
 
         return result
 
-    @torch.inference_mode()
+    @torch.no_grad()
     def _cutotune(self, *args, **kwargs) -> tuple[CutoTuneConfig, float]:
         best_config = None
         best_time = float("inf")
@@ -162,8 +162,9 @@ class _CutoTune:
                 best_config = config
                 best_time = elapsed_time
 
-        assert best_config is not None, "no best_config found, check that at least 1 cutotune config is valid"
+        torch.cuda.empty_cache()
 
+        assert best_config is not None, "no best_config found, check that at least 1 cutotune config is valid"
         return best_config, best_time
 
     def _get_lookup_key(self, *args, **kwargs) -> Any:
