@@ -7,7 +7,6 @@ from typing import Any, Callable
 
 import torch
 import torch.distributed
-from torch.utils._pytree import tree_map
 from tqdm import tqdm
 
 from .device import device_synchronize
@@ -111,8 +110,18 @@ class _CutoTune:
                 num_cutotune_overrideables += 1
             return x
 
-        args = tree_map(_count, args)
-        kwargs = tree_map(_count, kwargs)
+        for i in range(len(args)):
+            variable_name = self.signature.args[i]
+
+            if isinstance(args[i], CutoTuneParameter) and variable_name in self.cutotuneable_parameters:
+                num_cutotune_overrideables += 1
+
+        for variable_name in kwargs:
+            if (
+                isinstance(kwargs.get(variable_name), CutoTuneParameter)
+                and variable_name in self.cutotuneable_parameters
+            ):
+                num_cutotune_overrideables += 1
 
         assert num_cutotune_overrideables in [
             0,
@@ -127,19 +136,19 @@ class _CutoTune:
         # copy the best_config first so we can override with args or kwargs
         result = {variable_name: value for variable_name, value in config.get_key_values().items()}
 
-        for i, value in enumerate(args):
+        for i in range(len(args)):
             variable_name = self.signature.args[i]
 
             if override_allowed or variable_name not in result:
-                result[variable_name] = value
+                result[variable_name] = args[i]
 
-        for variable_name, value in kwargs.items():
+        for variable_name in kwargs:
             if override_allowed or variable_name not in result:
-                result[variable_name] = value
+                result[variable_name] = kwargs.get(variable_name)
 
         return result
 
-    @torch.no_grad()
+    @torch.inference_mode()
     def _cutotune(self, *args, **kwargs) -> tuple[CutoTuneConfig, float]:
         best_config = None
         best_time = float("inf")
@@ -162,9 +171,8 @@ class _CutoTune:
                 best_config = config
                 best_time = elapsed_time
 
-        torch.cuda.empty_cache()
-
         assert best_config is not None, "no best_config found, check that at least 1 cutotune config is valid"
+
         return best_config, best_time
 
     def _get_lookup_key(self, *args, **kwargs) -> Any:
