@@ -76,7 +76,7 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
                     const T2 _y = ((vector_t *)y)[thread_id];
 
                     output_vec[thread_id] = __hadd2(_x, _y);
-                } else if (vector_instruction_width == 16) {
+                } else if constexpr (vector_instruction_width == 16) {
                     const fp64 *x_vec = (fp64 *)&((vector_t *)x)[thread_id];
                     const fp64 *y_vec = (fp64 *)&((vector_t *)y)[thread_id];
 
