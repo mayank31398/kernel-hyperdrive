@@ -101,15 +101,7 @@ class _CutoTune:
 
         return output
 
-    def _check_no_args_are_cutotune_parameters(self, *args, **kwargs) -> None:
-        for i, value in enumerate(args):
-            assert not isinstance(
-                value, CutoTuneParameter
-            ), f"{self.signature.args[i]} should not be CutoTuneParameter"
-
-        for variable_name, value in kwargs.items():
-            assert not isinstance(value, CutoTuneParameter), f"{variable_name} should not be CutoTuneParameter"
-
+    @torch._dynamo.disable
     def _check_all_or_no_args_are_cutotune_parameters(self, *args, **kwargs) -> bool:
         num_cutotune_overrideables = 0
 
