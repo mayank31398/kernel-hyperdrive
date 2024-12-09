@@ -7,6 +7,7 @@ from typing import Any, Callable
 
 import torch
 import torch.distributed
+from torch.utils._pytree import tree_map
 from tqdm import tqdm
 
 from .device import device_synchronize
@@ -101,19 +102,17 @@ class _CutoTune:
 
         return output
 
-    @torch._dynamo.disable
     def _check_all_or_no_args_are_cutotune_parameters(self, *args, **kwargs) -> bool:
         num_cutotune_overrideables = 0
 
-        for i, value in enumerate(args):
-            variable_name = self.signature.args[i]
-
-            if isinstance(value, CutoTuneParameter) and variable_name in self.cutotuneable_parameters:
+        def _count(x: Any) -> Any:
+            nonlocal num_cutotune_overrideables
+            if isinstance(x, CutoTuneParameter):
                 num_cutotune_overrideables += 1
+            return x
 
-        for variable_name, value in kwargs.items():
-            if isinstance(value, CutoTuneParameter) and variable_name in self.cutotuneable_parameters:
-                num_cutotune_overrideables += 1
+        args = tree_map(_count, args)
+        kwargs = tree_map(_count, kwargs)
 
         assert num_cutotune_overrideables in [
             0,
@@ -180,7 +179,7 @@ class _CutoTune:
                 for func_name, func in triggers:
                     if func is None:
                         assert len(triggers) == 1
-                        trigger = lambda tensor: (tensor.dtype, tensor.size(), tensor.stride())
+                        func = lambda tensor: (tensor.dtype, tensor.size(), tensor.stride())
 
                     lookup_key.append(f"{variable_name}.{func_name} = {func(value)}")
             else:
