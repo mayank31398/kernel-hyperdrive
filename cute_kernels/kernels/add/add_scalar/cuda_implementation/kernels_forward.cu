@@ -15,6 +15,10 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
     static_assert(vector_instruction_width == 1 || vector_instruction_width == 2 || vector_instruction_width == 4 ||
                   vector_instruction_width == 8 || vector_instruction_width == 16);
 
+    using dtype = DType<scalar_t>;
+    using T = typename dtype::nv_dtype;
+    using T2 = typename dtype::nv_dtype2;
+
     const uint64 thread_id = get_global_thread_id();
 
     if constexpr (vector_instruction_width == 1) {
@@ -22,7 +26,6 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
             output[thread_id] = x[thread_id] + y;
         }
     } else {
-        using dtype = DType<scalar_t>;
         uint64 end = (thread_id + 1) * vector_instruction_width - 1;  // inclusive of last element
 
         if (end < num_elements) {
@@ -64,9 +67,6 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
                     }
                 }
             } else {
-                using T = typename dtype::nv_dtype;
-                using T2 = typename dtype::nv_dtype2;
-
                 if constexpr (vector_instruction_width == 2) {
                     const T2 _x = ((vector_t *)x)[thread_id];
                     fp32_2 _x_upcast = dtype::upcast(_x);
