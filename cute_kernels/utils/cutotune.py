@@ -110,6 +110,7 @@ class _CutoTune:
             if isinstance(args[i], CutoTuneParameter) and variable_name in self.cutotuneable_parameters:
                 num_cutotune_overrideables += 1
 
+        # accessing kwargs.items() breaks torch.compile in backwards of a custom autograd function
         for variable_name in kwargs:
             if (
                 isinstance(kwargs.get(variable_name), CutoTuneParameter)
@@ -136,6 +137,7 @@ class _CutoTune:
             if override_allowed or variable_name not in result:
                 result[variable_name] = args[i]
 
+        # accessing kwargs.items() breaks torch.compile in backwards of a custom autograd function
         for variable_name in kwargs:
             if override_allowed or variable_name not in result:
                 result[variable_name] = kwargs.get(variable_name)
