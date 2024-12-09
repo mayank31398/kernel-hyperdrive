@@ -13,19 +13,20 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
                                                 const int64_t num_elements) {
     constexpr int vector_instruction_width = sizeof(vector_t) / sizeof(scalar_t);
     static_assert(vector_instruction_width == 1 || vector_instruction_width == 2 || vector_instruction_width == 4 ||
-                  vector_instruction_width == 8);
+                  vector_instruction_width == 8 || vector_instruction_width == 16);
 
-    const int64_t thread_id = get_global_thread_id();
+    using dtype = DType<scalar_t>;
+    using T = typename dtype::nv_dtype;
+    using T2 = typename dtype::nv_dtype2;
+
+    const uint64 thread_id = get_global_thread_id();
 
     if constexpr (vector_instruction_width == 1) {
         if (thread_id < num_elements) {
             output[thread_id] = x[thread_id] + y[thread_id];
         }
     } else {
-        using dtype = DType<scalar_t>;
-        using T2 = typename dtype::nv_dtype2;
-
-        int64_t end = (thread_id + 1) * vector_instruction_width - 1;  // inclusive of last element
+        uint64 end = (thread_id + 1) * vector_instruction_width - 1;  // inclusive of last element
 
         if (end < num_elements) {
             vector_t *output_vec = (vector_t *)output;
@@ -75,11 +76,37 @@ __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
                     const T2 _y = ((vector_t *)y)[thread_id];
 
                     output_vec[thread_id] = __hadd2(_x, _y);
+                } else if constexpr (vector_instruction_width == 16) {
+                    const fp64 *x_vec = (fp64 *)&((vector_t *)x)[thread_id];
+                    const fp64 *y_vec = (fp64 *)&((vector_t *)y)[thread_id];
+
+                    constexpr int n = vector_instruction_width >> 2;
+                    fp64 output_buffer[n];
+
+                    // clang-format off
+                    #pragma unroll
+                    // clang-format on
+                    for (int i = 0; i < n; i++) {
+                        auto [x_first, x_second, x_third, x_fourth] = dtype::reinterpret_64_bits_as_4x16(x_vec[i]);
+                        auto [y_first, y_second, y_third, y_fourth] = dtype::reinterpret_64_bits_as_4x16(y_vec[i]);
+
+                        T2 x_left = dtype::make2(x_first, x_second);
+                        T2 y_left = dtype::make2(y_first, y_second);
+                        x_left = __hadd2(x_left, y_left);
+
+                        T2 x_right = dtype::make2(x_third, x_fourth);
+                        T2 y_right = dtype::make2(y_third, y_fourth);
+                        x_right = __hadd2(x_right, y_right);
+
+                        output_buffer[i] = dtype::reinterpret_4x16_as_64_bits(x_left, x_right);
+                    }
+
+                    output_vec[thread_id] = DType<fp64>::make4(output_buffer);
                 } else {
                     const fp32 *x_vec = (fp32 *)&((vector_t *)x)[thread_id];
                     const fp32 *y_vec = (fp32 *)&((vector_t *)y)[thread_id];
 
-                    const int n = vector_instruction_width >> 1;
+                    constexpr int n = vector_instruction_width >> 1;
                     fp32 output_buffer[n];
 
                     // clang-format off
@@ -155,6 +182,14 @@ void add_tensor_forward_cuda(const torch::Tensor &x,
                     } else {
                         _add_tensor_forward_cuda_kernel<scalar_t, fp32_4><<<NUM_BLOCKS, BLOCK_SIZE>>>(
                             x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
+                    }
+                    break;
+                case 16:
+                    if constexpr (std::is_same_v<scalar_t, c10::Half> || std::is_same_v<scalar_t, c10::BFloat16>) {
+                        _add_tensor_forward_cuda_kernel<scalar_t, fp64_4><<<NUM_BLOCKS, BLOCK_SIZE>>>(
+                            x.data_ptr<scalar_t>(), y.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
+                    } else {
+                        throw std::runtime_error("invalid vector_instruction_width = 16 for fp32");
                     }
                     break;
                 default:
