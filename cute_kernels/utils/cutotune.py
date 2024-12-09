@@ -101,26 +101,21 @@ class _CutoTune:
 
         return output
 
-    def _check_no_args_are_cutotune_parameters(self, *args, **kwargs) -> None:
-        for i, value in enumerate(args):
-            assert not isinstance(
-                value, CutoTuneParameter
-            ), f"{self.signature.args[i]} should not be CutoTuneParameter"
-
-        for variable_name, value in kwargs.items():
-            assert not isinstance(value, CutoTuneParameter), f"{variable_name} should not be CutoTuneParameter"
-
     def _check_all_or_no_args_are_cutotune_parameters(self, *args, **kwargs) -> bool:
         num_cutotune_overrideables = 0
 
-        for i, value in enumerate(args):
+        for i in range(len(args)):
             variable_name = self.signature.args[i]
 
-            if isinstance(value, CutoTuneParameter) and variable_name in self.cutotuneable_parameters:
+            if isinstance(args[i], CutoTuneParameter) and variable_name in self.cutotuneable_parameters:
                 num_cutotune_overrideables += 1
 
-        for variable_name, value in kwargs.items():
-            if isinstance(value, CutoTuneParameter) and variable_name in self.cutotuneable_parameters:
+        # accessing kwargs.items() breaks torch.compile in backwards of a custom autograd function
+        for variable_name in kwargs:
+            if (
+                isinstance(kwargs.get(variable_name), CutoTuneParameter)
+                and variable_name in self.cutotuneable_parameters
+            ):
                 num_cutotune_overrideables += 1
 
         assert num_cutotune_overrideables in [
@@ -136,15 +131,16 @@ class _CutoTune:
         # copy the best_config first so we can override with args or kwargs
         result = {variable_name: value for variable_name, value in config.get_key_values().items()}
 
-        for i, value in enumerate(args):
+        for i in range(len(args)):
             variable_name = self.signature.args[i]
 
             if override_allowed or variable_name not in result:
-                result[variable_name] = value
+                result[variable_name] = args[i]
 
-        for variable_name, value in kwargs.items():
+        # accessing kwargs.items() breaks torch.compile in backwards of a custom autograd function
+        for variable_name in kwargs:
             if override_allowed or variable_name not in result:
-                result[variable_name] = value
+                result[variable_name] = kwargs.get(variable_name)
 
         return result
 
@@ -188,7 +184,7 @@ class _CutoTune:
                 for func_name, func in triggers:
                     if func is None:
                         assert len(triggers) == 1
-                        trigger = lambda tensor: (tensor.dtype, tensor.size(), tensor.stride())
+                        func = lambda tensor: (tensor.dtype, tensor.size(), tensor.stride())
 
                     lookup_key.append(f"{variable_name}.{func_name} = {func(value)}")
             else:
