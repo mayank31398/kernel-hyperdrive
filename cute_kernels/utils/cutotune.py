@@ -104,12 +104,6 @@ class _CutoTune:
     def _check_all_or_no_args_are_cutotune_parameters(self, *args, **kwargs) -> bool:
         num_cutotune_overrideables = 0
 
-        def _count(x: Any) -> Any:
-            nonlocal num_cutotune_overrideables
-            if isinstance(x, CutoTuneParameter):
-                num_cutotune_overrideables += 1
-            return x
-
         for i in range(len(args)):
             variable_name = self.signature.args[i]
 
