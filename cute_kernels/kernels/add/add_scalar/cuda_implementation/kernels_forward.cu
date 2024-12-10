@@ -135,14 +135,6 @@ void add_scalar_forward_cuda(const torch::Tensor &x,
                             x.data_ptr<scalar_t>(), y, output.data_ptr<scalar_t>(), num_elements);
                     }
                     break;
-                case 16:
-                    if constexpr (std::is_same_v<scalar_t, c10::Half> || std::is_same_v<scalar_t, c10::BFloat16>) {
-                        _add_scalar_forward_cuda_kernel<scalar_t, fp64_4><<<NUM_BLOCKS, BLOCK_SIZE>>>(
-                            x.data_ptr<scalar_t>(), y, output.data_ptr<scalar_t>(), num_elements);
-                    } else {
-                        throw std::runtime_error("invalid vector_instruction_width = 16 for fp32");
-                    }
-                    break;
                 default:
                     throw std::runtime_error("invalid vector_instruction_width");
                     break;
