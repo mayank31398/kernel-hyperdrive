@@ -51,29 +51,9 @@ inline __device__ fp32 combine_16_bits_into_fp32(const uint16 &left_int, const u
     return __uint_as_float(left_right_int);
 }
 
-inline __device__ std::tuple<uint32, uint32> split_fp64_into_32_bits(const fp64 &value) {
-    uint64 left_right_int = __double_as_longlong(value);
-
-    uint32 right_int = left_right_int & 0xFFFFFFFF;
-    uint32 left_int = left_right_int >> 32;
-
-    return std::make_tuple(left_int, right_int);
-}
-
 inline __device__ fp64 combine_32_bits_into_fp64(const uint32 &left_int, const uint32 &right_int) {
     uint64 left_right_int = (static_cast<uint64>(left_int) << 32) | right_int;
     return __longlong_as_double(left_right_int);
-}
-
-inline __device__ std::tuple<uint16, uint16, uint16, uint16> split_fp64_into_16_bits(const fp64 &value) {
-    auto [left_int, right_int] = split_fp64_into_32_bits(value);
-
-    uint16 first_int = left_int >> 16;
-    uint16 second_int = left_int & 0xFFFF;
-    uint16 third_int = right_int >> 16;
-    uint16 fourth_int = right_int & 0xFFFF;
-
-    return std::make_tuple(first_int, second_int, third_int, fourth_int);
 }
 
 inline __device__ fp64 combine_16_bits_into_fp64(const uint16 &first_int,

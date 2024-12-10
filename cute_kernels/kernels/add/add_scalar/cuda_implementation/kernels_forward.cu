@@ -13,7 +13,7 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
                                                 const int64_t num_elements) {
     constexpr int vector_instruction_width = sizeof(vector_t) / sizeof(scalar_t);
     static_assert(vector_instruction_width == 1 || vector_instruction_width == 2 || vector_instruction_width == 4 ||
-                  vector_instruction_width == 8 || vector_instruction_width == 16);
+                  vector_instruction_width == 8);
 
     using dtype = DType<scalar_t>;
     using T = typename dtype::nv_dtype;
@@ -32,39 +32,22 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
             vector_t *output_vec = (vector_t *)output;
 
             if constexpr (std::is_same_v<scalar_t, fp32>) {
-                if constexpr (vector_instruction_width == 8) {
-                    const fp64 *x_vec = (fp64 *)&((vector_t *)x)[thread_id];
+                const fp32 *x_vec = (fp32 *)&((vector_t *)x)[thread_id];
+                fp32 output_buffer[vector_instruction_width];
 
-                    constexpr int n = vector_instruction_width >> 1;
-                    fp64 output_buffer[n];
+                // clang-format off
+                #pragma unroll
+                // clang-format on
+                for (int i = 0; i < vector_instruction_width; i++) {
+                    output_buffer[i] = x_vec[i] + y;
+                }
 
-                    // clang-format off
-                    #pragma unroll
-                    // clang-format on
-                    for (int i = 0; i < n; i++) {
-                        fp32_2 _x_upcast = dtype::reinterpret_64_bits_as_2x32(x_vec[i]);
-                        output_buffer[i] = dtype::reinterpret_2x32_as_64_bits(_x_upcast.x + y, _x_upcast.y + y);
-                    }
-
-                    output_vec[thread_id] = DType<fp64>::make4(output_buffer);
+                if constexpr (vector_instruction_width == 2) {
+                    output_vec[thread_id] = dtype::make2(output_buffer);
+                } else if constexpr (vector_instruction_width == 4) {
+                    output_vec[thread_id] = dtype::make4(output_buffer);
                 } else {
-                    const fp32 *x_vec = (fp32 *)&((vector_t *)x)[thread_id];
-                    fp32 output_buffer[vector_instruction_width];
-
-                    // clang-format off
-                    #pragma unroll
-                    // clang-format on
-                    for (int i = 0; i < vector_instruction_width; i++) {
-                        output_buffer[i] = x_vec[i] + y;
-                    }
-
-                    if constexpr (vector_instruction_width == 2) {
-                        output_vec[thread_id] = dtype::make2(output_buffer);
-                    } else if constexpr (vector_instruction_width == 4) {
-                        output_vec[thread_id] = dtype::make4(output_buffer);
-                    } else {
-                        static_assert("vector_instruction_width is invalid for fp32");
-                    }
+                    static_assert("vector_instruction_width is invalid for fp32");
                 }
             } else {
                 if constexpr (vector_instruction_width == 2) {
@@ -73,34 +56,6 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
 
                     _x_upcast = DType<fp32>::make2(_x_upcast.x + y, _x_upcast.y + y);
                     output_vec[thread_id] = dtype::downcast(_x_upcast);
-                } else if constexpr (vector_instruction_width == 16) {
-                    const fp64 *x_vec = (fp64 *)&((vector_t *)x)[thread_id];
-
-                    constexpr int n = vector_instruction_width >> 2;
-                    fp64 output_buffer[n];
-
-                    // clang-format off
-                    #pragma unroll
-                    // clang-format on
-                    for (int i = 0; i < n; i++) {
-                        auto [first, second, third, fourth] = dtype::reinterpret_64_bits_as_4x16(x_vec[i]);
-
-                        T2 left = dtype::make2(first, second);
-                        T2 right = dtype::make2(third, fourth);
-
-                        fp32_2 left_upcast = dtype::upcast(left);
-                        fp32_2 right_upcast = dtype::upcast(right);
-
-                        left_upcast = DType<fp32>::make2(left_upcast.x + y, left_upcast.y + y);
-                        right_upcast = DType<fp32>::make2(right_upcast.x + y, right_upcast.y + y);
-
-                        left = dtype::downcast(left_upcast);
-                        right = dtype::downcast(right_upcast);
-
-                        output_buffer[i] = dtype::reinterpret_4x16_as_64_bits(left, right);
-                    }
-
-                    output_vec[thread_id] = DType<fp64>::make4(output_buffer);
                 } else {
                     const fp32 *x_vec = (fp32 *)&((vector_t *)x)[thread_id];
 
@@ -178,14 +133,6 @@ void add_scalar_forward_cuda(const torch::Tensor &x,
                     } else {
                         _add_scalar_forward_cuda_kernel<scalar_t, fp32_4><<<NUM_BLOCKS, BLOCK_SIZE>>>(
                             x.data_ptr<scalar_t>(), y, output.data_ptr<scalar_t>(), num_elements);
-                    }
-                    break;
-                case 16:
-                    if constexpr (std::is_same_v<scalar_t, c10::Half> || std::is_same_v<scalar_t, c10::BFloat16>) {
-                        _add_scalar_forward_cuda_kernel<scalar_t, fp64_4><<<NUM_BLOCKS, BLOCK_SIZE>>>(
-                            x.data_ptr<scalar_t>(), y, output.data_ptr<scalar_t>(), num_elements);
-                    } else {
-                        throw std::runtime_error("invalid vector_instruction_width = 16 for fp32");
                     }
                     break;
                 default:
