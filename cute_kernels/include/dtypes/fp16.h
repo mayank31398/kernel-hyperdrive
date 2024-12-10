@@ -36,29 +36,6 @@ struct DType<c10::Half> {
         return combine_16_bits_into_fp32(left_int, right_int);
     }
 
-    // fp64 -> fp16_2, fp16_2
-    inline __device__ static std::tuple<nv_dtype, nv_dtype, nv_dtype, nv_dtype> reinterpret_64_bits_as_4x16(
-        const fp64 &value) {
-        auto [first_int, second_int, third_int, fourth_int] = split_fp64_into_16_bits(value);
-
-        nv_dtype first = __ushort_as_half(first_int);
-        nv_dtype second = __ushort_as_half(second_int);
-        nv_dtype third = __ushort_as_half(third_int);
-        nv_dtype fourth = __ushort_as_half(fourth_int);
-
-        return std::make_tuple(first, second, third, fourth);
-    }
-
-    // fp16_2, fp16_2 -> fp64
-    inline __device__ static fp64 reinterpret_4x16_as_64_bits(const nv_dtype2 &left, const nv_dtype2 &right) {
-        uint16 first_int = __half_as_ushort(left.x);
-        uint16 second_int = __half_as_ushort(left.y);
-        uint16 third_int = __half_as_ushort(right.x);
-        uint16 fourth_int = __half_as_ushort(right.y);
-
-        return combine_16_bits_into_fp64(first_int, second_int, third_int, fourth_int);
-    }
-
     inline __device__ static fp32 upcast(const c10_dtype &value) { return upcast(static_cast<nv_dtype>(value)); }
     inline __device__ static fp32 upcast(const nv_dtype &value) { return __half2float(value); }
     inline __device__ static fp32_2 upcast(const nv_dtype2 &value) { return __half22float2(value); }
