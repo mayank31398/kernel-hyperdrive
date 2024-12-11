@@ -54,7 +54,7 @@ def _forward(
 
         with torch.device(x.device):
             swiglu_unchunked_forward_triton_kernel[(num_strides * num_blocks_per_stride,)](
-                x=x,
+                x_ptr=x,
                 output_ptr=output,
                 stride=stride,
                 num_blocks_per_stride=num_blocks_per_stride,
