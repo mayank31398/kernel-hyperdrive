@@ -108,6 +108,7 @@ class SwigluUnchunkedTest(TestCommons):
         BLOCK_SIZE_backward: int,
         function: Callable,
     ) -> None:
+        size[-1] = (size[-1] // 2) * 2
         x_kernel, x_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
 
         z_kernel = function(
