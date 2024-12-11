@@ -25,5 +25,5 @@ def swiglu_unchunked_forward_triton_kernel(x_ptr, output_ptr, stride, num_blocks
 
     output = up * gate * tl.sigmoid(gate)
 
-    output_ptrs = output_ptr + stride_id * stride + local_pid * BLOCK_SIZE + tl.arange(0, BLOCK_SIZE)
+    output_ptrs = output_ptr + block_indices - stride_id * stride
     tl.store(output_ptrs, output, mask=mask)
