@@ -15,6 +15,8 @@ from .kernels import (
     rmsnorm_torch,
     swiglu_cute,
     swiglu_torch,
+    swiglu_unchunked_cute,
+    swiglu_unchunked_torch,
 )
 from .tensor import CuteTensor
 from .utils import (
