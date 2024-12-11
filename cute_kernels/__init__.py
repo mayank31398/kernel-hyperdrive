@@ -23,6 +23,7 @@ from .utils import (
     CuteInductor,
     CutoTuneConfig,
     CutoTuneParameter,
+    ceil_divide,
     cutotune,
     device_synchronize,
     get_cartesian_product_cutotune_configs,
