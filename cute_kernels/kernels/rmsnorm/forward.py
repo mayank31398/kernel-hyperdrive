@@ -1,7 +1,7 @@
 import torch
 import triton
 
-from ...constants import MAX_TRITON_BLOCK_SIZE, TORCH_TO_TRITON_DTYPE, TRITON_BLOCK_SIZES_POWERS_OF_2
+from ...constants import COMMON_TRITON_BLOCK_SIZES_POWERS_OF_2, MAX_TRITON_BLOCK_SIZE, TORCH_TO_TRITON_DTYPE
 from ...enums import KernelBackend
 from ...utils import CutoTuneConfig, ceil_divide, cutotune
 from .triton_implementation import rmsnorm_forward_triton_kernel
@@ -15,7 +15,7 @@ from .triton_implementation import rmsnorm_forward_triton_kernel
             <= kwargs["BLOCK_SIZE_B"] * kwargs["BLOCK_SIZE_H"]
             <= MAX_TRITON_BLOCK_SIZE,
         )
-        for BLOCK_SIZE_B in [1, 2, 4, 8, 16, 32] + TRITON_BLOCK_SIZES_POWERS_OF_2
+        for BLOCK_SIZE_B in [1, 2, 4, 8, 16, 32] + COMMON_TRITON_BLOCK_SIZES_POWERS_OF_2
     ],
     default_config=CutoTuneConfig({"BLOCK_SIZE_B": 1}),
     triggers={"x.dtype", "BLOCK_SIZE_H"},
