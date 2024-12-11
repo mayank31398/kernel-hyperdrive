@@ -34,7 +34,7 @@ class SwigluUnchunkedTest(TestCommons):
         #     [1024],  # BLOCK_SIZE_backward
         #     [swiglu_unchunked_cute, torch.compile(swiglu_unchunked_cute)],  # function
         # )
-        +TestCommons.make_args_matrix(
+        TestCommons.make_args_matrix(
             TestCommons.get_2d_tensor_sizes(),  # size
             [torch.device("cuda")],  # device
             TestCommons.get_dtypes(),  # dtype
