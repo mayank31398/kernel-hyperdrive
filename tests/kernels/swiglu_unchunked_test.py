@@ -95,7 +95,7 @@ class SwigluUnchunkedTest(TestCommons):
         #     [swiglu_unchunked_cute, torch.compile(swiglu_unchunked_cute)],  # function
         # )
     )
-    def test_swiglu(
+    def test_swiglu_unchunked(
         self,
         size: tuple[int],
         device: torch.device,
