@@ -13,7 +13,7 @@ class SwigluUnchunkedTest(TestCommons):
         TestCommons.make_args_matrix(
             TestCommons.get_2d_tensor_sizes(),  # size
             [torch.device("cuda")],  # device
-            TestCommons.get_dtypes()[:1],  # dtype
+            TestCommons.get_dtypes(),  # dtype
             [KernelBackend.triton],  # kernel_backend_forward
             [KernelBackend.triton],  # kernel_backend_backward
             [64],  # BLOCK_SIZE_B_forward
