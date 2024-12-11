@@ -63,6 +63,6 @@ def swiglu_unchunked_cute(
         kernel_backend_backward,
         BLOCK_SIZE_B_forward,
         BLOCK_SIZE_H_forward,
-        BLOCK_SIZE_B_forward,
         BLOCK_SIZE_B_backward,
+        BLOCK_SIZE_H_backward,
     )
