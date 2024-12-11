@@ -16,9 +16,11 @@ class SwigluUnchunkedTest(TestCommons):
             TestCommons.get_dtypes()[:1],  # dtype
             [KernelBackend.triton],  # kernel_backend_forward
             [KernelBackend.triton],  # kernel_backend_backward
-            [4],  # BLOCK_SIZE_forward
-            [1024],  # BLOCK_SIZE_backward
-            [swiglu_unchunked_cute],  # , torch.compile(swiglu_unchunked_cute)],  # function
+            [64],  # BLOCK_SIZE_B_forward
+            [64],  # BLOCK_SIZE_B_forward
+            [64],  # BLOCK_SIZE_H_backward
+            [64],  # BLOCK_SIZE_H_backward
+            [swiglu_unchunked_cute, torch.compile(swiglu_unchunked_cute)],  # function
         )
     )
     def test_swiglu_unchunked(
@@ -28,8 +30,10 @@ class SwigluUnchunkedTest(TestCommons):
         dtype: torch.dtype,
         kernel_backend_forward: KernelBackend,
         kernel_backend_backward: KernelBackend,
-        BLOCK_SIZE_forward: int,
-        BLOCK_SIZE_backward: int,
+        BLOCK_SIZE_B_forward: int,
+        BLOCK_SIZE_H_forward: int,
+        BLOCK_SIZE_B_backward: int,
+        BLOCK_SIZE_H_backward: int,
         function: Callable,
     ) -> None:
         size = (size[0], ceil_divide(size[-1], 2) * 2)
@@ -39,8 +43,10 @@ class SwigluUnchunkedTest(TestCommons):
             x_kernel,
             kernel_backend_forward=kernel_backend_forward,
             kernel_backend_backward=kernel_backend_backward,
-            BLOCK_SIZE_forward=BLOCK_SIZE_forward,
-            BLOCK_SIZE_backward=BLOCK_SIZE_backward,
+            BLOCK_SIZE_B_forward=BLOCK_SIZE_B_forward,
+            BLOCK_SIZE_H_forward=BLOCK_SIZE_H_forward,
+            BLOCK_SIZE_B_backward=BLOCK_SIZE_B_backward,
+            BLOCK_SIZE_H_backward=BLOCK_SIZE_H_backward,
         )
         z_expected = swiglu_unchunked_torch(x_expected)
 

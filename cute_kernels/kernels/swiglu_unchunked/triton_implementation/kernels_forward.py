@@ -3,27 +3,28 @@ import triton.language as tl
 
 
 @triton.jit
-def swiglu_unchunked_forward_triton_kernel(x_ptr, output_ptr, stride, num_blocks_per_stride, BLOCK_SIZE: tl.constexpr):
-    pid = tl.program_id(axis=0)
-    stride_id = pid // num_blocks_per_stride
+def swiglu_unchunked_forward_triton_kernel(
+    x_ptr, output_ptr, B, H, BLOCK_SIZE_B: tl.constexpr, BLOCK_SIZE_H: tl.constexpr
+):
+    pid_b = tl.program_id(axis=0)
+    pid_h = tl.program_id(axis=1)
 
-    stride_start = stride_id * 2 * stride
-    stride_end = stride_start + stride
+    indices_b = pid_b * BLOCK_SIZE_B + tl.arange(0, BLOCK_SIZE_B)
+    indices_h = pid_h * BLOCK_SIZE_H + tl.arange(0, BLOCK_SIZE_H)
 
-    local_pid = pid % num_blocks_per_stride
+    half_H = H >> 1
 
-    block_start = stride_start + local_pid * BLOCK_SIZE
-    block_indices = block_start + tl.arange(0, BLOCK_SIZE)
+    mask_b = indices_b < B
+    mask_h = indices_h < half_H
+    mask_bh = mask_b[:, None] & mask_h[None, :]
 
-    mask = block_indices < stride_end
+    up_ptrs = x_ptr + indices_b[:, None] * H + indices_h[None, :]
+    up = tl.load(up_ptrs, mask=mask_bh)
 
-    up_ptrs = x_ptr + block_indices
-    up = tl.load(up_ptrs, mask=mask)
-
-    gate_ptrs = up_ptrs + stride
-    gate = tl.load(gate_ptrs, mask=mask).to(tl.float32)
+    gate_ptrs = up_ptrs + (H >> 1)
+    gate = tl.load(gate_ptrs, mask=mask_bh)
 
     output = up * gate * tl.sigmoid(gate)
 
-    output_ptrs = output_ptr + block_indices - stride_id * stride
-    tl.store(output_ptrs, output, mask=mask)
+    output_ptrs = output_ptr + indices_b[:, None] * half_H + indices_h[None, :]
+    tl.store(output_ptrs, output, mask=mask_bh)
