@@ -1,6 +1,11 @@
 import torch
 
-from ...constants import COMMON_CUDA_BLOCK_SIZES_POWERS_OF_2, COMMON_TRITON_BLOCK_SIZES_POWERS_OF_2
+from ...constants import (
+    COMMON_CUDA_BLOCK_SIZES_POWERS_OF_2,
+    COMMON_TRITON_BLOCK_SIZES_POWERS_OF_2,
+    COMMON_VECTOR_INSTRUCTION_WIDTHS,
+    MAX_FP16_BF16_INSTRUCTION_WIDTH,
+)
 from ...enums import KernelBackend
 from ...utils import CutoTuneConfig, ceil_divide, cutotune, get_cartesian_product_cutotune_configs
 from .cuda_implementation import swiglu_forward_cuda_kernel
@@ -11,7 +16,7 @@ from .triton_implementation import swiglu_forward_triton_kernel
     configs=(
         get_cartesian_product_cutotune_configs(
             kernel_backend=[KernelBackend.cuda],
-            vector_instruction_width=[1, 2, 4],
+            vector_instruction_width=COMMON_VECTOR_INSTRUCTION_WIDTHS,
             BLOCK_SIZE=COMMON_CUDA_BLOCK_SIZES_POWERS_OF_2,
         )
         if torch.cuda.is_available()
@@ -20,7 +25,7 @@ from .triton_implementation import swiglu_forward_triton_kernel
     + (
         get_cartesian_product_cutotune_configs(
             kernel_backend=[KernelBackend.cuda],
-            vector_instruction_width=[8],
+            vector_instruction_width=[MAX_FP16_BF16_INSTRUCTION_WIDTH],
             BLOCK_SIZE=COMMON_CUDA_BLOCK_SIZES_POWERS_OF_2,
             condition=lambda **kwargs: kwargs["gate"].dtype in [torch.float16, torch.bfloat16],
         )
