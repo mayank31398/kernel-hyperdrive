@@ -9,6 +9,7 @@ from .torch_implementation import swiglu_unchunked_torch
 
 class _SwigluUnchunked_Cute(torch.autograd.Function):
     @staticmethod
+    @ensure_contiguous
     def forward(
         ctx,
         x: torch.Tensor,
@@ -19,9 +20,6 @@ class _SwigluUnchunked_Cute(torch.autograd.Function):
         BLOCK_SIZE_forward: int,
         BLOCK_SIZE_backward: int,
     ) -> torch.Tensor:
-        if x.stride(-1) != 1:
-            x = x.contiguous()
-
         ctx.save_for_backward(x)
         ctx.kernel_backend_backward = kernel_backend_backward
         ctx.vector_instruction_width_backward = vector_instruction_width_backward

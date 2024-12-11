@@ -39,7 +39,9 @@ from .triton_implementation import swiglu_unchunked_forward_triton_kernel
 def _forward(
     x: torch.Tensor, kernel_backend: KernelBackend, vector_instruction_width: int, BLOCK_SIZE: int
 ) -> torch.Tensor:
-    output = torch.empty_like(x)
+    x_size = x.size()
+    stride = divide_if_divisible(x_size[-1], 2)
+    output = torch.empty(*x_size[:-1], stride, device=x.device, dtype=x.dtype)
 
     if kernel_backend == KernelBackend.cuda:
         assert x.is_cuda, "tensor x is not on GPU"
@@ -48,7 +50,6 @@ def _forward(
             x=x, output=output, vector_instruction_width=vector_instruction_width, BLOCK_SIZE=BLOCK_SIZE
         )
     elif kernel_backend == KernelBackend.triton:
-        stride = divide_if_divisible(x.size(-1), 2)
         num_blocks_per_stride = ceil_divide(stride, BLOCK_SIZE)
         num_strides = divide_if_divisible(x.numel(), x.size(-1))
 
