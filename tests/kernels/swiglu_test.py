@@ -58,7 +58,7 @@ class SwigluTest(TestCommons):
             TestCommons.get_dtypes(),  # dtype
             [KernelBackend.cuda],  # kernel_backend_forward
             [KernelBackend.triton],  # kernel_backend_backward
-            [COMMON_VECTOR_INSTRUCTION_WIDTHS],  # vector_instruction_width_forward
+            COMMON_VECTOR_INSTRUCTION_WIDTHS,  # vector_instruction_width_forward
             [None],  # vector_instruction_width_backward
             [1024],  # BLOCK_SIZE_forward
             [1024],  # BLOCK_SIZE_backward
