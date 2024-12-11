@@ -29,8 +29,7 @@ from .triton_implementation import swiglu_unchunked_forward_triton_kernel
     get_cartesian_product_cutotune_configs(
         kernel_backend=[KernelBackend.triton],
         vector_instruction_width=[None],
-        BLOCK_SIZE_B=TRITON_BLOCK_SIZES_POWERS_OF_2,
-        BLOCK_SIZE_H=TRITON_BLOCK_SIZES_POWERS_OF_2,
+        BLOCK_SIZE=TRITON_BLOCK_SIZES_POWERS_OF_2,
     ),
     default_config=CutoTuneConfig(
         {"kernel_backend": KernelBackend.triton, "vector_instruction_width": None, "BLOCK_SIZE": 1024}
@@ -38,7 +37,7 @@ from .triton_implementation import swiglu_unchunked_forward_triton_kernel
     triggers={"x.dtype"},
 )
 def _forward(
-    x: torch.Tensor, kernel_backend: KernelBackend, vector_instruction_width: int, BLOCK_SIZE_B: int, BLOCK_SIZE_H: int
+    x: torch.Tensor, kernel_backend: KernelBackend, vector_instruction_width: int, BLOCK_SIZE: int
 ) -> torch.Tensor:
     output = torch.empty_like(x)
 
@@ -50,18 +49,16 @@ def _forward(
         )
     elif kernel_backend == KernelBackend.triton:
         stride = divide_if_divisible(x.size(-1), 2)
-        num_elements = divide_if_divisible(x.numel(), x.size(-1))
+        num_blocks_per_stride = ceil_divide(stride, BLOCK_SIZE)
+        num_strides = divide_if_divisible(x.numel(), x.size(-1))
 
         with torch.device(x.device):
-            swiglu_unchunked_forward_triton_kernel[
-                (ceil_divide(num_elements, BLOCK_SIZE_B), ceil_divide(stride, BLOCK_SIZE_H))
-            ](
+            swiglu_unchunked_forward_triton_kernel[(num_strides * num_blocks_per_stride,)](
                 x=x,
                 output_ptr=output,
-                num_elements=num_elements,
                 stride=stride,
-                BLOCK_SIZE_B=BLOCK_SIZE_B,
-                BLOCK_SIZE_H=BLOCK_SIZE_H,
+                num_blocks_per_stride=num_blocks_per_stride,
+                BLOCK_SIZE=BLOCK_SIZE,
             )
     else:
         raise ValueError(f"unexpected kernel_backend ({kernel_backend})")
