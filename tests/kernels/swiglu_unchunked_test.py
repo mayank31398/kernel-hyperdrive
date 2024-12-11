@@ -40,8 +40,6 @@ class SwigluUnchunkedTest(TestCommons):
             TestCommons.get_dtypes()[:1],  # dtype
             [KernelBackend.triton],  # kernel_backend_forward
             [KernelBackend.triton],  # kernel_backend_backward
-            [None],  # vector_instruction_width_forward
-            [None],  # vector_instruction_width_backward
             [4],  # BLOCK_SIZE_forward
             [1024],  # BLOCK_SIZE_backward
             [swiglu_unchunked_cute],  # , torch.compile(swiglu_unchunked_cute)],  # function
@@ -102,8 +100,6 @@ class SwigluUnchunkedTest(TestCommons):
         dtype: torch.dtype,
         kernel_backend_forward: KernelBackend,
         kernel_backend_backward: KernelBackend,
-        vector_instruction_width_forward: int,
-        vector_instruction_width_backward: int,
         BLOCK_SIZE_forward: int,
         BLOCK_SIZE_backward: int,
         function: Callable,
@@ -115,8 +111,6 @@ class SwigluUnchunkedTest(TestCommons):
             x_kernel,
             kernel_backend_forward=kernel_backend_forward,
             kernel_backend_backward=kernel_backend_backward,
-            vector_instruction_width_forward=vector_instruction_width_forward,
-            vector_instruction_width_backward=vector_instruction_width_backward,
             BLOCK_SIZE_forward=BLOCK_SIZE_forward,
             BLOCK_SIZE_backward=BLOCK_SIZE_backward,
         )
