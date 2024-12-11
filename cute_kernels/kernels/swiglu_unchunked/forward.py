@@ -1,6 +1,5 @@
 import torch
 
-from ...constants import COMMON_TRITON_BLOCK_SIZES_POWERS_OF_2, MAX_TRITON_BLOCK_SIZE
 from ...enums import KernelBackend
 from ...utils import (
     CutoTuneConfig,
@@ -26,9 +25,7 @@ def _forward(x: torch.Tensor, kernel_backend: KernelBackend, BLOCK_SIZE_B: int, 
     H = x.size(-1)
     B = x.numel() // H
 
-    x_size = x.size()
-    stride = divide_if_divisible(x_size[-1], 2)
-    output = torch.empty(*x_size[:-1], stride, device=x.device, dtype=x.dtype)
+    output = torch.empty(*x.size()[:-1], divide_if_divisible(H, 2), device=x.device, dtype=x.dtype)
 
     if kernel_backend == KernelBackend.triton:
         with torch.device(x.device):
