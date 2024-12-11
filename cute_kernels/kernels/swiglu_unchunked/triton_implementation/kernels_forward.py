@@ -22,7 +22,7 @@ def swiglu_unchunked_forward_triton_kernel(
     up = tl.load(up_ptrs, mask=mask_bh)
 
     gate_ptrs = up_ptrs + (H >> 1)
-    gate = tl.load(gate_ptrs, mask=mask_bh)
+    gate = tl.load(gate_ptrs, mask=mask_bh).to(tl.float32)
 
     output = up * gate * tl.sigmoid(gate)
 
