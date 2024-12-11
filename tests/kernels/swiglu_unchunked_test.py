@@ -50,8 +50,8 @@ class SwigluUnchunkedTest(TestCommons):
         )
         z_expected = swiglu_unchunked_torch(x_expected)
 
-        # z_kernel.mean().backward()
-        # z_expected.mean().backward()
+        z_kernel.mean().backward()
+        z_expected.mean().backward()
 
         self.assert_equal_tensors(z_kernel, z_expected, False, atol_float32=5.5e-6, rtol_float32=0)
-        # self.assert_equal_tensors(x_kernel.grad, x_expected.grad, False, atol_float32=5e-6, rtol_float32=0)
+        self.assert_equal_tensors(x_kernel.grad, x_expected.grad, False, atol_float32=5e-6, rtol_float32=0)

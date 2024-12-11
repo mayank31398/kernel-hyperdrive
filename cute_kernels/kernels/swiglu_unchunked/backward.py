@@ -1,14 +1,7 @@
 import torch
 
 from ...enums import KernelBackend
-from ...utils import (
-    CutoTuneConfig,
-    ceil_divide,
-    cutotune,
-    divide_if_divisible,
-    get_cartesian_product_cutotune_configs,
-    get_powers_of_2,
-)
+from ...utils import CutoTuneConfig, ceil_divide, cutotune, get_cartesian_product_cutotune_configs, get_powers_of_2
 from .triton_implementation import swiglu_unchunked_backward_triton_kernel
 
 
