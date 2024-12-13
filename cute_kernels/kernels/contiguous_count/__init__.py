@@ -27,15 +27,14 @@ def contiguous_count_cute(
     output = torch.zeros(num_programs, C, dtype=torch.long, device=x.device)
 
     if kernel_backend == KernelBackend.triton:
-        with torch.device(x.device):
-            contiguous_count_triton_kernel[(num_programs,)](
-                x_ptr=x,
-                output_ptr=output,
-                B=B,
-                C=C,
-                BLOCK_SIZE_B=BLOCK_SIZE_B,
-                BLOCK_SIZE_C=BLOCK_SIZE_C,
-            )
+        contiguous_count_triton_kernel[(num_programs,)](
+            x_ptr=x,
+            output_ptr=output,
+            B=B,
+            C=C,
+            BLOCK_SIZE_B=BLOCK_SIZE_B,
+            BLOCK_SIZE_C=BLOCK_SIZE_C,
+        )
     else:
         raise ValueError(f"unexpected kernel_backend ({kernel_backend})")
 
