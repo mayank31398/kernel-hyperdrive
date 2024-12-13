@@ -21,7 +21,7 @@ class RMSNormTest(TestCommons):
             [torch.float32, torch.float16],  # dtype
             [True, False],  # memory_efficient
             [True, False],  # has_weight
-            [rmsnorm_cute, torch.compile(rmsnorm_cute)],  # function
+            [rmsnorm_cute, torch.compile(rmsnorm_cute, fullgraph=True)],  # function
         )
     )
     def test_rmsnorm(
