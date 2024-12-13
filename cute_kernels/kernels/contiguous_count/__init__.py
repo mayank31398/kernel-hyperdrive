@@ -1,8 +1,7 @@
 import torch
-import triton
 
 from ...enums import KernelBackend
-from ...utils import ceil_divide, ensure_contiguous, get_sm_count
+from ...utils import ensure_contiguous
 from .triton_implementation import contiguous_count_triton
 
 
