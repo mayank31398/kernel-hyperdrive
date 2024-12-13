@@ -57,13 +57,14 @@ class AddTensorTest(TestCommons):
         x_kernel, x_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
         y = 0.42
 
-        z_kernel = function(
-            x_kernel,
-            y,
-            kernel_backend=kernel_backend,
-            vector_instruction_width=vector_instruction_width,
-            BLOCK_SIZE=BLOCK_SIZE,
-        )
+        with torch.device(x_kernel.device):
+            z_kernel = function(
+                x_kernel,
+                y,
+                kernel_backend=kernel_backend,
+                vector_instruction_width=vector_instruction_width,
+                BLOCK_SIZE=BLOCK_SIZE,
+            )
         z_expected = add_scalar_torch(x_expected, y)
 
         z_kernel.mean().backward()
@@ -71,5 +72,3 @@ class AddTensorTest(TestCommons):
 
         self.assert_equal_tensors(z_kernel, z_expected, True)
         self.assert_equal_tensors(x_kernel.grad, x_expected.grad, True)
-
-        torch._dynamo.reset()
