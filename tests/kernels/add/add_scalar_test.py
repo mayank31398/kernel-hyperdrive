@@ -60,14 +60,13 @@ class AddTensorTest(TestCommons):
         x_kernel, x_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
         y = 0.42
 
-        with torch.device(x_kernel.device):
-            z_kernel = function(
-                x_kernel,
-                y,
-                kernel_backend=kernel_backend,
-                vector_instruction_width=vector_instruction_width,
-                BLOCK_SIZE=BLOCK_SIZE,
-            )
+        z_kernel = function(
+            x_kernel,
+            y,
+            kernel_backend=kernel_backend,
+            vector_instruction_width=vector_instruction_width,
+            BLOCK_SIZE=BLOCK_SIZE,
+        )
         z_expected = add_scalar_torch(x_expected, y)
 
         z_kernel.mean().backward()
