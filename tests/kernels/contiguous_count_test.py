@@ -31,7 +31,8 @@ class ContiguousCountTest(TestCommons):
     ) -> None:
         x = torch.randint(0, MAX_EXPERTS, (size,), device=device, dtype=torch.long)
 
-        with torch.device(x.device):
+        torch.cuda.set_device(x.device)
+        with torch.cuda._DeviceGuard(x.device):
             z_kernel = function(x=x, size=MAX_EXPERTS, kernel_backend=kernel_backend, BLOCK_SIZE_B=BLOCK_SIZE_B)
         z_expected = x.view(-1).bincount(minlength=MAX_EXPERTS)
 
