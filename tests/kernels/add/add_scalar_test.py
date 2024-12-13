@@ -71,3 +71,5 @@ class AddTensorTest(TestCommons):
 
         self.assert_equal_tensors(z_kernel, z_expected, True)
         self.assert_equal_tensors(x_kernel.grad, x_expected.grad, True)
+
+        torch._dynamo.reset()
