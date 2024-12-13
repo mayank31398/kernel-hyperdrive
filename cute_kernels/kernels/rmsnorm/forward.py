@@ -1,9 +1,8 @@
 import torch
-import triton
 
 from ...constants import MAX_TRITON_BLOCK_SIZE
 from ...enums import KernelBackend
-from ...utils import CutoTuneConfig, cutotune
+from ...utils import CutoTuneConfig, cutotune, get_next_power_of_2
 from .triton_implementation import rmsnorm_forward_triton
 
 
@@ -28,7 +27,7 @@ def _forward(
     rmsnorm_denominator = None if memory_efficient else torch.empty(num_elements, device=x.device, dtype=torch.float32)
 
     if kernel_backend == KernelBackend.triton:
-        BLOCK_SIZE_H = triton.next_power_of_2(hidden_size)
+        BLOCK_SIZE_H = get_next_power_of_2(hidden_size)
         assert BLOCK_SIZE_H <= MAX_TRITON_BLOCK_SIZE
 
         rmsnorm_forward_triton(
