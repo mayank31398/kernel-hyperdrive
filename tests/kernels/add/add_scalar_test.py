@@ -23,7 +23,7 @@ class AddTensorTest(TestCommons):
             [KernelBackend.cuda],  # kernel_backend
             COMMON_VECTOR_INSTRUCTION_WIDTHS,  # vector_instruction_width
             [1024],  # BLOCK_SIZE
-            [add_scalar_cute, torch.compile(add_scalar_cute)],  # function
+            [add_scalar_cute, torch.compile(add_scalar_cute, fullgraph=True)],  # function
         )
         + TestCommons.make_args_matrix(
             TestCommons.get_2d_tensor_sizes(),  # size
@@ -32,7 +32,7 @@ class AddTensorTest(TestCommons):
             [KernelBackend.cuda],  # kernel_backend
             [MAX_FP16_BF16_INSTRUCTION_WIDTH],  # vector_instruction_width
             [1024],  # BLOCK_SIZE
-            [add_scalar_cute, torch.compile(add_scalar_cute)],  # function
+            [add_scalar_cute, torch.compile(add_scalar_cute, fullgraph=True)],  # function
         )
         + TestCommons.make_args_matrix(
             TestCommons.get_2d_tensor_sizes(),  # size
@@ -41,7 +41,7 @@ class AddTensorTest(TestCommons):
             [KernelBackend.triton],  # kernel_backend
             [None],  # vector_instruction_width
             [1024],  # BLOCK_SIZE
-            [add_scalar_cute, torch.compile(add_scalar_cute)],  # function
+            [add_scalar_cute, torch.compile(add_scalar_cute, fullgraph=True)],  # function
         )
     )
     def test_add_tensor(
