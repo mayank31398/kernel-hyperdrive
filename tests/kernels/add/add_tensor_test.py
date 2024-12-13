@@ -9,6 +9,7 @@ from cute_kernels import (
     KernelBackend,
     add_tensor_cute,
     add_tensor_torch,
+    init_inductor,
 )
 
 from ...test_commons import TestCommons
@@ -23,7 +24,7 @@ class AddTensorTest(TestCommons):
             [KernelBackend.cuda],  # kernel_backend
             COMMON_VECTOR_INSTRUCTION_WIDTHS,  # vector_instruction_width
             [1024],  # BLOCK_SIZE
-            [add_tensor_cute, torch.compile(add_tensor_cute)],  # function
+            [add_tensor_cute, torch.compile(add_tensor_cute, fullgraph=True)],  # function
         )
         + TestCommons.make_args_matrix(
             TestCommons.get_2d_tensor_sizes(),  # size
@@ -32,7 +33,7 @@ class AddTensorTest(TestCommons):
             [KernelBackend.cuda],  # kernel_backend
             [MAX_FP16_BF16_INSTRUCTION_WIDTH],  # vector_instruction_width
             [1024],  # BLOCK_SIZE
-            [add_tensor_cute, torch.compile(add_tensor_cute)],  # function
+            [add_tensor_cute, torch.compile(add_tensor_cute, fullgraph=True)],  # function
         )
         + TestCommons.make_args_matrix(
             TestCommons.get_2d_tensor_sizes(),  # size
@@ -41,7 +42,7 @@ class AddTensorTest(TestCommons):
             [KernelBackend.triton],  # kernel_backend
             [None],  # vector_instruction_width
             [1024],  # BLOCK_SIZE
-            [add_tensor_cute, torch.compile(add_tensor_cute)],  # function
+            [add_tensor_cute, torch.compile(add_tensor_cute, fullgraph=True)],  # function
         )
     )
     def test_add_tensor(
@@ -54,16 +55,19 @@ class AddTensorTest(TestCommons):
         BLOCK_SIZE: int,
         function: Callable,
     ) -> None:
+        init_inductor()
+
         x_kernel, x_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
         y_kernel, y_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
 
-        z_kernel = function(
-            x_kernel,
-            y_kernel,
-            kernel_backend=kernel_backend,
-            vector_instruction_width=vector_instruction_width,
-            BLOCK_SIZE=BLOCK_SIZE,
-        )
+        with torch.device(x_kernel.device):
+            z_kernel = function(
+                x_kernel,
+                y_kernel,
+                kernel_backend=kernel_backend,
+                vector_instruction_width=vector_instruction_width,
+                BLOCK_SIZE=BLOCK_SIZE,
+            )
         z_expected = add_tensor_torch(x_expected, y_expected)
 
         z_kernel.mean().backward()
