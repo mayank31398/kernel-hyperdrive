@@ -23,13 +23,14 @@ def contiguous_count_triton(x: torch.Tensor, size: int, BLOCK_SIZE_B: int) -> to
 
     output = torch.zeros(num_programs, size, dtype=torch.long, device=x.device)
 
-    contiguous_count_triton_kernel[(num_programs,)](
-        x_ptr=x,
-        output_ptr=output,
-        B=B,
-        C=size,
-        BLOCK_SIZE_B=BLOCK_SIZE_B,
-        BLOCK_SIZE_C=BLOCK_SIZE_C,
-    )
+    with torch.device(x.device):
+        contiguous_count_triton_kernel[(num_programs,)](
+            x_ptr=x,
+            output_ptr=output,
+            B=B,
+            C=size,
+            BLOCK_SIZE_B=BLOCK_SIZE_B,
+            BLOCK_SIZE_C=BLOCK_SIZE_C,
+        )
 
     return output.sum(dim=0)
