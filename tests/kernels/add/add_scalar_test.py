@@ -9,7 +9,6 @@ from cute_kernels import (
     KernelBackend,
     add_scalar_cute,
     add_scalar_torch,
-    init_inductor,
 )
 
 from ...test_commons import TestCommons
@@ -55,8 +54,6 @@ class AddTensorTest(TestCommons):
         BLOCK_SIZE: int,
         function: Callable,
     ) -> None:
-        init_inductor()
-
         x_kernel, x_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
         y = 0.42
 
