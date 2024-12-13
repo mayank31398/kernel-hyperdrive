@@ -12,7 +12,7 @@ from cute_kernels import init_inductor
 
 class TestCommons(TestCase):
     def setUp(self) -> None:
-        return init_inductor()
+        return init_inductor(cache_size_limit=128)
 
     @staticmethod
     def get_all_devices() -> list[torch.device]:
