@@ -1,4 +1,3 @@
-import inspect
 from typing import Callable, Iterable, Sequence
 
 import torch
@@ -30,8 +29,6 @@ def cute_op(
 
         def _run(*args, **kwargs):
             return _dispatch(func, compileable_func, *args, **kwargs)
-
-        _run.__signature__ = inspect.signature(func)
 
         return _run
 
