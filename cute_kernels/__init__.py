@@ -1,5 +1,6 @@
 from .constants import COMMON_VECTOR_INSTRUCTION_WIDTHS, MAX_FP16_BF16_INSTRUCTION_WIDTH
 from .enums import KernelBackend
+from .inductor import init_inductor
 from .kernel_registry import KernelRegistry
 from .kernels import (
     MoE_Torch,
