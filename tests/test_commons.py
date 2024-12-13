@@ -7,8 +7,13 @@ import torch
 import torch.nn as nn
 from torch.testing import assert_close
 
+from cute_kernels import init_inductor
+
 
 class TestCommons(TestCase):
+    def setUp(self) -> None:
+        return init_inductor()
+
     @staticmethod
     def get_all_devices() -> list[torch.device]:
         return [torch.device("cpu"), torch.device("cuda")]
