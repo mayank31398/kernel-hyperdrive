@@ -305,6 +305,7 @@ def cutotune(
     configs: list[CutoTuneConfig],
     default_config: CutoTuneConfig,
     triggers: set[str] = set(),
+    functional_triggers: dict[str, Callable] = {},
     warmup_iterations: int = _DEFAULT_WARMUP_ITERATIONS,
     benchmark_iterations: int = _BENCHMARK_ITERATIONS,
     in_place_op: bool = False,
@@ -317,6 +318,7 @@ def cutotune(
             triggers=triggers,
             warmup_iterations=warmup_iterations,
             benchmark_iterations=benchmark_iterations,
+            functional_triggers=functional_triggers,
             in_place_op=in_place_op,
         ).__call__
 
