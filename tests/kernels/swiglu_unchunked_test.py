@@ -20,7 +20,7 @@ class SwigluUnchunkedTest(TestCommons):
             [64],  # BLOCK_SIZE_B_forward
             [64],  # BLOCK_SIZE_H_backward
             [64],  # BLOCK_SIZE_H_backward
-            [swiglu_unchunked_cute, torch.compile(swiglu_unchunked_cute)],  # function
+            [swiglu_unchunked_cute, torch.compile(swiglu_unchunked_cute, fullgraph=True)],  # function
         )
     )
     def test_swiglu_unchunked(
