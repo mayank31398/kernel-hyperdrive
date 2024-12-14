@@ -1,9 +1,8 @@
 import torch
-import triton
 
 from ...constants import COMMON_TRITON_BLOCK_SIZES_POWERS_OF_2, MAX_TRITON_BLOCK_SIZE, TORCH_TO_TRITON_DTYPE
 from ...enums import KernelBackend
-from ...utils import CutoTuneConfig, ceil_divide, cutotune, get_powers_of_2, get_sm_count
+from ...utils import CutoTuneConfig, ceil_divide, cutotune, get_next_power_of_2, get_powers_of_2, get_sm_count
 from .triton_implementation import rmsnorm_backward_triton_kernel
 
 
@@ -44,23 +43,23 @@ def _triton_backward(
         torch.empty(num_programs, hidden_size, device=x_grad.device, dtype=torch.float32) if has_weight else None
     )
 
-    with torch.device(x.device):
-        rmsnorm_backward_triton_kernel[(num_programs,)](
-            x_ptr=x,
-            x_dtype=TORCH_TO_TRITON_DTYPE[x.dtype],
-            has_weight=weight is not None,
-            weight_ptr=weight,
-            output_grad_ptr=output_grad,
-            x_grad_ptr=x_grad,
-            weight_grad_ptr=weight_grad,
-            eps=eps,
-            memory_efficient=memory_efficient,
-            rmsnorm_denominator_ptr=rmsnorm_denominator,
-            B=num_elements,
-            H=hidden_size,
-            BLOCK_SIZE_B=BLOCK_SIZE_B,
-            BLOCK_SIZE_H=BLOCK_SIZE_H,
-        )
+    # with torch.device(x.device):
+    rmsnorm_backward_triton_kernel[(num_programs,)](
+        x_ptr=x,
+        x_dtype=TORCH_TO_TRITON_DTYPE[x.dtype],
+        has_weight=weight is not None,
+        weight_ptr=weight,
+        output_grad_ptr=output_grad,
+        x_grad_ptr=x_grad,
+        weight_grad_ptr=weight_grad,
+        eps=eps,
+        memory_efficient=memory_efficient,
+        rmsnorm_denominator_ptr=rmsnorm_denominator,
+        B=num_elements,
+        H=hidden_size,
+        BLOCK_SIZE_B=BLOCK_SIZE_B,
+        BLOCK_SIZE_H=BLOCK_SIZE_H,
+    )
 
     if has_weight:
         weight_grad = weight_grad.sum(dim=0).type_as(weight)
@@ -89,7 +88,7 @@ def _backward(
 
     if kernel_backend == KernelBackend.triton:
         # NOTE we ignore the BLOCK_SIZE_H passed by user
-        BLOCK_SIZE_H = triton.next_power_of_2(hidden_size)
+        BLOCK_SIZE_H = get_next_power_of_2(hidden_size)
         assert BLOCK_SIZE_H <= MAX_TRITON_BLOCK_SIZE
 
         weight_grad = _triton_backward(
