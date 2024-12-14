@@ -201,7 +201,8 @@ def _rmsnorm_backward_triton(
         for BLOCK_SIZE_B in get_powers_of_2(1, 32) + COMMON_TRITON_BLOCK_SIZES_POWERS_OF_2
     ],
     default_config=CutoTuneConfig({"BLOCK_SIZE_B": 1}),
-    triggers={"x.dtype", "BLOCK_SIZE_H", ("has_weight", lambda **kwargs: kwargs["weight"] is not None)},
+    triggers={"x.dtype", "BLOCK_SIZE_H"},
+    functional_triggers={"has_weight": lambda **kwargs: kwargs["weight"] is not None},
 )
 def rmsnorm_backward_triton(
     x: torch.Tensor,
