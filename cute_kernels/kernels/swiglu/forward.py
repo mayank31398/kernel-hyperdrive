@@ -7,9 +7,9 @@ from ...constants import (
     MAX_FP16_BF16_INSTRUCTION_WIDTH,
 )
 from ...enums import KernelBackend
-from ...utils import CutoTuneConfig, ceil_divide, cutotune, get_cartesian_product_cutotune_configs
+from ...utils import CutoTuneConfig, cutotune, get_cartesian_product_cutotune_configs
 from .cuda_implementation import swiglu_forward_cuda_kernel
-from .triton_implementation import swiglu_forward_triton_kernel
+from .triton_implementation import swiglu_forward_triton
 
 
 @cutotune(
@@ -59,16 +59,8 @@ def _forward(
             BLOCK_SIZE=BLOCK_SIZE,
         )
     elif kernel_backend == KernelBackend.triton:
-        num_elements = gate.numel()
-
-        with torch.device(gate.device):
-            swiglu_forward_triton_kernel[(ceil_divide(num_elements, BLOCK_SIZE),)](
-                gate_ptr=gate,
-                up_ptr=up,
-                output_ptr=output,
-                num_elements=num_elements,
-                BLOCK_SIZE=BLOCK_SIZE,
-            )
+        assert vector_instruction_width is None
+        swiglu_forward_triton(gate=gate, up=up, output=output, BLOCK_SIZE=BLOCK_SIZE)
     else:
         raise ValueError(f"unexpected kernel_backend ({kernel_backend})")
 
