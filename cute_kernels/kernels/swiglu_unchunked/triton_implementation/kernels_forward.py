@@ -4,8 +4,6 @@ import triton.language as tl
 
 from ....constants import LIBRARY_NAME
 from ....utils import ceil_divide, cute_op
-from .kernels_backward import swiglu_unchunked_backward_triton_kernel
-from .kernels_forward import swiglu_unchunked_forward_triton_kernel
 
 
 _KERNEL_NAME = "swiglu_unchunked_forward_triton"
