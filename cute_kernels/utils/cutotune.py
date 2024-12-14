@@ -186,7 +186,11 @@ class _CutoTune:
                         assert len(triggers) == 1
                         func = lambda tensor: (tensor.dtype, tensor.size(), tensor.stride())
 
-                    lookup_key.append(f"{variable_name}.{func_name} = {func(value)}")
+                    lookup_key.append(
+                        f"{variable_name} = {func(value)}"
+                        if func_name is None
+                        else f"{variable_name}.{func_name} = {func(value)}"
+                    )
             else:
                 assert len(triggers) == 1
                 func_name, func = triggers[0]
@@ -252,33 +256,37 @@ class _CutoTune:
                 variable_name not in self.variable_name_trigger_map
             ), "trigger can't be an instance of CutoTuneParameter"
 
-    def _parse_trigger(self, trigger: str) -> tuple[str, str, Callable]:
-        split_trigger = trigger.split(_SEPARATOR)
-        variable_name = split_trigger[0]
+    def _parse_trigger(self, trigger: str | tuple[str, Callable]) -> tuple[str, str, Callable]:
+        if isinstance(trigger, tuple):
+            func_name = None
+            variable_name, func = trigger
+        else:
+            split_trigger = trigger.split(_SEPARATOR)
+            variable_name = split_trigger[0]
 
-        if len(split_trigger) == 1:
-            func_name = "info"
-            func = None
-        elif len(split_trigger) == 2:
-            func_name = split_trigger[1]
+            if len(split_trigger) == 1:
+                func_name = "info"
+                func = None
+            elif len(split_trigger) == 2:
+                func_name = split_trigger[1]
 
-            if func_name == "dtype":
-                func = lambda tensor: tensor.dtype
-            elif func_name in ["size()", "shape"]:
-                func = lambda tensor: tensor.size()
-            elif func_name == "stride()":
-                func = lambda tensor: tensor.stride()
-            elif func_name.startswith("size"):
-                dim = int(func_name[5:][:-1])
-                func = lambda tensor: tensor.size(dim)
-            elif func_name.startswith("shape"):
-                dim = int(func_name[6:][:-1])
-                func = lambda tensor: tensor.size(dim)
-            elif func_name.startswith("stride"):
-                dim = int(func_name[7:][:-1])
-                func = lambda tensor: tensor.stride(dim)
-            else:
-                raise ValueError(f"unexpected triggeer found ({trigger})")
+                if func_name == "dtype":
+                    func = lambda tensor: tensor.dtype
+                elif func_name in ["size()", "shape"]:
+                    func = lambda tensor: tensor.size()
+                elif func_name == "stride()":
+                    func = lambda tensor: tensor.stride()
+                elif func_name.startswith("size"):
+                    dim = int(func_name[5:][:-1])
+                    func = lambda tensor: tensor.size(dim)
+                elif func_name.startswith("shape"):
+                    dim = int(func_name[6:][:-1])
+                    func = lambda tensor: tensor.size(dim)
+                elif func_name.startswith("stride"):
+                    dim = int(func_name[7:][:-1])
+                    func = lambda tensor: tensor.stride(dim)
+                else:
+                    raise ValueError(f"unexpected triggeer found ({trigger})")
 
         return variable_name, func_name, func
 

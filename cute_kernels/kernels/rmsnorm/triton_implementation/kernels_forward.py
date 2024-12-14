@@ -69,7 +69,7 @@ def rmsnorm_forward_triton_kernel(
         for BLOCK_SIZE_B in get_powers_of_2(1, 32) + COMMON_TRITON_BLOCK_SIZES_POWERS_OF_2
     ],
     default_config=CutoTuneConfig({"BLOCK_SIZE_B": 1}),
-    triggers={"x.dtype", "BLOCK_SIZE_H"},
+    triggers={"x.dtype", "BLOCK_SIZE_H", ("has_weight", lambda **kwargs: kwargs["weight"] is not None)},
 )
 @cute_op(f"{LIBRARY_NAME}::{_KERNEL_NAME}", mutates_args={"output", "rmsnorm_denominator"})
 def rmsnorm_forward_triton(
