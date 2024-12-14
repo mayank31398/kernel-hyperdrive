@@ -38,7 +38,7 @@ def swiglu_backward_triton(
     B = x.numel() // H
 
     with torch.device(x.device):
-        swiglu_unchunked_backward_triton_kernel[(ceil_divide(B, BLOCK_SIZE),)](
+        swiglu_unchunked_backward_triton_kernel[(ceil_divide(B, BLOCK_SIZE_B), ceil_divide(H, BLOCK_SIZE_H))](
             x_ptr=x,
             output_grad_ptr=output_grad,
             x_grad_ptr=x_grad,
