@@ -2,8 +2,8 @@ import torch
 
 from ...constants import MAX_TRITON_BLOCK_SIZE
 from ...enums import KernelBackend
-from ...utils import CutoTuneConfig, ceil_divide, cutotune, get_cartesian_product_cutotune_configs, get_powers_of_2
-from .triton_implementation import embedding_forward_triton_kernel
+from ...utils import CutoTuneConfig, cutotune, get_cartesian_product_cutotune_configs, get_powers_of_2
+from .triton_implementation import embedding_forward_triton
 
 
 @cutotune(
@@ -29,18 +29,9 @@ def _forward(
     output = torch.empty(num_elements, hidden_size, dtype=weight.dtype, device=input_ids.device)
 
     if kernel_backend == KernelBackend.triton:
-        with torch.device(input_ids.device):
-            embedding_forward_triton_kernel[
-                (ceil_divide(num_elements, BLOCK_SIZE_B), ceil_divide(hidden_size, BLOCK_SIZE_H))
-            ](
-                x_ptr=input_ids,
-                weight_ptr=weight,
-                output_ptr=output,
-                B=num_elements,
-                H=hidden_size,
-                BLOCK_SIZE_B=BLOCK_SIZE_B,
-                BLOCK_SIZE_H=BLOCK_SIZE_H,
-            )
+        embedding_forward_triton(
+            input_ids=input_ids, weight=weight, output=output, BLOCK_SIZE_B=BLOCK_SIZE_B, BLOCK_SIZE_H=BLOCK_SIZE_H
+        )
     else:
         raise ValueError(f"unexpected kernel_backend ({kernel_backend})")
 

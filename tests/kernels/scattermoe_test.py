@@ -90,7 +90,7 @@ class ScatterMoETest(TestCommons):
             ).to(dtype=dtype)
 
         if is_compiling:
-            moe_custom = torch.compile(moe_custom)
+            moe_custom = torch.compile(moe_custom, fullgraph=True)
 
         state_dict = moe_custom.state_dict()
 

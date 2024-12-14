@@ -22,3 +22,14 @@ def get_powers_of_2(start: int, end: int) -> list[int]:
 def divide_if_divisible(dividend: int, divisor: int, msg: str = "") -> int:
     assert dividend % divisor == 0, msg
     return dividend // divisor
+
+
+_POWERS_OF_2 = get_powers_of_2(1, 65536)
+
+
+def get_next_power_of_2(x: int) -> int:
+    for p in _POWERS_OF_2:
+        if p >= x:
+            return p
+
+    raise ValueError(f"x ({x}) is bigger than the max allowable power of 2 ({p})")

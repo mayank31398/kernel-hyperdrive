@@ -7,9 +7,9 @@ from ...constants import (
     MAX_FP16_BF16_INSTRUCTION_WIDTH,
 )
 from ...enums import KernelBackend
-from ...utils import CutoTuneConfig, ceil_divide, cutotune, get_cartesian_product_cutotune_configs
-from .cuda_implementation import swiglu_backward_cuda_kernel
-from .triton_implementation import swiglu_backward_triton_kernel
+from ...utils import CutoTuneConfig, cutotune, get_cartesian_product_cutotune_configs
+from .cuda_implementation import swiglu_backward_cuda
+from .triton_implementation import swiglu_backward_triton
 
 
 @cutotune(
@@ -54,7 +54,7 @@ def _backward(
     up_grad = torch.empty_like(up)
 
     if kernel_backend == KernelBackend.cuda:
-        swiglu_backward_cuda_kernel(
+        swiglu_backward_cuda(
             gate=gate,
             up=up,
             output_grad=output_grad,
@@ -64,18 +64,10 @@ def _backward(
             BLOCK_SIZE=BLOCK_SIZE,
         )
     elif kernel_backend == KernelBackend.triton:
-        num_elements = gate.numel()
-
-        with torch.device(gate.device):
-            swiglu_backward_triton_kernel[ceil_divide(num_elements, BLOCK_SIZE),](
-                gate_ptr=gate,
-                up_ptr=up,
-                output_grad_ptr=output_grad,
-                gate_grad_ptr=gate_grad,
-                up_grad_ptr=up_grad,
-                num_elements=num_elements,
-                BLOCK_SIZE=BLOCK_SIZE,
-            )
+        assert vector_instruction_width is None
+        swiglu_backward_triton(
+            gate=gate, up=up, output_grad=output_grad, gate_grad=gate_grad, up_grad=up_grad, BLOCK_SIZE=BLOCK_SIZE
+        )
     else:
         raise ValueError(f"unexpected kernel_backend ({kernel_backend})")
 

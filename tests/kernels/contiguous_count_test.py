@@ -18,7 +18,7 @@ class ContiguousCountTest(TestCommons):
             [torch.device("cuda")],  # device
             [KernelBackend.triton],  # kernel_backend
             [64],  # BLOCK_SIZE_B
-            [contiguous_count_cute, torch.compile(contiguous_count_cute)],  # function
+            [contiguous_count_cute, torch.compile(contiguous_count_cute, fullgraph=True)],  # function
         )
     )
     def test_contiguous_count(
