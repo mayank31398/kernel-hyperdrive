@@ -4,8 +4,6 @@ import triton.language as tl
 
 from ....constants import LIBRARY_NAME
 from ....utils import ceil_divide, cute_op
-from .kernels_backward import embedding_backward_triton_kernel
-from .kernels_forward import embedding_forward_triton_kernel
 
 
 _KERNEL_NAME = "embedding_forward_triton"

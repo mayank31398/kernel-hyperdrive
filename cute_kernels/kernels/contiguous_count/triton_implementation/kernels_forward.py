@@ -4,7 +4,6 @@ import triton.language as tl
 
 from ....constants import LIBRARY_NAME
 from ....utils import ceil_divide, cute_op, get_next_power_of_2, get_sm_count
-from .kernels_forward import contiguous_count_triton_kernel
 
 
 _KERNEL_NAME = "contiguous_count_triton"

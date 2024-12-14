@@ -4,7 +4,6 @@ import triton.language as tl
 
 from .....constants import LIBRARY_NAME
 from .....utils import ceil_divide, cute_op
-from .kernels_forward import add_tensor_forward_triton_kernel
 
 
 _KERNEL_NAME = "add_tensor_forward_triton"
