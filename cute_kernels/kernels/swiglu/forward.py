@@ -8,7 +8,7 @@ from ...constants import (
 )
 from ...enums import KernelBackend
 from ...utils import CutoTuneConfig, cutotune, get_cartesian_product_cutotune_configs
-from .cuda_implementation import swiglu_forward_cuda_kernel
+from .cuda_implementation import swiglu_forward_cuda
 from .triton_implementation import swiglu_forward_triton
 
 
@@ -51,7 +51,7 @@ def _forward(
         assert gate.is_cuda, "tensor gate is not on GPU"
         assert up.is_cuda, "tensor up is not on GPU"
 
-        swiglu_forward_cuda_kernel(
+        swiglu_forward_cuda(
             gate=gate,
             up=up,
             output=output,

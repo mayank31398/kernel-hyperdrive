@@ -8,7 +8,7 @@ from ...constants import (
 )
 from ...enums import KernelBackend
 from ...utils import CutoTuneConfig, ceil_divide, cutotune, get_cartesian_product_cutotune_configs
-from .cuda_implementation import swiglu_backward_cuda_kernel
+from .cuda_implementation import swiglu_backward_cuda
 from .triton_implementation import swiglu_backward_triton_kernel
 
 
@@ -54,7 +54,7 @@ def _backward(
     up_grad = torch.empty_like(up)
 
     if kernel_backend == KernelBackend.cuda:
-        swiglu_backward_cuda_kernel(
+        swiglu_backward_cuda(
             gate=gate,
             up=up,
             output_grad=output_grad,

@@ -10,14 +10,14 @@ _BACKWARD_KERNEL_NAME = "swiglu_backward_cuda"
 
 
 @cute_op(f"{LIBRARY_NAME}::{_FORWARD_KERNEL_NAME}", mutates_args={"output"})
-def swiglu_forward_cuda_kernel(
+def swiglu_forward_cuda(
     gate: torch.Tensor, up: torch.Tensor, output: torch.Tensor, vector_instruction_width: int, BLOCK_SIZE: int
 ) -> None:
     KernelRegistry.get_kernel(_FORWARD_KERNEL_NAME)(gate, up, output, vector_instruction_width, BLOCK_SIZE)
 
 
 @cute_op(f"{LIBRARY_NAME}::{_BACKWARD_KERNEL_NAME}", mutates_args={"gate_grad", "up_grad"})
-def swiglu_backward_cuda_kernel(
+def swiglu_backward_cuda(
     gate: torch.Tensor,
     up: torch.Tensor,
     output_grad: torch.Tensor,
