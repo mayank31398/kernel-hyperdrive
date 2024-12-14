@@ -48,6 +48,7 @@ class _CutoTune:
         triggers: set[str],
         warmup_iterations: int,
         benchmark_iterations: int,
+        functional_triggers: dict[str, Callable] = {},
         in_place_op: bool = False,
     ) -> None:
         assert len(configs) > 0, "no cutotune config is passed"
@@ -64,6 +65,8 @@ class _CutoTune:
 
         self._setup_trigger_map(triggers)
         self._check_configs()
+
+        self.functional_triggers = functional_triggers
 
         if self.in_place_op:
             raise NotImplementedError()
@@ -203,6 +206,15 @@ class _CutoTune:
         for variable_name, value in kwargs.items():
             _maybe_add_key(variable_name, value)
 
+        # now run the functional triggers
+        if len(self.functional_triggers) > 0:
+            kwargs = self._get_function_arguments(
+                config=CutoTuneConfig({}), args=args, kwargs=kwargs, override_allowed=False
+            )
+
+            for variable_name, func in self.functional_triggers.items():
+                lookup_key.append(f"{variable_name} = {func(**kwargs)}")
+
         return tuple(lookup_key)
 
     def _run_benchmark(self, **kwargs: dict) -> float:
@@ -293,6 +305,7 @@ def cutotune(
     configs: list[CutoTuneConfig],
     default_config: CutoTuneConfig,
     triggers: set[str] = set(),
+    functional_triggers: dict[str, Callable] = {},
     warmup_iterations: int = _DEFAULT_WARMUP_ITERATIONS,
     benchmark_iterations: int = _BENCHMARK_ITERATIONS,
     in_place_op: bool = False,
@@ -305,6 +318,7 @@ def cutotune(
             triggers=triggers,
             warmup_iterations=warmup_iterations,
             benchmark_iterations=benchmark_iterations,
+            functional_triggers=functional_triggers,
             in_place_op=in_place_op,
         ).__call__
 

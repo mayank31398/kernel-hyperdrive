@@ -58,8 +58,22 @@ def rmsnorm_forward_triton_kernel(
     tl.store(output_ptrs, x, mask=mask_bh)
 
 
+@cutotune(
+    configs=[
+        CutoTuneConfig(
+            {"BLOCK_SIZE_B": BLOCK_SIZE_B},
+            condition=lambda **kwargs: 1024
+            <= kwargs["BLOCK_SIZE_B"] * kwargs["BLOCK_SIZE_H"]
+            <= MAX_TRITON_BLOCK_SIZE,
+        )
+        for BLOCK_SIZE_B in get_powers_of_2(1, 32) + COMMON_TRITON_BLOCK_SIZES_POWERS_OF_2
+    ],
+    default_config=CutoTuneConfig({"BLOCK_SIZE_B": 1}),
+    triggers={"x.dtype", "BLOCK_SIZE_H"},
+    functional_triggers={"has_weight": lambda **kwargs: kwargs["weight"] is not None},
+)
 @cute_op(f"{LIBRARY_NAME}::{_KERNEL_NAME}", mutates_args={"output", "rmsnorm_denominator"})
-def _rmsnorm_forward_triton(
+def rmsnorm_forward_triton(
     x: torch.Tensor,
     weight: torch.Tensor | None,
     output: torch.Tensor,
@@ -89,38 +103,3 @@ def _rmsnorm_forward_triton(
             BLOCK_SIZE_B=BLOCK_SIZE_B,
             BLOCK_SIZE_H=BLOCK_SIZE_H,
         )
-
-
-@cutotune(
-    configs=[
-        CutoTuneConfig(
-            {"BLOCK_SIZE_B": BLOCK_SIZE_B},
-            condition=lambda **kwargs: 1024
-            <= kwargs["BLOCK_SIZE_B"] * kwargs["BLOCK_SIZE_H"]
-            <= MAX_TRITON_BLOCK_SIZE,
-        )
-        for BLOCK_SIZE_B in get_powers_of_2(1, 32) + COMMON_TRITON_BLOCK_SIZES_POWERS_OF_2
-    ],
-    default_config=CutoTuneConfig({"BLOCK_SIZE_B": 1}),
-    triggers={"x.dtype", "BLOCK_SIZE_H"},
-)
-def rmsnorm_forward_triton(
-    x: torch.Tensor,
-    weight: torch.Tensor | None,
-    output: torch.Tensor,
-    eps: float,
-    memory_efficient: bool,
-    rmsnorm_denominator: torch.Tensor | None,
-    BLOCK_SIZE_B: int,
-    BLOCK_SIZE_H: int,
-) -> None:
-    _rmsnorm_forward_triton(
-        x=x,
-        weight=weight,
-        output=output,
-        eps=eps,
-        memory_efficient=memory_efficient,
-        rmsnorm_denominator=rmsnorm_denominator,
-        BLOCK_SIZE_B=BLOCK_SIZE_B,
-        BLOCK_SIZE_H=BLOCK_SIZE_H,
-    )

@@ -202,10 +202,11 @@ def _rmsnorm_backward_triton(
     ],
     default_config=CutoTuneConfig({"BLOCK_SIZE_B": 1}),
     triggers={"x.dtype", "BLOCK_SIZE_H"},
+    functional_triggers={"has_weight": lambda **kwargs: kwargs["weight"] is not None},
 )
 def rmsnorm_backward_triton(
     x: torch.Tensor,
-    weight: torch.Tensor,
+    weight: torch.Tensor | None,
     output_grad: torch.Tensor,
     rmsnorm_denominator: torch.Tensor,
     x_grad: torch.Tensor,
