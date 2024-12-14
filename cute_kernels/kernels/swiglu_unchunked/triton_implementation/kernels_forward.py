@@ -1,5 +1,12 @@
+import torch
 import triton
 import triton.language as tl
+
+from ....constants import LIBRARY_NAME
+from ....utils import ceil_divide, cute_op
+
+
+_KERNEL_NAME = "swiglu_unchunked_forward_triton"
 
 
 @triton.jit
@@ -28,3 +35,21 @@ def swiglu_unchunked_forward_triton_kernel(
 
     output_ptrs = output_ptr + indices_b[:, None] * half_H + indices_h[None, :]
     tl.store(output_ptrs, output, mask=mask_bh)
+
+
+@cute_op(f"{LIBRARY_NAME}::{_KERNEL_NAME}", mutates_args={"output"})
+def swiglu_unchunked_forward_triton(
+    x: torch.Tensor, output: torch.Tensor, BLOCK_SIZE_B: int, BLOCK_SIZE_H: int
+) -> None:
+    H = x.size(-1)
+    B = x.numel() // H
+
+    with torch.device(x.device):
+        swiglu_unchunked_forward_triton_kernel[(ceil_divide(B, BLOCK_SIZE_B), ceil_divide(H, BLOCK_SIZE_H))](
+            x_ptr=x,
+            output_ptr=output,
+            B=B,
+            H=H,
+            BLOCK_SIZE_B=BLOCK_SIZE_B,
+            BLOCK_SIZE_H=BLOCK_SIZE_H,
+        )

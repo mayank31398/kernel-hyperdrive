@@ -8,7 +8,7 @@ from ...utils import (
     get_cartesian_product_cutotune_configs,
     get_powers_of_2,
 )
-from .triton_implementation import swiglu_forward_triton
+from .triton_implementation import swiglu_unchunked_forward_triton
 
 
 @cutotune(
@@ -25,7 +25,7 @@ def _forward(x: torch.Tensor, kernel_backend: KernelBackend, BLOCK_SIZE_B: int, 
     output = torch.empty(*x.size()[:-1], divide_if_divisible(H, 2), device=x.device, dtype=x.dtype)
 
     if kernel_backend == KernelBackend.triton:
-        swiglu_forward_triton(x=x, output=output, BLOCK_SIZE_B=BLOCK_SIZE_B, BLOCK_SIZE_H=BLOCK_SIZE_H)
+        swiglu_unchunked_forward_triton(x=x, output=output, BLOCK_SIZE_B=BLOCK_SIZE_B, BLOCK_SIZE_H=BLOCK_SIZE_H)
     else:
         raise ValueError(f"unexpected kernel_backend ({kernel_backend})")
 

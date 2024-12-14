@@ -2,7 +2,7 @@ import torch
 
 from ...constants import MAX_TRITON_BLOCK_SIZE
 from ...enums import KernelBackend
-from ...utils import CutoTuneConfig, ceil_divide, cutotune, get_cartesian_product_cutotune_configs, get_powers_of_2
+from ...utils import CutoTuneConfig, cutotune, get_cartesian_product_cutotune_configs, get_powers_of_2
 from .triton_implementation import embedding_backward_triton
 
 

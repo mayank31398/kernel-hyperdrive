@@ -1,5 +1,12 @@
+import torch
 import triton
 import triton.language as tl
+
+from ....constants import LIBRARY_NAME
+from ....utils import ceil_divide, cute_op
+
+
+_KERNEL_NAME = "embedding_backward_triton"
 
 
 @triton.jit
@@ -30,3 +37,28 @@ def embedding_backward_triton_kernel(
 
     weight_grad_ptrs = weight_grad_ptr + x[:, None] * H + indices_h[None, :]
     tl.atomic_add(weight_grad_ptrs, output_grad, mask=mask_bh)
+
+
+@cute_op(f"{LIBRARY_NAME}::{_KERNEL_NAME}", mutates_args={"weight_grad"})
+def embedding_backward_triton(
+    input_ids: torch.Tensor,
+    output_grad: torch.Tensor,
+    weight_grad: torch.Tensor,
+    BLOCK_SIZE_B: int,
+    BLOCK_SIZE_H: int,
+) -> None:
+    num_elements = input_ids.numel()
+    hidden_size = weight_grad.size(-1)
+
+    with torch.device(input_ids.device):
+        embedding_backward_triton_kernel[
+            (ceil_divide(num_elements, BLOCK_SIZE_B), ceil_divide(hidden_size, BLOCK_SIZE_H))
+        ](
+            x_ptr=input_ids,
+            output_grad_ptr=output_grad,
+            weight_grad_ptr=weight_grad,
+            B=num_elements,
+            H=hidden_size,
+            BLOCK_SIZE_B=BLOCK_SIZE_B,
+            BLOCK_SIZE_H=BLOCK_SIZE_H,
+        )
