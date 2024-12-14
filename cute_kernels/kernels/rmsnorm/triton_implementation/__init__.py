@@ -102,23 +102,23 @@ def _rmsnorm_backward_no_weight_triton(
     sm_count = get_sm_count(x.device)
     num_programs = min(sm_count, ceil_divide(num_elements, BLOCK_SIZE_B))
 
-    # with torch.device(x.device):
-    rmsnorm_backward_triton_kernel[(num_programs,)](
-        x_ptr=x,
-        x_dtype=TORCH_TO_TRITON_DTYPE[x.dtype],
-        has_weight=False,
-        weight_ptr=None,
-        output_grad_ptr=output_grad,
-        x_grad_ptr=x_grad,
-        weight_grad_ptr=None,
-        eps=eps,
-        memory_efficient=memory_efficient,
-        rmsnorm_denominator_ptr=rmsnorm_denominator,
-        B=num_elements,
-        H=hidden_size,
-        BLOCK_SIZE_B=BLOCK_SIZE_B,
-        BLOCK_SIZE_H=BLOCK_SIZE_H,
-    )
+    with torch.device(x.device):
+        rmsnorm_backward_triton_kernel[(num_programs,)](
+            x_ptr=x,
+            x_dtype=TORCH_TO_TRITON_DTYPE[x.dtype],
+            has_weight=False,
+            weight_ptr=None,
+            output_grad_ptr=output_grad,
+            x_grad_ptr=x_grad,
+            weight_grad_ptr=None,
+            eps=eps,
+            memory_efficient=memory_efficient,
+            rmsnorm_denominator_ptr=rmsnorm_denominator,
+            B=num_elements,
+            H=hidden_size,
+            BLOCK_SIZE_B=BLOCK_SIZE_B,
+            BLOCK_SIZE_H=BLOCK_SIZE_H,
+        )
 
 
 @cutotune(
