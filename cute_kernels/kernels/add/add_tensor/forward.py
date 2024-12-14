@@ -61,7 +61,6 @@ def _forward(
         )
     elif kernel_backend == KernelBackend.triton:
         assert vector_instruction_width is None
-
         add_tensor_forward_triton(x=x, y=y, output=output, BLOCK_SIZE=BLOCK_SIZE)
     else:
         raise ValueError(f"unexpected kernel_backend ({kernel_backend})")
