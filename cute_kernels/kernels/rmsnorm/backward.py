@@ -3,7 +3,7 @@ import torch
 from ...constants import COMMON_TRITON_BLOCK_SIZES_POWERS_OF_2, MAX_TRITON_BLOCK_SIZE, TORCH_TO_TRITON_DTYPE
 from ...enums import KernelBackend
 from ...utils import CutoTuneConfig, ceil_divide, cutotune, get_next_power_of_2, get_powers_of_2, get_sm_count
-from .triton_implementation import rmsnorm_backward_triton_kernel
+from .triton_implementation import rmsnorm_backward_no_weight_triton, rmsnorm_backward_triton_kernel
 
 
 @cutotune(
@@ -91,17 +91,30 @@ def _backward(
         BLOCK_SIZE_H = get_next_power_of_2(hidden_size)
         assert BLOCK_SIZE_H <= MAX_TRITON_BLOCK_SIZE
 
-        weight_grad = _triton_backward(
-            x=x.view(-1, hidden_size),
-            weight=weight,
-            output_grad=output_grad.view(-1, hidden_size),
-            rmsnorm_denominator=rmsnorm_denominator,
-            x_grad=x_grad,
-            eps=eps,
-            memory_efficient=memory_efficient,
-            BLOCK_SIZE_B=BLOCK_SIZE_B,
-            BLOCK_SIZE_H=BLOCK_SIZE_H,
-        )
+        if weight is None:
+            weight_grad = rmsnorm_backward_no_weight_triton(
+                x=x,
+                weight=weight,
+                output_grad=output_grad,
+                rmsnorm_denominator=rmsnorm_denominator,
+                x_grad=x_grad,
+                eps=eps,
+                memory_efficient=memory_efficient,
+                BLOCK_SIZE_B=BLOCK_SIZE_B,
+                BLOCK_SIZE_H=BLOCK_SIZE_H,
+            )
+        else:
+            weight_grad = _triton_backward(
+                x=x.view(-1, hidden_size),
+                weight=weight,
+                output_grad=output_grad.view(-1, hidden_size),
+                rmsnorm_denominator=rmsnorm_denominator,
+                x_grad=x_grad,
+                eps=eps,
+                memory_efficient=memory_efficient,
+                BLOCK_SIZE_B=BLOCK_SIZE_B,
+                BLOCK_SIZE_H=BLOCK_SIZE_H,
+            )
     else:
         raise ValueError(f"unexpected kernel_backend ({kernel_backend})")
 
