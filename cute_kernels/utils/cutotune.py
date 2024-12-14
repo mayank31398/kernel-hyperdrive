@@ -212,7 +212,7 @@ class _CutoTune:
                 config=CutoTuneConfig({}), args=args, kwargs=kwargs, override_allowed=False
             )
 
-            for variable_name, func in self.functional_triggers:
+            for variable_name, func in self.functional_triggers.items():
                 lookup_key.append(f"{variable_name} = {func(**kwargs)}")
 
         return tuple(lookup_key)
