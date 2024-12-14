@@ -7,7 +7,7 @@ from ...constants import (
     MAX_FP16_BF16_INSTRUCTION_WIDTH,
 )
 from ...enums import KernelBackend
-from ...utils import CutoTuneConfig, ceil_divide, cutotune, get_cartesian_product_cutotune_configs
+from ...utils import CutoTuneConfig, cutotune, get_cartesian_product_cutotune_configs
 from .cuda_implementation import swiglu_backward_cuda
 from .triton_implementation import swiglu_backward_triton
 
