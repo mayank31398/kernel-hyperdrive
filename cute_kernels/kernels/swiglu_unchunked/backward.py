@@ -21,9 +21,6 @@ def _backward(
     BLOCK_SIZE_B: int,
     BLOCK_SIZE_H: int,
 ) -> tuple[torch.Tensor]:
-    H = x.size(-1)
-    B = x.numel() // H
-
     x_grad = torch.empty_like(x)
 
     if kernel_backend == KernelBackend.triton:
