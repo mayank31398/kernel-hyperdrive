@@ -2,7 +2,7 @@ import torch
 import triton
 
 from ....constants import LIBRARY_NAME
-from ....utils import ceil_divide, cute_op, get_sm_count
+from ....utils import ceil_divide, cute_op, get_next_power_of_2, get_sm_count
 from .kernels_forward import contiguous_count_triton_kernel
 
 
@@ -16,7 +16,7 @@ def _fake(x: torch.Tensor, size: int, BLOCK_SIZE_B: int) -> torch.Tensor:
 @cute_op(f"{LIBRARY_NAME}::{_KERNEL_NAME}", mutates_args={}, fake_func=_fake)
 def contiguous_count_triton(x: torch.Tensor, size: int, BLOCK_SIZE_B: int) -> torch.Tensor:
     B = x.numel()
-    BLOCK_SIZE_C = triton.next_power_of_2(size)
+    BLOCK_SIZE_C = get_next_power_of_2(size)
 
     sm_count = get_sm_count(x.device)
     num_programs = min(sm_count, ceil_divide(B, BLOCK_SIZE_B))
