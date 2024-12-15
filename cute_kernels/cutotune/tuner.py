@@ -199,8 +199,8 @@ class _CutoTune:
             variable_name = self.signature.args[i]
             _maybe_add_key(variable_name, value)
 
-        for variable_name, value in kwargs.items():
-            _maybe_add_key(variable_name, value)
+        for variable_name in kwargs:
+            _maybe_add_key(variable_name, kwargs[variable_name])
 
         # now run the functional triggers
         if len(self.functional_triggers) > 0:
