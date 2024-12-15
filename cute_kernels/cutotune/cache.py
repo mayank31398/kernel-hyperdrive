@@ -48,7 +48,9 @@ class _CutoTuneCache:
         if lookup_key_configs is None:
             return default
 
-        return lookup_key_configs.get(lookup_key, default)
+        default = lookup_key_configs.get(lookup_key, (default, None))[0]
+
+        return default
 
 
 _CUTOTUNE_CACHE = None
