@@ -53,7 +53,7 @@ class _CutoTune:
             raise NotImplementedError()
 
         self.best_configs = {}
-        self.timed_configs = None
+        self.timed_configs = {}
 
         self.function_hash = f"{os.path.relpath(inspect.getfile(function), 'cute_kernels')}::{function.__name__}"
 
