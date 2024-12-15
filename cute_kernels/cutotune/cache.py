@@ -7,12 +7,11 @@ from .config import CutoTuneConfig
 
 class CutoTuneCache:
     def __init__(self, filename: str) -> None:
-        self.full_cache = None
-        self.min_cache = None
+        self.full_cache = defaultdict(defaultdict(list))
+        self.min_cache = defaultdict(defaultdict(dict))
 
         if os.path.exists(filename):
             self.full_cache = json.load(open(filename, "r"))
-            self.min_cache = defaultdict(defaultdict(dict))
 
             for function_hash, lookup_key_timed_configs in self.full_cache.items():
                 for lookup_key, timed_configs in lookup_key_timed_configs.items():
