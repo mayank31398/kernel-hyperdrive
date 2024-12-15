@@ -3,7 +3,7 @@ import torch
 from ...constants import MAX_TRITON_BLOCK_SIZE
 from ...cutotune import CutoTuneConfig, cutotune
 from ...enums import KernelBackend
-from ...utils import get_next_power_of_2
+from ...math import get_next_power_of_2
 from .triton_implementation import rmsnorm_backward_triton
 
 

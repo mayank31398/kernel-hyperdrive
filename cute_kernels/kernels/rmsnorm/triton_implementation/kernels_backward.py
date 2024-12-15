@@ -9,7 +9,8 @@ from ....constants import (
     TORCH_TO_TRITON_DTYPE,
 )
 from ....cutotune import CutoTuneConfig, cutotune
-from ....utils import ceil_divide, cute_op, get_powers_of_2, get_sm_count
+from ....math import ceil_divide, get_powers_of_2
+from ....utils import cute_op, get_sm_count
 
 
 _KERNEL_NO_WEIGHT_NAME = "rmsnorm_backward_no_weight_triton"

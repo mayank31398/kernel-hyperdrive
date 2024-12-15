@@ -9,7 +9,8 @@ from ....constants import (
     TORCH_TO_TRITON_DTYPE,
 )
 from ....cutotune import CutoTuneConfig, cutotune
-from ....utils import ceil_divide, cute_op, get_powers_of_2
+from ....math import ceil_divide, get_powers_of_2
+from ....utils import cute_op
 
 
 _KERNEL_NAME = "rmsnorm_forward_triton"
