@@ -8,7 +8,7 @@ import torch
 from tqdm import tqdm
 
 from ..utils import device_synchronize
-from .cache import CutoTuneCache
+from .cache import get_cutotune_cache
 from .config import CutoTuneConfig
 from .parameter import CutoTuneParameter
 
@@ -53,7 +53,7 @@ class _CutoTune:
             raise NotImplementedError()
 
         self.function_hash = f"{os.path.relpath(inspect.getfile(function), 'cute_kernels')}::{function.__name__}"
-        self.cutotune_cache = CutoTuneCache("cute.json")
+        self.cutotune_cache = get_cutotune_cache()
 
     def __call__(self, *args, **kwargs) -> Any:
         override_cutotune_parameters = self._check_all_or_no_args_are_cutotune_parameters(*args, **kwargs)

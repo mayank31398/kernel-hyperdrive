@@ -5,7 +5,7 @@ from collections import defaultdict
 from .config import CutoTuneConfig
 
 
-class CutoTuneCache:
+class _CutoTuneCache:
     def __init__(self, filename: str) -> None:
         self.full_cache = defaultdict(defaultdict(list))
         self.min_cache = defaultdict(defaultdict(dict))
@@ -44,3 +44,13 @@ class CutoTuneCache:
             return default
 
         return lookup_key_configs.get(lookup_key, default)
+
+
+_CUTOTUNE_CACHE = None
+
+
+def get_cutotune_cache() -> _CutoTuneCache:
+    global _CUTOTUNE_CACHE
+    if _CUTOTUNE_CACHE is None:
+        _CUTOTUNE_CACHE = _CutoTuneCache("cute.json")
+    return _CUTOTUNE_CACHE
