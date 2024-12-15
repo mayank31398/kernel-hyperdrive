@@ -1,4 +1,5 @@
 from .constants import COMMON_VECTOR_INSTRUCTION_WIDTHS, MAX_FP16_BF16_INSTRUCTION_WIDTH
+from .cutotune import CutoTuneConfig, CutoTuneParameter, cutotune, get_cartesian_product_cutotune_configs
 from .enums import KernelBackend
 from .inductor import init_inductor
 from .kernel_registry import KernelRegistry
@@ -19,15 +20,6 @@ from .kernels import (
     swiglu_unchunked_cute,
     swiglu_unchunked_torch,
 )
+from .math import ceil_divide, get_powers_of_2
 from .tensor import CuteTensor
-from .utils import (
-    CuteInductor,
-    CutoTuneConfig,
-    CutoTuneParameter,
-    ceil_divide,
-    cutotune,
-    device_synchronize,
-    get_cartesian_product_cutotune_configs,
-    get_powers_of_2,
-    get_triton_num_warps,
-)
+from .utils import CuteInductor, device_synchronize, get_triton_num_warps
