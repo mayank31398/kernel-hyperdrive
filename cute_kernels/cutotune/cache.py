@@ -7,8 +7,8 @@ from .config import CutoTuneConfig
 
 class _CutoTuneCache:
     def __init__(self, filename: str) -> None:
-        self.full_cache = defaultdict(defaultdict(list))
-        self.min_cache = defaultdict(defaultdict(dict))
+        self.full_cache = defaultdict(lambda: defaultdict(list))
+        self.min_cache = defaultdict(lambda: defaultdict(dict))
 
         if os.path.exists(filename):
             self.full_cache = json.load(open(filename, "r"))
