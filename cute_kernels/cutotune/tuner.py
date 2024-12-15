@@ -61,8 +61,8 @@ class _CutoTune:
         if os.path.exists(filename):
             self.timed_configs = json.load(open(filename, "r"))
 
-            for key in self.timed_configs:
-                self.best_configs[key] = min(self.timed_configs[key], key=lambda x: x[1])
+            for key in self.timed_configs[self.function_hash]:
+                self.best_configs[key] = min(self.timed_configs[self.function_hash][key], key=lambda x: x[1])
 
     def __call__(self, *args, **kwargs) -> Any:
         override_cutotune_parameters = self._check_all_or_no_args_are_cutotune_parameters(*args, **kwargs)
@@ -77,7 +77,7 @@ class _CutoTune:
                 best_config = self.best_configs[lookup_key]
             else:
                 best_config, best_time, timed_configs = self._cutotune(*args, **kwargs)
-                self.timed_configs[lookup_key] = timed_configs
+                self.timed_configs[self.function_hash][lookup_key] = timed_configs
 
                 if _DEBUG_CUTOTUNE and (not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0):
                     print(
