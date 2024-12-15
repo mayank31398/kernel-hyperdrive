@@ -72,6 +72,7 @@ class _CutoTune:
             raise NotImplementedError()
 
         self.best_configs = {}
+        self.function_hash = f"{os.path.relpath(inspect.getfile(function), 'cute_kernels')}::{function.__name__}"
 
     def __call__(self, *args, **kwargs) -> Any:
         override_cutotune_parameters = self._check_all_or_no_args_are_cutotune_parameters(*args, **kwargs)
