@@ -1,4 +1,5 @@
 import inspect
+import json
 import os
 from collections import defaultdict
 from time import perf_counter
@@ -52,20 +53,31 @@ class _CutoTune:
             raise NotImplementedError()
 
         self.best_configs = {}
+        self.timed_configs = None
+
         self.function_hash = f"{os.path.relpath(inspect.getfile(function), 'cute_kernels')}::{function.__name__}"
+
+        filename = "cute.json"
+        if os.path.exists(filename):
+            self.timed_configs = json.load(open(filename, "r"))
+
+            for key in self.timed_configs:
+                self.best_configs[key] = min(self.timed_configs[key], key=lambda x: x[1])
 
     def __call__(self, *args, **kwargs) -> Any:
         override_cutotune_parameters = self._check_all_or_no_args_are_cutotune_parameters(*args, **kwargs)
 
         if _DISABLE_CUTOTUNE or torch.compiler.is_compiling():
-            best_config = self.default_config
+            lookup_key = self._get_lookup_key(*args, **kwargs)
+            best_config = self.best_configs.get(lookup_key, self.default_config)
         else:
             lookup_key = self._get_lookup_key(*args, **kwargs)
 
             if lookup_key in self.best_configs:
                 best_config = self.best_configs[lookup_key]
             else:
-                best_config, best_time = self._cutotune(*args, **kwargs)
+                best_config, best_time, timed_configs = self._cutotune(*args, **kwargs)
+                self.timed_configs[lookup_key] = timed_configs
 
                 if _DEBUG_CUTOTUNE and (not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0):
                     print(
@@ -129,11 +141,12 @@ class _CutoTune:
         return result
 
     @torch.inference_mode()
-    def _cutotune(self, *args, **kwargs) -> tuple[CutoTuneConfig, float]:
+    def _cutotune(self, *args, **kwargs) -> tuple[CutoTuneConfig, float, list[tuple[CutoTuneConfig, float]]]:
         best_config = None
         best_time = float("inf")
 
         configs = tqdm(self.configs) if _DEBUG_CUTOTUNE else self.configs
+        timed_configs = []
 
         for config in configs:
             if not config.is_condition_valid(
@@ -147,13 +160,15 @@ class _CutoTune:
                 **self._get_function_arguments(config=config, args=args, kwargs=kwargs, override_allowed=False),
             )
 
+            timed_configs.append((config, elapsed_time))
+
             if elapsed_time < best_time:
                 best_config = config
                 best_time = elapsed_time
 
         assert best_config is not None, "no best_config found, check that at least 1 cutotune config is valid"
 
-        return best_config, best_time
+        return best_config, best_time, timed_configs
 
     def _get_lookup_key(self, *args, **kwargs) -> Any:
         lookup_key = []
