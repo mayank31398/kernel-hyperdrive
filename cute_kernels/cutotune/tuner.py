@@ -1,15 +1,15 @@
 import inspect
 import os
 from collections import defaultdict
-from itertools import product
 from time import perf_counter
 from typing import Any, Callable
 
 import torch
-import torch.distributed
 from tqdm import tqdm
 
-from .device import device_synchronize
+from ..utils import device_synchronize
+from .config import CutoTuneConfig
+from .parameter import CutoTuneParameter
 
 
 _DEBUG_CUTOTUNE = bool(os.getenv("DEBUG_CUTOTUNE", 0))
@@ -17,26 +17,6 @@ _DISABLE_CUTOTUNE = bool(os.getenv("DISABLE_CUTOTUNE", 0))
 _SEPARATOR = "."
 _DEFAULT_WARMUP_ITERATIONS = 5
 _BENCHMARK_ITERATIONS = 10
-
-
-class CutoTuneConfig:
-    def __init__(self, config: dict, condition: Callable = None) -> None:
-        self.config = config
-        self.condition = condition
-
-    def get_key_values(self) -> dict:
-        return self.config
-
-    def is_condition_valid(self, **kwargs) -> bool:
-        # note that here we override the values from the args passed by the user
-        kwargs.update(self.get_key_values())
-        return True if self.condition is None else self.condition(**kwargs)
-
-    def __repr__(self) -> str:
-        return str(self.config)
-
-
-class CutoTuneParameter: ...
 
 
 class _CutoTune:
@@ -324,17 +304,3 @@ def cutotune(
         ).__call__
 
     return inner
-
-
-def get_cartesian_product_cutotune_configs(
-    condition: Callable = None, **kwargs: dict[str, list]
-) -> list[CutoTuneConfig]:
-    configs = []
-    all_values = product(*list(kwargs.values()))
-
-    for values in all_values:
-        config = {key: value for key, value in zip(kwargs.keys(), values)}
-        config = CutoTuneConfig(config, condition=condition)
-        configs.append(config)
-
-    return configs

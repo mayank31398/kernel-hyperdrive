@@ -8,7 +8,8 @@ from ....constants import (
     MAX_TRITON_BLOCK_SIZE,
     TORCH_TO_TRITON_DTYPE,
 )
-from ....utils import CutoTuneConfig, ceil_divide, cute_op, cutotune, get_powers_of_2
+from ....cutotune import CutoTuneConfig, cutotune
+from ....utils import ceil_divide, cute_op, get_powers_of_2
 
 
 _KERNEL_NAME = "rmsnorm_forward_triton"
