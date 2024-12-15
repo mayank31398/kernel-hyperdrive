@@ -25,7 +25,12 @@ class _CutoTuneCache:
     def add_config(self, function_hash: str, lookup_key: str, config: CutoTuneConfig, time: float) -> None:
         self.full_cache[function_hash][lookup_key].append((config, time))
 
-        min_time = self.min_cache[function_hash][lookup_key][1]
+        min_time = (
+            self.min_cache[function_hash][lookup_key][1]
+            if self.has_config(function_hash=function_hash, lookup_key=lookup_key)
+            else float("inf")
+        )
+
         if time < min_time:
             self.min_cache[function_hash][lookup_key] = (config, time)
 
