@@ -53,6 +53,8 @@ class _CutoTune:
             raise NotImplementedError()
 
         self.function_hash = f"{os.path.relpath(inspect.getfile(function), 'cute_kernels')}::{function.__name__}"
+        self.cutotune_cache = get_cutotune_cache()
+
         self.best_configs = {}
 
     def __call__(self, *args, **kwargs) -> Any:
@@ -87,10 +89,8 @@ class _CutoTune:
         return output
 
     def _update_cutotune_cache(self, lookup_key: str, timed_configs: list[tuple[CutoTuneConfig, float]]) -> None:
-        cutotune_cache = get_cutotune_cache()
-
         for config, time in timed_configs:
-            cutotune_cache.add_config(
+            self.cutotune_cache.add_config(
                 function_hash=self.function_hash, lookup_key=lookup_key, config=config, time=time
             )
 
