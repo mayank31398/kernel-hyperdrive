@@ -11,10 +11,10 @@ _CUTOTUNE_CACHE_FILENAME = os.path.join(os.path.dirname(__file__), "cutotune_cac
 
 
 class _CutoTuneCache:
-    def __init__(self, filename: str) -> None:
+    def __init__(self) -> None:
         self.full_cache = defaultdict(lambda: defaultdict(list))
 
-        if os.path.exists(filename):
+        if os.path.exists(_CUTOTUNE_CACHE_FILENAME):
             self.load()
 
     def add_config(self, function_hash: str, lookup_key: str, config: CutoTuneConfig, time: float) -> None:
@@ -76,10 +76,10 @@ _CUTOTUNE_CACHE = None
 
 
 def get_cutotune_cache() -> _CutoTuneCache:
-    global _CUTOTUNE_CACHE, _CUTOTUNE_CACHE_FILENAME
+    global _CUTOTUNE_CACHE
 
     if _CUTOTUNE_CACHE is None:
-        _CUTOTUNE_CACHE = _CutoTuneCache(_CUTOTUNE_CACHE_FILENAME)
+        _CUTOTUNE_CACHE = _CutoTuneCache()
 
     return _CUTOTUNE_CACHE
 
