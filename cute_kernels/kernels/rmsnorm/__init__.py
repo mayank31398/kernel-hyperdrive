@@ -24,7 +24,8 @@ class _RMSNorm_Cute(torch.autograd.Function):
         BLOCK_SIZE_H_forward: int,
         BLOCK_SIZE_H_backward: int,
     ) -> torch.Tensor:
-        assert x.dim() > 1, "x should have more than 1 dimensions"
+        if x.dim() == 1:
+            x = x.unsqueeze(0)
 
         if weight is not None:
             assert weight.dim() == 1, "weight should be 1D"
