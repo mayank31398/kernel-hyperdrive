@@ -60,6 +60,7 @@ class _CutoTuneCache:
 
                         unserialized_config[key] = value
 
+                    unserialized_config = CutoTuneConfig(unserialized_config)
                     self.full_cache[function_hash][lookup_key].append((unserialized_config, time))
 
     def get_best_configs(self, function_hash: str) -> dict[str, CutoTuneConfig]:
