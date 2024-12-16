@@ -44,6 +44,13 @@ class _CutoTuneCache:
                         {"config": serialized_config, "time": time}
                     )
 
+        best_configs = {}
+        for function_hash in full_cache_serialized:
+            for lookup_key in full_cache_serialized[function_hash]:
+                best_configs[lookup_key] = min(self.full_cache[function_hash][lookup_key], key=lambda x: x[1])
+
+        full_cache_serialized = {"all_configs": full_cache_serialized, "best_configs": best_configs}
+
         yaml.dump(full_cache_serialized, open(_CUTOTUNE_CACHE_FILENAME, "w"))
 
     def load(self) -> None:
