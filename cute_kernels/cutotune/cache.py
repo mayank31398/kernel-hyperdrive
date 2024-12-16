@@ -15,25 +15,23 @@ _LOAD_CUTOTUNE_CACHE = get_boolean_env_variable("LOAD_CUTOTUNE_CACHE")
 class _CutoTuneCache:
     def __init__(self) -> None:
         self.full_cache = defaultdict(lambda: defaultdict(list))
+        self.best_cache = defaultdict(lambda: defaultdict(list))
 
         if _LOAD_CUTOTUNE_CACHE and os.path.exists(_CUTOTUNE_CACHE_FILENAME):
-            self.load()
+            yaml.dump(
+                {"all_configs": self.full_cache, "best_configs": self.best_cache}, open(_CUTOTUNE_CACHE_FILENAME, "w")
+            )
 
     def add_config(self, function_hash: str, lookup_key: str, config: CutoTuneConfig, time: float) -> None:
         # use list instead of tuple since yaml is more cleaner with list
         self.full_cache[function_hash][lookup_key].append([config, time])
 
-    def save(self) -> None:
-        best_configs = {}
-        for function_hash in self.full_cache:
-            best_configs[function_hash] = {}
-            for lookup_key in self.full_cache[function_hash]:
-                config_time = min(self.full_cache[function_hash][lookup_key], key=lambda x: x["time"])
-                best_configs[function_hash][lookup_key] = config_time
+        min_time = float("inf")
+        if lookup_key in self.best_cache[function_hash][lookup_key]:
+            min_time = self.best_cache[function_hash][lookup_key][1]
 
-        full_cache_serialized = {"all_configs": self.full_cache, "best_configs": best_configs}
-
-        yaml.dump(full_cache_serialized, open(_CUTOTUNE_CACHE_FILENAME, "w"))
+        if time < min_time:
+            self.best_cache[function_hash][lookup_key] = [config, time]
 
     def load(self) -> None:
         full_cache_serialized = yaml.load(open(_CUTOTUNE_CACHE_FILENAME, "r"), yaml.SafeLoader)
