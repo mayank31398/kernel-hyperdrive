@@ -7,7 +7,7 @@ from ..enums import KernelBackend
 from .config import CutoTuneConfig
 
 
-_CUTOTUNE_CACHE_FILENAME = "cute.yml"
+_CUTOTUNE_CACHE_FILENAME = os.path.join(os.path.dirname(__file__), "cutotune_cache.yml")
 
 
 class _CutoTuneCache:
