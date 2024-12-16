@@ -55,22 +55,22 @@ class _CutoTune:
         self.function_hash = f"{os.path.relpath(inspect.getfile(function), 'cute_kernels')}::{function.__name__}"
         self.cutotune_cache = get_cutotune_cache()
 
+        self.best_configs = {}
+
     def __call__(self, *args, **kwargs) -> Any:
         override_cutotune_parameters = self._check_all_or_no_args_are_cutotune_parameters(*args, **kwargs)
         lookup_key = self._get_lookup_key(*args, **kwargs)
 
         if _DISABLE_CUTOTUNE or torch.compiler.is_compiling():
-            best_config = self.cutotune_cache.get_best_config(
-                function_hash=self.function_hash, lookup_key=lookup_key, default=self.default_config
-            )
+            best_config = self.best_configs.get(lookup_key, self.default_config)
         else:
-            if self.cutotune_cache.has_config(function_hash=self.function_hash, lookup_key=lookup_key):
-                best_config = self.cutotune_cache.get_best_config(
-                    function_hash=self.function_hash, lookup_key=lookup_key
-                )
-            else:
+            best_config = self.best_configs.get(lookup_key, None)
+
+            if best_config is None:
                 best_config, best_time, timed_configs = self._cutotune(*args, **kwargs)
                 self._update_cutotune_cache(lookup_key=lookup_key, timed_configs=timed_configs)
+
+                self.best_configs[lookup_key] = best_config
 
                 if _DEBUG_CUTOTUNE and (not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0):
                     print(
