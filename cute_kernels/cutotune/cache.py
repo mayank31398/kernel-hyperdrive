@@ -18,9 +18,7 @@ class _CutoTuneCache:
         self.best_cache = defaultdict(lambda: defaultdict(list))
 
         if _LOAD_CUTOTUNE_CACHE and os.path.exists(_CUTOTUNE_CACHE_FILENAME):
-            yaml.dump(
-                {"all_configs": self.full_cache, "best_configs": self.best_cache}, open(_CUTOTUNE_CACHE_FILENAME, "w")
-            )
+            self.load()
 
     def add_config(self, function_hash: str, lookup_key: str, config: CutoTuneConfig, time: float) -> None:
         # use list instead of tuple since yaml is more cleaner with list
@@ -32,6 +30,10 @@ class _CutoTuneCache:
 
         if time < min_time:
             self.best_cache[function_hash][lookup_key] = [config, time]
+
+    def save(self) -> None:
+        full_cache_serialized = {"all_configs": self.full_cache, "best_configs": self.best_cache}
+        yaml.dump(full_cache_serialized, open(_CUTOTUNE_CACHE_FILENAME, "w"))
 
     def load(self) -> None:
         full_cache_serialized = yaml.load(open(_CUTOTUNE_CACHE_FILENAME, "r"), yaml.SafeLoader)
