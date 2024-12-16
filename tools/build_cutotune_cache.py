@@ -33,7 +33,6 @@ for metadata in tqdm(get_tensor_metadata()):
     add_scalar_cute(x, 3)
     add_tensor_cute(x, x)
     swiglu_cute(x, x)
-    swiglu_unchunked_cute(x)
 
     weight = torch.randn(x.size(-1), dtype=metadata[1], device=torch.cuda.current_device())
     rmsnorm_cute(x, weight, eps=1e-5)
