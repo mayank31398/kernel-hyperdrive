@@ -23,13 +23,13 @@ class _CutoTuneCache:
         self.full_cache[function_hash][lookup_key].append((config, time))
 
     def save(self) -> None:
-        full_cache_serialized = {}
+        all_configs = {}
 
         for function_hash in self.full_cache:
-            full_cache_serialized[function_hash] = {}
+            all_configs[function_hash] = {}
 
             for lookup_key in self.full_cache[function_hash]:
-                full_cache_serialized[function_hash][lookup_key] = []
+                all_configs[function_hash][lookup_key] = []
 
                 for config, time in self.full_cache[function_hash][lookup_key]:
                     serialized_config = {}
@@ -40,19 +40,17 @@ class _CutoTuneCache:
                         else:
                             serialized_config[key] = value
 
-                    full_cache_serialized[function_hash][lookup_key].append(
-                        {"config": serialized_config, "time": time}
-                    )
+                    all_configs[function_hash][lookup_key].append({"config": serialized_config, "time": time})
 
         best_configs = {}
-        for function_hash in full_cache_serialized:
+        for function_hash in all_configs:
             best_configs[function_hash] = {}
-            for lookup_key in full_cache_serialized[function_hash]:
+            for lookup_key in all_configs[function_hash]:
                 best_configs[function_hash][lookup_key] = min(
                     self.full_cache[function_hash][lookup_key], key=lambda x: x[1]
                 )
 
-        full_cache_serialized = {"all_configs": full_cache_serialized, "best_configs": best_configs}
+        full_cache_serialized = {"all_configs": all_configs, "best_configs": best_configs}
 
         yaml.dump(full_cache_serialized, open(_CUTOTUNE_CACHE_FILENAME, "w"))
 
