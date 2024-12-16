@@ -46,8 +46,11 @@ class _CutoTuneCache:
 
         best_configs = {}
         for function_hash in full_cache_serialized:
+            best_configs[function_hash] = {}
             for lookup_key in full_cache_serialized[function_hash]:
-                best_configs[lookup_key] = min(self.full_cache[function_hash][lookup_key], key=lambda x: x[1])
+                best_configs[function_hash][lookup_key] = min(
+                    self.full_cache[function_hash][lookup_key], key=lambda x: x[1]
+                )
 
         full_cache_serialized = {"all_configs": full_cache_serialized, "best_configs": best_configs}
 
