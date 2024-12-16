@@ -1,4 +1,5 @@
 import torch
+from tqdm import tqdm
 
 from cute_kernels import (
     add_scalar_cute,
@@ -24,7 +25,7 @@ def get_tensor_metadata() -> list[tuple[torch.dtype, tuple[int]]]:
     return metadata_list
 
 
-for metadata in get_tensor_metadata():
+for metadata in tqdm(get_tensor_metadata()):
     x = torch.randn(metadata[0], dtype=metadata[1], device=torch.cuda.current_device())
 
     add_scalar_cute(x, 3)
@@ -36,7 +37,7 @@ for metadata in get_tensor_metadata():
     rmsnorm_cute(x, weight, eps=1e-5)
     rmsnorm_cute(x, None, eps=1e-5)
 
-for size in get_1d_tensor_sizes():
+for size in tqdm(get_1d_tensor_sizes()):
     x = torch.randint(0, 64, (size,), device=torch.cuda.current_device(), dtype=torch.long)
     contiguous_count_cute(x, 64)
 
