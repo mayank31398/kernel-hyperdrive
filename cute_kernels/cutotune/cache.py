@@ -1,12 +1,13 @@
-import json
 import os
 from collections import defaultdict
-from enum import Enum
 
+import yaml
+
+from ..enums import KernelBackend
 from .config import CutoTuneConfig
 
 
-_CUTOTUNE_CACHE_FILENAME = "cute.json"
+_CUTOTUNE_CACHE_FILENAME = "cute.yml"
 
 
 class _CutoTuneCache:
@@ -14,7 +15,7 @@ class _CutoTuneCache:
         self.full_cache = defaultdict(lambda: defaultdict(list))
 
         if os.path.exists(filename):
-            self.full_cache = json.load(open(filename, "r"))
+            self.load()
 
     def add_config(self, function_hash: str, lookup_key: str, config: CutoTuneConfig, time: float) -> None:
         self.full_cache[function_hash][lookup_key].append((config, time))
@@ -32,14 +33,34 @@ class _CutoTuneCache:
                     serialized_config = {}
 
                     for key, value in config.get_key_values().items():
-                        if isinstance(value, Enum):
+                        if isinstance(value, KernelBackend):
                             serialized_config[key] = value.value
                         else:
                             serialized_config[key] = value
 
-                    full_cache_serialized[function_hash][lookup_key].append((serialized_config, time))
+                    full_cache_serialized[function_hash][lookup_key].append(
+                        {"config": serialized_config, "time": time}
+                    )
 
-        json.dump(full_cache_serialized, open(_CUTOTUNE_CACHE_FILENAME, "w"), indent=4)
+        yaml.dump(full_cache_serialized, open(_CUTOTUNE_CACHE_FILENAME, "w"))
+
+    def load(self) -> None:
+        full_cache_serialized = yaml.load(open(_CUTOTUNE_CACHE_FILENAME, "r"), yaml.SafeLoader)
+
+        for function_hash in full_cache_serialized:
+            for lookup_key in full_cache_serialized[function_hash]:
+                for config_time in full_cache_serialized[function_hash][lookup_key]:
+                    config = config_time["config"]
+                    time = config_time["time"]
+
+                    unserialized_config = {}
+                    for key, value in config.items():
+                        if key == "kernel_backend":
+                            value = KernelBackend(value)
+
+                        unserialized_config[key] = value
+
+                    self.full_cache[function_hash][lookup_key].append((unserialized_config, time))
 
 
 _CUTOTUNE_CACHE = None
