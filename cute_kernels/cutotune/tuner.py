@@ -7,14 +7,14 @@ from typing import Any, Callable
 import torch
 from tqdm import tqdm
 
-from ..utils import device_synchronize
+from ..utils import device_synchronize, get_boolean_env_variable
 from .cache import get_cutotune_cache
 from .config import CutoTuneConfig
 from .parameter import CutoTuneParameter
 
 
-_DEBUG_CUTOTUNE = bool(os.getenv("DEBUG_CUTOTUNE", 0))
-_DISABLE_CUTOTUNE = bool(os.getenv("DISABLE_CUTOTUNE", 0))
+_DEBUG_CUTOTUNE = get_boolean_env_variable("DEBUG_CUTOTUNE")
+_DISABLE_CUTOTUNE = get_boolean_env_variable("DISABLE_CUTOTUNE")
 _SEPARATOR = "."
 _DEFAULT_WARMUP_ITERATIONS = 5
 _BENCHMARK_ITERATIONS = 10

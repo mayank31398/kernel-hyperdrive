@@ -4,11 +4,12 @@ from collections import defaultdict
 import yaml
 
 from ..enums import KernelBackend
+from ..utils import get_boolean_env_variable
 from .config import CutoTuneConfig
 
 
 _CUTOTUNE_CACHE_FILENAME = os.path.join(os.path.dirname(__file__), "cutotune_cache.yml")
-_LOAD_CUTOTUNE_CACHE = bool(os.getenv("LOAD_CUTOTUNE_CACHE", 1))
+_LOAD_CUTOTUNE_CACHE = get_boolean_env_variable("LOAD_CUTOTUNE_CACHE")
 
 
 class _CutoTuneCache:
