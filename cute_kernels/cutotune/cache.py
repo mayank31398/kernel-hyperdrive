@@ -55,12 +55,7 @@ class _CutoTuneCache:
                     self.full_cache[function_hash][lookup_key].append((unserialized_config, time))
 
     def get_best_configs(self, function_hash: str) -> dict[str, CutoTuneConfig]:
-        best_configs = {}
-
-        for lookup_key in self.full_cache[function_hash]:
-            best_configs[lookup_key] = min(self.full_cache[function_hash][lookup_key], key=lambda x: x[1])[0]
-
-        return best_configs
+        return self.best_cache[function_hash]
 
 
 _CUTOTUNE_CACHE = None
