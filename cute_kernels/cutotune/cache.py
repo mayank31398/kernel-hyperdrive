@@ -8,13 +8,14 @@ from .config import CutoTuneConfig
 
 
 _CUTOTUNE_CACHE_FILENAME = os.path.join(os.path.dirname(__file__), "cutotune_cache.yml")
+_LOAD_CUTOTUNE_CACHE = bool(os.getenv("LOAD_CUTOTUNE_CACHE", 1))
 
 
 class _CutoTuneCache:
     def __init__(self) -> None:
         self.full_cache = defaultdict(lambda: defaultdict(list))
 
-        if os.path.exists(_CUTOTUNE_CACHE_FILENAME):
+        if _LOAD_CUTOTUNE_CACHE and os.path.exists(_CUTOTUNE_CACHE_FILENAME):
             self.load()
 
     def add_config(self, function_hash: str, lookup_key: str, config: CutoTuneConfig, time: float) -> None:
