@@ -1,5 +1,12 @@
 from .constants import COMMON_VECTOR_INSTRUCTION_WIDTHS, MAX_FP16_BF16_INSTRUCTION_WIDTH
-from .cutotune import CutoTuneConfig, CutoTuneParameter, cutotune, get_cartesian_product_cutotune_configs
+from .cutotune import (
+    CutoTuneConfig,
+    CutoTuneParameter,
+    cutotune,
+    get_cartesian_product_cutotune_configs,
+    get_cutotune_cache,
+    save_cutotune_cache,
+)
 from .enums import KernelBackend
 from .inductor import init_inductor
 from .kernel_registry import KernelRegistry
@@ -22,4 +29,12 @@ from .kernels import (
 )
 from .math import ceil_divide, get_powers_of_2
 from .tensor import CuteTensor
-from .utils import CuteInductor, device_synchronize, get_triton_num_warps
+from .utils import (
+    CuteInductor,
+    device_synchronize,
+    get_1d_tensor_sizes,
+    get_2d_tensor_sizes,
+    get_all_devices,
+    get_dtypes,
+    get_triton_num_warps,
+)
