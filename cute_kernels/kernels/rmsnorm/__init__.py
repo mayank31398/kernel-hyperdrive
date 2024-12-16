@@ -43,6 +43,9 @@ class _RMSNorm_Cute(torch.autograd.Function):
             BLOCK_SIZE_H=BLOCK_SIZE_H_forward,
         )
 
+        if is_x_1d:
+            output = output.squeeze(0)
+
         ctx.save_for_backward(x, weight, rmsnorm_denominator)
         ctx.is_x_1d = is_x_1d
         ctx.memory_efficient = memory_efficient
