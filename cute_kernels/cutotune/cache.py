@@ -46,8 +46,8 @@ class _CutoTuneCache:
         for function_hash in all_configs:
             best_configs[function_hash] = {}
             for lookup_key in all_configs[function_hash]:
-                config_time = min(all_configs[function_hash][lookup_key], key=lambda x: x[1])
-                best_configs[function_hash][lookup_key] = {"config": config_time[0], "time": config_time[1]}
+                config_time = min(all_configs[function_hash][lookup_key], key=lambda x: x["time"])
+                best_configs[function_hash][lookup_key] = config_time
 
         full_cache_serialized = {"all_configs": all_configs, "best_configs": best_configs}
 
