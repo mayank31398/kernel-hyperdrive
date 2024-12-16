@@ -32,13 +32,13 @@ class _CutoTuneCache:
                 all_configs[function_hash][lookup_key] = []
 
                 for config, time in self.full_cache[function_hash][lookup_key]:
-                    serialized_config = {}
+                    serialized_config = config
 
-                    for key, value in config.get_key_values().items():
-                        if isinstance(value, KernelBackend):
-                            serialized_config[key] = value.value
-                        else:
-                            serialized_config[key] = value
+                    # for key, value in config.get_key_values().items():
+                    #     if isinstance(value, KernelBackend):
+                    #         serialized_config[key] = value.value
+                    #     else:
+                    #         serialized_config[key] = value
 
                     all_configs[function_hash][lookup_key].append({"config": serialized_config, "time": time})
 
