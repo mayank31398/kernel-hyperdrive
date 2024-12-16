@@ -23,24 +23,7 @@ class _CutoTuneCache:
         self.full_cache[function_hash][lookup_key].append((config, time))
 
     def save(self) -> None:
-        all_configs = {}
-
-        for function_hash in self.full_cache:
-            all_configs[function_hash] = {}
-
-            for lookup_key in self.full_cache[function_hash]:
-                all_configs[function_hash][lookup_key] = []
-
-                for config, time in self.full_cache[function_hash][lookup_key]:
-                    serialized_config = config
-
-                    # for key, value in config.get_key_values().items():
-                    #     if isinstance(value, KernelBackend):
-                    #         serialized_config[key] = value.value
-                    #     else:
-                    #         serialized_config[key] = value
-
-                    all_configs[function_hash][lookup_key].append({"config": serialized_config, "time": time})
+        all_configs = self.full_cache[function_hash]
 
         best_configs = {}
         for function_hash in all_configs:
