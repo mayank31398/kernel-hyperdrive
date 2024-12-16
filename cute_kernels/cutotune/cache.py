@@ -20,19 +20,18 @@ class _CutoTuneCache:
             self.load()
 
     def add_config(self, function_hash: str, lookup_key: str, config: CutoTuneConfig, time: float) -> None:
-        self.full_cache[function_hash][lookup_key].append((config, time))
+        # use list instead of tuple since yaml is more cleaner with list
+        self.full_cache[function_hash][lookup_key].append([config, time])
 
     def save(self) -> None:
-        all_configs = self.full_cache[function_hash]
-
         best_configs = {}
-        for function_hash in all_configs:
+        for function_hash in self.full_cache:
             best_configs[function_hash] = {}
-            for lookup_key in all_configs[function_hash]:
-                config_time = min(all_configs[function_hash][lookup_key], key=lambda x: x["time"])
+            for lookup_key in self.full_cache[function_hash]:
+                config_time = min(self.full_cache[function_hash][lookup_key], key=lambda x: x["time"])
                 best_configs[function_hash][lookup_key] = config_time
 
-        full_cache_serialized = {"all_configs": all_configs, "best_configs": best_configs}
+        full_cache_serialized = {"all_configs": self.full_cache, "best_configs": best_configs}
 
         yaml.dump(full_cache_serialized, open(_CUTOTUNE_CACHE_FILENAME, "w"))
 
