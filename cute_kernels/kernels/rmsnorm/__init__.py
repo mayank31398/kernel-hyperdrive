@@ -24,13 +24,14 @@ class _RMSNorm_Cute(torch.autograd.Function):
         BLOCK_SIZE_H_forward: int,
         BLOCK_SIZE_H_backward: int,
     ) -> torch.Tensor:
-        if x.dim() == 1:
-            x = x.unsqueeze(0)
-
         if weight is not None:
             assert weight.dim() == 1, "weight should be 1D"
             assert weight.size(-1) == x.size(-1), "hidden size for x and weight tensor is different"
             assert weight.type() == x.type(), "tensors weight and y should have same dtype"
+
+        is_x_1d = x.dim() == 1
+        if is_x_1d:
+            x = x.unsqueeze(0)
 
         output, rmsnorm_denominator = _forward(
             x=x,
@@ -43,6 +44,7 @@ class _RMSNorm_Cute(torch.autograd.Function):
         )
 
         ctx.save_for_backward(x, weight, rmsnorm_denominator)
+        ctx.is_x_1d = is_x_1d
         ctx.memory_efficient = memory_efficient
         ctx.kernel_backend_backward = kernel_backend_backward
         ctx.eps = eps
@@ -67,6 +69,9 @@ class _RMSNorm_Cute(torch.autograd.Function):
             BLOCK_SIZE_B=ctx.BLOCK_SIZE_B_backward,
             BLOCK_SIZE_H=ctx.BLOCK_SIZE_H_backward,
         )
+
+        if ctx.is_x_1d:
+            x_grad = x_grad.squeeze(0)
 
         return x_grad, weight_grad, *[None] * 8
 
