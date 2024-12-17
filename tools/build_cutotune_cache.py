@@ -10,7 +10,6 @@ from cute_kernels import (
     ceil_divide,
     contiguous_count_cute,
     embedding_cute,
-    get_dtypes,
     rmsnorm_cute,
     save_cutotune_cache,
     swiglu_cute,
@@ -26,7 +25,7 @@ def forward_backward(kernel: Callable, *args, **kwargs) -> None:
 set_seed(42)
 
 
-for dtype in get_dtypes():
+for dtype in [torch.float32, torch.float16, torch.bfloat16]:
     for size in [104857600]:
         x = torch.randn(size, dtype=dtype, device=torch.cuda.current_device(), requires_grad=True)
 
