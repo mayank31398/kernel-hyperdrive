@@ -41,13 +41,13 @@ for dtype in get_dtypes():
         forward_backward(add_tensor_cute, x, x)
         forward_backward(swiglu_cute, x, x)
 
-        forward_backward(rmsnorm_cute, x, weight=None, eps=1e-5)
-        forward_backward(
-            rmsnorm_cute,
-            x,
-            weight=torch.randn(x.size(-1), dtype=dtype, device=torch.cuda.current_device(), requires_grad=True),
-            eps=1e-5,
-        )
+        # forward_backward(rmsnorm_cute, x, weight=None, eps=1e-5)
+        # forward_backward(
+        #     rmsnorm_cute,
+        #     x,
+        #     weight=torch.randn(x.size(-1), dtype=dtype, device=torch.cuda.current_device(), requires_grad=True),
+        #     eps=1e-5,
+        # )
 
     for size in [(819200, 819200)]:
         forward_backward(
