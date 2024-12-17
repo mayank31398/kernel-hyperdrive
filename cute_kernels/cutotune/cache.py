@@ -1,5 +1,6 @@
 import os
 from collections import defaultdict
+from enum import Enum
 
 import yaml
 
@@ -21,18 +22,20 @@ class _CutoTuneCache:
             self.load()
 
     def add_config(self, function_hash: str, lookup_key: str, config: CutoTuneConfig, time: float) -> None:
-        # use list instead of tuple since yaml is more cleaner with list
-        self.full_cache[function_hash][lookup_key].append([config, time])
+        self.full_cache[function_hash][lookup_key].append((config, time))
 
         min_time = float("inf")
         if lookup_key in self.best_cache[function_hash][lookup_key]:
             min_time = self.best_cache[function_hash][lookup_key][1]
 
         if time < min_time:
-            self.best_cache[function_hash][lookup_key] = [config, time]
+            self.best_cache[function_hash][lookup_key] = (config, time)
 
     def save(self) -> None:
-        full_cache_serialized = {"all_configs": self.full_cache, "best_configs": self.best_cache}
+        full_cache_serialized = {
+            "all_configs": self._serialize(self.full_cache, True),
+            "best_configs": self._serialize(self.best_cache, False),
+        }
         yaml.dump(full_cache_serialized, open(_CUTOTUNE_CACHE_FILENAME, "w"))
 
     def load(self) -> None:
@@ -43,6 +46,31 @@ class _CutoTuneCache:
 
     def get_best_configs(self, function_hash: str) -> dict[str, CutoTuneConfig]:
         return self.best_cache[function_hash]
+
+    def _serialize(self, x: dict, has_config_time_list: bool) -> dict:
+        result = {}
+        for function_hash in x:
+            result[function_hash] = {}
+
+            for lookup_key in x[function_hash]:
+                config_time_list = x[function_hash][lookup_key]
+                if not has_config_time_list:
+                    config_time_list = [config_time_list]
+
+                def _serialize(v):
+                    if isinstance(v, Enum):
+                        v = v.value
+                    return v
+
+                for i, config_time in enumerate(config_time_list):
+                    config, time = config_time
+                    config = {key: _serialize(value) for key, value in config.get_key_values().items()}
+
+                    config_time_list[i] = [config, time]
+
+                result[function_hash][lookup_key] = config_time_list
+
+        return result
 
 
 _CUTOTUNE_CACHE = None
