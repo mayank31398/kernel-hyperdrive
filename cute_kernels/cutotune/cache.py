@@ -41,8 +41,8 @@ class _CutoTuneCache:
     def load(self) -> None:
         cache = yaml.load(open(_CUTOTUNE_CACHE_FILENAME, "r"), yaml.SafeLoader)
 
-        self.full_cache = cache["all_configs"]
-        self.best_cache = cache["best_configs"]
+        self.full_cache = self._deserialize(cache["all_configs"], True)
+        self.best_cache = self._deserialize(cache["best_configs"], False)
 
     def get_best_configs(self, function_hash: str) -> dict[str, CutoTuneConfig]:
         return self.best_cache[function_hash]
