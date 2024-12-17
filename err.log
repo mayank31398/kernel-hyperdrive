@@ -1,0 +1,1083 @@
+../../miniconda3/envs/ai/lib/python3.11/site-packages/parameterized/parameterized.py:620: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/kernels/rmsnorm_test.py:60: in test_rmsnorm
+    self.assert_equal_tensors(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5085>
+x = tensor([ 14.6641,  16.7812,  10.9844, -29.6094,  18.2969,   7.6914,  25.3438,
+        -14.6094,  29.1719, -22.7812,  -...     -5.7344,  -3.8164, -10.7266, -37.5938,  13.9531,   6.8086,  14.2422],
+       device='cuda:0', dtype=torch.float16)
+y = tensor([ 14.6875,  16.7969,  10.9922, -29.6406,  18.3125,   7.6914,  25.3438,
+        -14.5859,  29.1719, -22.8125,  -...     -5.7227,  -3.8438, -10.7266, -37.6250,  13.9141,   6.8828,  14.2734],
+       device='cuda:0', dtype=torch.float16)
+exact_match = False, rtol_float32 = 0, atol_float32 = 3e-05, rtol_float16 = 0.0006, atol_float16 = 0.09, rtol_bfloat16 = None, atol_bfloat16 = None
+
+    def assert_equal_tensors(
+        self,
+        x: torch.Tensor,
+        y: torch.Tensor,
+        exact_match: bool,
+        rtol_float32: float = None,
+        atol_float32: float = None,
+        rtol_float16: float = None,
+        atol_float16: float = None,
+        rtol_bfloat16: float = None,
+        atol_bfloat16: float = None,
+    ) -> None:
+        if exact_match:
+            assert x.equal(y)
+        else:
+            assert x.dtype == y.dtype
+            dtype = x.dtype
+    
+            if dtype == torch.float32:
+                assert_close(x, y, rtol=rtol_float32, atol=atol_float32)
+            elif dtype == torch.float16:
+>               assert_close(x, y, rtol=rtol_float16, atol=atol_float16)
+E               AssertionError: Tensor-likes are not close!
+E               
+E               Mismatched elements: 2 / 259 (0.8%)
+E               Greatest absolute difference: 0.15625 at index (33,) (up to 0.09 allowed)
+E               Greatest relative difference: 0.005313873291015625 at index (33,) (up to 0.0006 allowed)
+
+tests/test_commons.py:56: AssertionError
+------------------------------------------------------------------------------------------------------------ Captured stdout call -------------------------------------------------------------------------------------------------------------
+(400, 259) cuda torch.float16 False True <function rmsnorm_cute at 0x152b70d21f80>
+________________________________________________________________________________________________________ RMSNormTest.test_rmsnorm_5176 ________________________________________________________________________________________________________
+
+a = (<tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5176>,), kw = {}
+
+    @wraps(func)
+    def standalone_func(*a, **kw):
+>       return func(*(a + p.args), **p.kwargs, **kw)
+
+../../miniconda3/envs/ai/lib/python3.11/site-packages/parameterized/parameterized.py:620: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/kernels/rmsnorm_test.py:60: in test_rmsnorm
+    self.assert_equal_tensors(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5176>
+x = tensor([ 30.0156, -22.0156, -18.5156,  20.2500,  -4.4062, -26.7812, -24.7031,
+         31.4531,  -6.1953,  58.9688,  -...8125, -14.2031,
+        -38.2812,   3.4375,  13.9531,  12.3594,  33.5312], device='cuda:0',
+       dtype=torch.float16)
+y = tensor([ 30.0781, -22.0000, -18.5312,  20.2188,  -4.4219, -26.7500, -24.6875,
+         31.2969,  -6.1719,  58.8438,  -...7812, -14.2188,
+        -38.2500,   3.4824,  13.9688,  12.3828,  33.5000], device='cuda:0',
+       dtype=torch.float16)
+exact_match = False, rtol_float32 = 0, atol_float32 = 3e-05, rtol_float16 = 0.0006, atol_float16 = 0.09, rtol_bfloat16 = None, atol_bfloat16 = None
+
+    def assert_equal_tensors(
+        self,
+        x: torch.Tensor,
+        y: torch.Tensor,
+        exact_match: bool,
+        rtol_float32: float = None,
+        atol_float32: float = None,
+        rtol_float16: float = None,
+        atol_float16: float = None,
+        rtol_bfloat16: float = None,
+        atol_bfloat16: float = None,
+    ) -> None:
+        if exact_match:
+            assert x.equal(y)
+        else:
+            assert x.dtype == y.dtype
+            dtype = x.dtype
+    
+            if dtype == torch.float32:
+                assert_close(x, y, rtol=rtol_float32, atol=atol_float32)
+            elif dtype == torch.float16:
+>               assert_close(x, y, rtol=rtol_float16, atol=atol_float16)
+E               AssertionError: Tensor-likes are not close!
+E               
+E               Mismatched elements: 3 / 33 (9.1%)
+E               Greatest absolute difference: 0.15625 at index (7,) (up to 0.09 allowed)
+E               Greatest relative difference: 0.0247650146484375 at index (18,) (up to 0.0006 allowed)
+
+tests/test_commons.py:56: AssertionError
+------------------------------------------------------------------------------------------------------------ Captured stdout call -------------------------------------------------------------------------------------------------------------
+(400, 33) cuda torch.float16 True True <function rmsnorm_cute at 0x152b71287b00>
+________________________________________________________________________________________________________ RMSNormTest.test_rmsnorm_5177 ________________________________________________________________________________________________________
+
+a = (<tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5177>,), kw = {}
+
+    @wraps(func)
+    def standalone_func(*a, **kw):
+>       return func(*(a + p.args), **p.kwargs, **kw)
+
+../../miniconda3/envs/ai/lib/python3.11/site-packages/parameterized/parameterized.py:620: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/kernels/rmsnorm_test.py:60: in test_rmsnorm
+    self.assert_equal_tensors(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5177>
+x = tensor([ 30.0156, -22.0156, -18.5156,  20.2500,  -4.4062, -26.7812, -24.7031,
+         31.4531,  -6.1953,  58.9688,  -...8125, -14.2031,
+        -38.2812,   3.4375,  13.9531,  12.3594,  33.5312], device='cuda:0',
+       dtype=torch.float16)
+y = tensor([ 30.0781, -22.0000, -18.5312,  20.2188,  -4.4219, -26.7500, -24.6875,
+         31.2969,  -6.1719,  58.8438,  -...7812, -14.2188,
+        -38.2500,   3.4824,  13.9688,  12.3828,  33.5000], device='cuda:0',
+       dtype=torch.float16)
+exact_match = False, rtol_float32 = 0, atol_float32 = 3e-05, rtol_float16 = 0.0006, atol_float16 = 0.09, rtol_bfloat16 = None, atol_bfloat16 = None
+
+    def assert_equal_tensors(
+        self,
+        x: torch.Tensor,
+        y: torch.Tensor,
+        exact_match: bool,
+        rtol_float32: float = None,
+        atol_float32: float = None,
+        rtol_float16: float = None,
+        atol_float16: float = None,
+        rtol_bfloat16: float = None,
+        atol_bfloat16: float = None,
+    ) -> None:
+        if exact_match:
+            assert x.equal(y)
+        else:
+            assert x.dtype == y.dtype
+            dtype = x.dtype
+    
+            if dtype == torch.float32:
+                assert_close(x, y, rtol=rtol_float32, atol=atol_float32)
+            elif dtype == torch.float16:
+>               assert_close(x, y, rtol=rtol_float16, atol=atol_float16)
+E               AssertionError: Tensor-likes are not close!
+E               
+E               Mismatched elements: 3 / 33 (9.1%)
+E               Greatest absolute difference: 0.15625 at index (7,) (up to 0.09 allowed)
+E               Greatest relative difference: 0.0247650146484375 at index (18,) (up to 0.0006 allowed)
+
+tests/test_commons.py:56: AssertionError
+------------------------------------------------------------------------------------------------------------ Captured stdout call -------------------------------------------------------------------------------------------------------------
+(400, 33) cuda torch.float16 True True <function rmsnorm_cute at 0x152b70d21f80>
+________________________________________________________________________________________________________ RMSNormTest.test_rmsnorm_5180 ________________________________________________________________________________________________________
+
+a = (<tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5180>,), kw = {}
+
+    @wraps(func)
+    def standalone_func(*a, **kw):
+>       return func(*(a + p.args), **p.kwargs, **kw)
+
+../../miniconda3/envs/ai/lib/python3.11/site-packages/parameterized/parameterized.py:620: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/kernels/rmsnorm_test.py:60: in test_rmsnorm
+    self.assert_equal_tensors(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5180>
+x = tensor([ 30.0156, -22.0156, -18.5156,  20.2500,  -4.4062, -26.7812, -24.7031,
+         31.4531,  -6.1953,  58.9688,  -...8125, -14.2031,
+        -38.2812,   3.4375,  13.9531,  12.3594,  33.5312], device='cuda:0',
+       dtype=torch.float16)
+y = tensor([ 30.0781, -22.0000, -18.5312,  20.2188,  -4.4219, -26.7500, -24.6875,
+         31.2969,  -6.1719,  58.8438,  -...7812, -14.2188,
+        -38.2500,   3.4824,  13.9688,  12.3828,  33.5000], device='cuda:0',
+       dtype=torch.float16)
+exact_match = False, rtol_float32 = 0, atol_float32 = 3e-05, rtol_float16 = 0.0006, atol_float16 = 0.09, rtol_bfloat16 = None, atol_bfloat16 = None
+
+    def assert_equal_tensors(
+        self,
+        x: torch.Tensor,
+        y: torch.Tensor,
+        exact_match: bool,
+        rtol_float32: float = None,
+        atol_float32: float = None,
+        rtol_float16: float = None,
+        atol_float16: float = None,
+        rtol_bfloat16: float = None,
+        atol_bfloat16: float = None,
+    ) -> None:
+        if exact_match:
+            assert x.equal(y)
+        else:
+            assert x.dtype == y.dtype
+            dtype = x.dtype
+    
+            if dtype == torch.float32:
+                assert_close(x, y, rtol=rtol_float32, atol=atol_float32)
+            elif dtype == torch.float16:
+>               assert_close(x, y, rtol=rtol_float16, atol=atol_float16)
+E               AssertionError: Tensor-likes are not close!
+E               
+E               Mismatched elements: 3 / 33 (9.1%)
+E               Greatest absolute difference: 0.15625 at index (7,) (up to 0.09 allowed)
+E               Greatest relative difference: 0.0247650146484375 at index (18,) (up to 0.0006 allowed)
+
+tests/test_commons.py:56: AssertionError
+------------------------------------------------------------------------------------------------------------ Captured stdout call -------------------------------------------------------------------------------------------------------------
+(400, 33) cuda torch.float16 False True <function rmsnorm_cute at 0x152b71287b00>
+________________________________________________________________________________________________________ RMSNormTest.test_rmsnorm_5181 ________________________________________________________________________________________________________
+
+a = (<tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5181>,), kw = {}
+
+    @wraps(func)
+    def standalone_func(*a, **kw):
+>       return func(*(a + p.args), **p.kwargs, **kw)
+
+../../miniconda3/envs/ai/lib/python3.11/site-packages/parameterized/parameterized.py:620: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/kernels/rmsnorm_test.py:60: in test_rmsnorm
+    self.assert_equal_tensors(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5181>
+x = tensor([ 30.0156, -22.0156, -18.5156,  20.2500,  -4.4062, -26.7812, -24.7031,
+         31.4531,  -6.1953,  58.9688,  -...8125, -14.2031,
+        -38.2812,   3.4375,  13.9531,  12.3594,  33.5312], device='cuda:0',
+       dtype=torch.float16)
+y = tensor([ 30.0781, -22.0000, -18.5312,  20.2188,  -4.4219, -26.7500, -24.6875,
+         31.2969,  -6.1719,  58.8438,  -...7812, -14.2188,
+        -38.2500,   3.4824,  13.9688,  12.3828,  33.5000], device='cuda:0',
+       dtype=torch.float16)
+exact_match = False, rtol_float32 = 0, atol_float32 = 3e-05, rtol_float16 = 0.0006, atol_float16 = 0.09, rtol_bfloat16 = None, atol_bfloat16 = None
+
+    def assert_equal_tensors(
+        self,
+        x: torch.Tensor,
+        y: torch.Tensor,
+        exact_match: bool,
+        rtol_float32: float = None,
+        atol_float32: float = None,
+        rtol_float16: float = None,
+        atol_float16: float = None,
+        rtol_bfloat16: float = None,
+        atol_bfloat16: float = None,
+    ) -> None:
+        if exact_match:
+            assert x.equal(y)
+        else:
+            assert x.dtype == y.dtype
+            dtype = x.dtype
+    
+            if dtype == torch.float32:
+                assert_close(x, y, rtol=rtol_float32, atol=atol_float32)
+            elif dtype == torch.float16:
+>               assert_close(x, y, rtol=rtol_float16, atol=atol_float16)
+E               AssertionError: Tensor-likes are not close!
+E               
+E               Mismatched elements: 3 / 33 (9.1%)
+E               Greatest absolute difference: 0.15625 at index (7,) (up to 0.09 allowed)
+E               Greatest relative difference: 0.0247650146484375 at index (18,) (up to 0.0006 allowed)
+
+tests/test_commons.py:56: AssertionError
+------------------------------------------------------------------------------------------------------------ Captured stdout call -------------------------------------------------------------------------------------------------------------
+(400, 33) cuda torch.float16 False True <function rmsnorm_cute at 0x152b70d21f80>
+________________________________________________________________________________________________________ RMSNormTest.test_rmsnorm_5320 ________________________________________________________________________________________________________
+
+a = (<tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5320>,), kw = {}
+
+    @wraps(func)
+    def standalone_func(*a, **kw):
+>       return func(*(a + p.args), **p.kwargs, **kw)
+
+../../miniconda3/envs/ai/lib/python3.11/site-packages/parameterized/parameterized.py:620: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/kernels/rmsnorm_test.py:60: in test_rmsnorm
+    self.assert_equal_tensors(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5320>
+x = tensor([ 2.9938e+01,  3.2938e+01,  1.8115e+00, -8.5938e+00,  2.5844e+01,
+        -3.0672e+01, -1.5020e+00, -2.2000e+01...50e+01,  3.7793e+00,  8.7031e+00, -1.6219e+01,
+        -1.2250e+01,  4.4023e+00], device='cuda:0', dtype=torch.float16)
+y = tensor([ 2.9938e+01,  3.2938e+01,  1.8135e+00, -8.5781e+00,  2.5844e+01,
+        -3.0656e+01, -1.5059e+00, -2.1969e+01...34e+01,  3.7930e+00,  8.7422e+00, -1.6219e+01,
+        -1.2250e+01,  4.4258e+00], device='cuda:0', dtype=torch.float16)
+exact_match = False, rtol_float32 = 0, atol_float32 = 3e-05, rtol_float16 = 0.0006, atol_float16 = 0.09, rtol_bfloat16 = None, atol_bfloat16 = None
+
+    def assert_equal_tensors(
+        self,
+        x: torch.Tensor,
+        y: torch.Tensor,
+        exact_match: bool,
+        rtol_float32: float = None,
+        atol_float32: float = None,
+        rtol_float16: float = None,
+        atol_float16: float = None,
+        rtol_bfloat16: float = None,
+        atol_bfloat16: float = None,
+    ) -> None:
+        if exact_match:
+            assert x.equal(y)
+        else:
+            assert x.dtype == y.dtype
+            dtype = x.dtype
+    
+            if dtype == torch.float32:
+                assert_close(x, y, rtol=rtol_float32, atol=atol_float32)
+            elif dtype == torch.float16:
+>               assert_close(x, y, rtol=rtol_float16, atol=atol_float16)
+E               AssertionError: Tensor-likes are not close!
+E               
+E               Mismatched elements: 1 / 517 (0.2%)
+E               Greatest absolute difference: 0.115234375 at index (323,) (up to 0.09 allowed)
+E               Greatest relative difference: 0.045196533203125 at index (323,) (up to 0.0006 allowed)
+
+tests/test_commons.py:56: AssertionError
+------------------------------------------------------------------------------------------------------------ Captured stdout call -------------------------------------------------------------------------------------------------------------
+(400, 517) cuda torch.float16 True True <function rmsnorm_cute at 0x152b71287b00>
+________________________________________________________________________________________________________ RMSNormTest.test_rmsnorm_5321 ________________________________________________________________________________________________________
+
+a = (<tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5321>,), kw = {}
+
+    @wraps(func)
+    def standalone_func(*a, **kw):
+>       return func(*(a + p.args), **p.kwargs, **kw)
+
+../../miniconda3/envs/ai/lib/python3.11/site-packages/parameterized/parameterized.py:620: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/kernels/rmsnorm_test.py:60: in test_rmsnorm
+    self.assert_equal_tensors(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5321>
+x = tensor([ 2.9938e+01,  3.2938e+01,  1.8115e+00, -8.5938e+00,  2.5844e+01,
+        -3.0672e+01, -1.5020e+00, -2.2000e+01...50e+01,  3.7793e+00,  8.7031e+00, -1.6219e+01,
+        -1.2250e+01,  4.4023e+00], device='cuda:0', dtype=torch.float16)
+y = tensor([ 2.9938e+01,  3.2938e+01,  1.8135e+00, -8.5781e+00,  2.5844e+01,
+        -3.0656e+01, -1.5059e+00, -2.1969e+01...34e+01,  3.7930e+00,  8.7422e+00, -1.6219e+01,
+        -1.2250e+01,  4.4258e+00], device='cuda:0', dtype=torch.float16)
+exact_match = False, rtol_float32 = 0, atol_float32 = 3e-05, rtol_float16 = 0.0006, atol_float16 = 0.09, rtol_bfloat16 = None, atol_bfloat16 = None
+
+    def assert_equal_tensors(
+        self,
+        x: torch.Tensor,
+        y: torch.Tensor,
+        exact_match: bool,
+        rtol_float32: float = None,
+        atol_float32: float = None,
+        rtol_float16: float = None,
+        atol_float16: float = None,
+        rtol_bfloat16: float = None,
+        atol_bfloat16: float = None,
+    ) -> None:
+        if exact_match:
+            assert x.equal(y)
+        else:
+            assert x.dtype == y.dtype
+            dtype = x.dtype
+    
+            if dtype == torch.float32:
+                assert_close(x, y, rtol=rtol_float32, atol=atol_float32)
+            elif dtype == torch.float16:
+>               assert_close(x, y, rtol=rtol_float16, atol=atol_float16)
+E               AssertionError: Tensor-likes are not close!
+E               
+E               Mismatched elements: 1 / 517 (0.2%)
+E               Greatest absolute difference: 0.115234375 at index (323,) (up to 0.09 allowed)
+E               Greatest relative difference: 0.045196533203125 at index (323,) (up to 0.0006 allowed)
+
+tests/test_commons.py:56: AssertionError
+------------------------------------------------------------------------------------------------------------ Captured stdout call -------------------------------------------------------------------------------------------------------------
+(400, 517) cuda torch.float16 True True <function rmsnorm_cute at 0x152b70d21f80>
+________________________________________________________________________________________________________ RMSNormTest.test_rmsnorm_5324 ________________________________________________________________________________________________________
+
+a = (<tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5324>,), kw = {}
+
+    @wraps(func)
+    def standalone_func(*a, **kw):
+>       return func(*(a + p.args), **p.kwargs, **kw)
+
+../../miniconda3/envs/ai/lib/python3.11/site-packages/parameterized/parameterized.py:620: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/kernels/rmsnorm_test.py:60: in test_rmsnorm
+    self.assert_equal_tensors(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5324>
+x = tensor([ 2.9938e+01,  3.2938e+01,  1.8115e+00, -8.5938e+00,  2.5844e+01,
+        -3.0672e+01, -1.5020e+00, -2.2000e+01...50e+01,  3.7793e+00,  8.7031e+00, -1.6219e+01,
+        -1.2250e+01,  4.4023e+00], device='cuda:0', dtype=torch.float16)
+y = tensor([ 2.9938e+01,  3.2938e+01,  1.8135e+00, -8.5781e+00,  2.5844e+01,
+        -3.0656e+01, -1.5059e+00, -2.1969e+01...34e+01,  3.7930e+00,  8.7422e+00, -1.6219e+01,
+        -1.2250e+01,  4.4258e+00], device='cuda:0', dtype=torch.float16)
+exact_match = False, rtol_float32 = 0, atol_float32 = 3e-05, rtol_float16 = 0.0006, atol_float16 = 0.09, rtol_bfloat16 = None, atol_bfloat16 = None
+
+    def assert_equal_tensors(
+        self,
+        x: torch.Tensor,
+        y: torch.Tensor,
+        exact_match: bool,
+        rtol_float32: float = None,
+        atol_float32: float = None,
+        rtol_float16: float = None,
+        atol_float16: float = None,
+        rtol_bfloat16: float = None,
+        atol_bfloat16: float = None,
+    ) -> None:
+        if exact_match:
+            assert x.equal(y)
+        else:
+            assert x.dtype == y.dtype
+            dtype = x.dtype
+    
+            if dtype == torch.float32:
+                assert_close(x, y, rtol=rtol_float32, atol=atol_float32)
+            elif dtype == torch.float16:
+>               assert_close(x, y, rtol=rtol_float16, atol=atol_float16)
+E               AssertionError: Tensor-likes are not close!
+E               
+E               Mismatched elements: 1 / 517 (0.2%)
+E               Greatest absolute difference: 0.115234375 at index (323,) (up to 0.09 allowed)
+E               Greatest relative difference: 0.045196533203125 at index (323,) (up to 0.0006 allowed)
+
+tests/test_commons.py:56: AssertionError
+------------------------------------------------------------------------------------------------------------ Captured stdout call -------------------------------------------------------------------------------------------------------------
+(400, 517) cuda torch.float16 False True <function rmsnorm_cute at 0x152b71287b00>
+________________________________________________________________________________________________________ RMSNormTest.test_rmsnorm_5325 ________________________________________________________________________________________________________
+
+a = (<tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5325>,), kw = {}
+
+    @wraps(func)
+    def standalone_func(*a, **kw):
+>       return func(*(a + p.args), **p.kwargs, **kw)
+
+../../miniconda3/envs/ai/lib/python3.11/site-packages/parameterized/parameterized.py:620: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/kernels/rmsnorm_test.py:60: in test_rmsnorm
+    self.assert_equal_tensors(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5325>
+x = tensor([ 2.9938e+01,  3.2938e+01,  1.8115e+00, -8.5938e+00,  2.5844e+01,
+        -3.0672e+01, -1.5020e+00, -2.2000e+01...50e+01,  3.7793e+00,  8.7031e+00, -1.6219e+01,
+        -1.2250e+01,  4.4023e+00], device='cuda:0', dtype=torch.float16)
+y = tensor([ 2.9938e+01,  3.2938e+01,  1.8135e+00, -8.5781e+00,  2.5844e+01,
+        -3.0656e+01, -1.5059e+00, -2.1969e+01...34e+01,  3.7930e+00,  8.7422e+00, -1.6219e+01,
+        -1.2250e+01,  4.4258e+00], device='cuda:0', dtype=torch.float16)
+exact_match = False, rtol_float32 = 0, atol_float32 = 3e-05, rtol_float16 = 0.0006, atol_float16 = 0.09, rtol_bfloat16 = None, atol_bfloat16 = None
+
+    def assert_equal_tensors(
+        self,
+        x: torch.Tensor,
+        y: torch.Tensor,
+        exact_match: bool,
+        rtol_float32: float = None,
+        atol_float32: float = None,
+        rtol_float16: float = None,
+        atol_float16: float = None,
+        rtol_bfloat16: float = None,
+        atol_bfloat16: float = None,
+    ) -> None:
+        if exact_match:
+            assert x.equal(y)
+        else:
+            assert x.dtype == y.dtype
+            dtype = x.dtype
+    
+            if dtype == torch.float32:
+                assert_close(x, y, rtol=rtol_float32, atol=atol_float32)
+            elif dtype == torch.float16:
+>               assert_close(x, y, rtol=rtol_float16, atol=atol_float16)
+E               AssertionError: Tensor-likes are not close!
+E               
+E               Mismatched elements: 1 / 517 (0.2%)
+E               Greatest absolute difference: 0.115234375 at index (323,) (up to 0.09 allowed)
+E               Greatest relative difference: 0.045196533203125 at index (323,) (up to 0.0006 allowed)
+
+tests/test_commons.py:56: AssertionError
+------------------------------------------------------------------------------------------------------------ Captured stdout call -------------------------------------------------------------------------------------------------------------
+(400, 517) cuda torch.float16 False True <function rmsnorm_cute at 0x152b70d21f80>
+________________________________________________________________________________________________________ RMSNormTest.test_rmsnorm_5352 ________________________________________________________________________________________________________
+
+a = (<tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5352>,), kw = {}
+
+    @wraps(func)
+    def standalone_func(*a, **kw):
+>       return func(*(a + p.args), **p.kwargs, **kw)
+
+../../miniconda3/envs/ai/lib/python3.11/site-packages/parameterized/parameterized.py:620: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/kernels/rmsnorm_test.py:60: in test_rmsnorm
+    self.assert_equal_tensors(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5352>
+x = tensor([ 34.6562,   5.7812,  35.6250,  -2.9688,  31.7031, -11.4531, -11.3203,
+        -11.5859,   5.4453, -14.5156, -3...     43.1562, -15.5000, -30.2188,  -6.9375, -13.2422,  -9.2266,   0.6602],
+       device='cuda:0', dtype=torch.float16)
+y = tensor([ 34.5938,   5.7461,  35.5938,  -2.9648,  31.6562, -11.4375, -11.3359,
+        -11.6016,   5.5156, -14.4844, -3...     43.0625, -15.5078, -30.1406,  -6.8984, -13.2734,  -9.1875,   0.6484],
+       device='cuda:0', dtype=torch.float16)
+exact_match = False, rtol_float32 = 0, atol_float32 = 3e-05, rtol_float16 = 0.0006, atol_float16 = 0.09, rtol_bfloat16 = None, atol_bfloat16 = None
+
+    def assert_equal_tensors(
+        self,
+        x: torch.Tensor,
+        y: torch.Tensor,
+        exact_match: bool,
+        rtol_float32: float = None,
+        atol_float32: float = None,
+        rtol_float16: float = None,
+        atol_float16: float = None,
+        rtol_bfloat16: float = None,
+        atol_bfloat16: float = None,
+    ) -> None:
+        if exact_match:
+            assert x.equal(y)
+        else:
+            assert x.dtype == y.dtype
+            dtype = x.dtype
+    
+            if dtype == torch.float32:
+                assert_close(x, y, rtol=rtol_float32, atol=atol_float32)
+            elif dtype == torch.float16:
+>               assert_close(x, y, rtol=rtol_float16, atol=atol_float16)
+E               AssertionError: Tensor-likes are not close!
+E               
+E               Mismatched elements: 1 / 35 (2.9%)
+E               Greatest absolute difference: 0.125 at index (15,) (up to 0.09 allowed)
+E               Greatest relative difference: 0.00370025634765625 at index (15,) (up to 0.0006 allowed)
+
+tests/test_commons.py:56: AssertionError
+------------------------------------------------------------------------------------------------------------ Captured stdout call -------------------------------------------------------------------------------------------------------------
+(400, 35) cuda torch.float16 True True <function rmsnorm_cute at 0x152b71287b00>
+________________________________________________________________________________________________________ RMSNormTest.test_rmsnorm_5353 ________________________________________________________________________________________________________
+
+a = (<tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5353>,), kw = {}
+
+    @wraps(func)
+    def standalone_func(*a, **kw):
+>       return func(*(a + p.args), **p.kwargs, **kw)
+
+../../miniconda3/envs/ai/lib/python3.11/site-packages/parameterized/parameterized.py:620: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/kernels/rmsnorm_test.py:60: in test_rmsnorm
+    self.assert_equal_tensors(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5353>
+x = tensor([ 34.6562,   5.7812,  35.6250,  -2.9688,  31.7031, -11.4531, -11.3203,
+        -11.5859,   5.4453, -14.5156, -3...     43.1562, -15.5000, -30.2188,  -6.9375, -13.2422,  -9.2266,   0.6602],
+       device='cuda:0', dtype=torch.float16)
+y = tensor([ 34.5938,   5.7461,  35.5938,  -2.9648,  31.6562, -11.4375, -11.3359,
+        -11.6016,   5.5156, -14.4844, -3...     43.0625, -15.5078, -30.1406,  -6.8984, -13.2734,  -9.1875,   0.6484],
+       device='cuda:0', dtype=torch.float16)
+exact_match = False, rtol_float32 = 0, atol_float32 = 3e-05, rtol_float16 = 0.0006, atol_float16 = 0.09, rtol_bfloat16 = None, atol_bfloat16 = None
+
+    def assert_equal_tensors(
+        self,
+        x: torch.Tensor,
+        y: torch.Tensor,
+        exact_match: bool,
+        rtol_float32: float = None,
+        atol_float32: float = None,
+        rtol_float16: float = None,
+        atol_float16: float = None,
+        rtol_bfloat16: float = None,
+        atol_bfloat16: float = None,
+    ) -> None:
+        if exact_match:
+            assert x.equal(y)
+        else:
+            assert x.dtype == y.dtype
+            dtype = x.dtype
+    
+            if dtype == torch.float32:
+                assert_close(x, y, rtol=rtol_float32, atol=atol_float32)
+            elif dtype == torch.float16:
+>               assert_close(x, y, rtol=rtol_float16, atol=atol_float16)
+E               AssertionError: Tensor-likes are not close!
+E               
+E               Mismatched elements: 1 / 35 (2.9%)
+E               Greatest absolute difference: 0.125 at index (15,) (up to 0.09 allowed)
+E               Greatest relative difference: 0.00370025634765625 at index (15,) (up to 0.0006 allowed)
+
+tests/test_commons.py:56: AssertionError
+------------------------------------------------------------------------------------------------------------ Captured stdout call -------------------------------------------------------------------------------------------------------------
+(400, 35) cuda torch.float16 True True <function rmsnorm_cute at 0x152b70d21f80>
+________________________________________________________________________________________________________ RMSNormTest.test_rmsnorm_5356 ________________________________________________________________________________________________________
+
+a = (<tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5356>,), kw = {}
+
+    @wraps(func)
+    def standalone_func(*a, **kw):
+>       return func(*(a + p.args), **p.kwargs, **kw)
+
+../../miniconda3/envs/ai/lib/python3.11/site-packages/parameterized/parameterized.py:620: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/kernels/rmsnorm_test.py:60: in test_rmsnorm
+    self.assert_equal_tensors(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5356>
+x = tensor([ 34.6562,   5.7812,  35.6250,  -2.9688,  31.7031, -11.4531, -11.3203,
+        -11.5859,   5.4453, -14.5156, -3...     43.1562, -15.5000, -30.2188,  -6.9375, -13.2422,  -9.2266,   0.6602],
+       device='cuda:0', dtype=torch.float16)
+y = tensor([ 34.5938,   5.7461,  35.5938,  -2.9648,  31.6562, -11.4375, -11.3359,
+        -11.6016,   5.5156, -14.4844, -3...     43.0625, -15.5078, -30.1406,  -6.8984, -13.2734,  -9.1875,   0.6484],
+       device='cuda:0', dtype=torch.float16)
+exact_match = False, rtol_float32 = 0, atol_float32 = 3e-05, rtol_float16 = 0.0006, atol_float16 = 0.09, rtol_bfloat16 = None, atol_bfloat16 = None
+
+    def assert_equal_tensors(
+        self,
+        x: torch.Tensor,
+        y: torch.Tensor,
+        exact_match: bool,
+        rtol_float32: float = None,
+        atol_float32: float = None,
+        rtol_float16: float = None,
+        atol_float16: float = None,
+        rtol_bfloat16: float = None,
+        atol_bfloat16: float = None,
+    ) -> None:
+        if exact_match:
+            assert x.equal(y)
+        else:
+            assert x.dtype == y.dtype
+            dtype = x.dtype
+    
+            if dtype == torch.float32:
+                assert_close(x, y, rtol=rtol_float32, atol=atol_float32)
+            elif dtype == torch.float16:
+>               assert_close(x, y, rtol=rtol_float16, atol=atol_float16)
+E               AssertionError: Tensor-likes are not close!
+E               
+E               Mismatched elements: 1 / 35 (2.9%)
+E               Greatest absolute difference: 0.125 at index (15,) (up to 0.09 allowed)
+E               Greatest relative difference: 0.00370025634765625 at index (15,) (up to 0.0006 allowed)
+
+tests/test_commons.py:56: AssertionError
+------------------------------------------------------------------------------------------------------------ Captured stdout call -------------------------------------------------------------------------------------------------------------
+(400, 35) cuda torch.float16 False True <function rmsnorm_cute at 0x152b71287b00>
+________________________________________________________________________________________________________ RMSNormTest.test_rmsnorm_5357 ________________________________________________________________________________________________________
+
+a = (<tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5357>,), kw = {}
+
+    @wraps(func)
+    def standalone_func(*a, **kw):
+>       return func(*(a + p.args), **p.kwargs, **kw)
+
+../../miniconda3/envs/ai/lib/python3.11/site-packages/parameterized/parameterized.py:620: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/kernels/rmsnorm_test.py:60: in test_rmsnorm
+    self.assert_equal_tensors(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5357>
+x = tensor([ 34.6562,   5.7812,  35.6250,  -2.9688,  31.7031, -11.4531, -11.3203,
+        -11.5859,   5.4453, -14.5156, -3...     43.1562, -15.5000, -30.2188,  -6.9375, -13.2422,  -9.2266,   0.6602],
+       device='cuda:0', dtype=torch.float16)
+y = tensor([ 34.5938,   5.7461,  35.5938,  -2.9648,  31.6562, -11.4375, -11.3359,
+        -11.6016,   5.5156, -14.4844, -3...     43.0625, -15.5078, -30.1406,  -6.8984, -13.2734,  -9.1875,   0.6484],
+       device='cuda:0', dtype=torch.float16)
+exact_match = False, rtol_float32 = 0, atol_float32 = 3e-05, rtol_float16 = 0.0006, atol_float16 = 0.09, rtol_bfloat16 = None, atol_bfloat16 = None
+
+    def assert_equal_tensors(
+        self,
+        x: torch.Tensor,
+        y: torch.Tensor,
+        exact_match: bool,
+        rtol_float32: float = None,
+        atol_float32: float = None,
+        rtol_float16: float = None,
+        atol_float16: float = None,
+        rtol_bfloat16: float = None,
+        atol_bfloat16: float = None,
+    ) -> None:
+        if exact_match:
+            assert x.equal(y)
+        else:
+            assert x.dtype == y.dtype
+            dtype = x.dtype
+    
+            if dtype == torch.float32:
+                assert_close(x, y, rtol=rtol_float32, atol=atol_float32)
+            elif dtype == torch.float16:
+>               assert_close(x, y, rtol=rtol_float16, atol=atol_float16)
+E               AssertionError: Tensor-likes are not close!
+E               
+E               Mismatched elements: 1 / 35 (2.9%)
+E               Greatest absolute difference: 0.125 at index (15,) (up to 0.09 allowed)
+E               Greatest relative difference: 0.00370025634765625 at index (15,) (up to 0.0006 allowed)
+
+tests/test_commons.py:56: AssertionError
+------------------------------------------------------------------------------------------------------------ Captured stdout call -------------------------------------------------------------------------------------------------------------
+(400, 35) cuda torch.float16 False True <function rmsnorm_cute at 0x152b70d21f80>
+________________________________________________________________________________________________________ RMSNormTest.test_rmsnorm_5560 ________________________________________________________________________________________________________
+
+a = (<tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5560>,), kw = {}
+
+    @wraps(func)
+    def standalone_func(*a, **kw):
+>       return func(*(a + p.args), **p.kwargs, **kw)
+
+../../miniconda3/envs/ai/lib/python3.11/site-packages/parameterized/parameterized.py:620: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/kernels/rmsnorm_test.py:60: in test_rmsnorm
+    self.assert_equal_tensors(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5560>
+x = tensor([ 5.4750e+01, -2.8875e+01, -7.6328e+00,  4.1758e+00, -1.6828e+01,
+         1.3172e+01,  3.5410e+00, -1.4070e+01...12e+01, -1.5156e+01, -3.2281e+01, -1.4688e+01,
+         5.8438e+01, -5.5125e+01], device='cuda:0', dtype=torch.float16)
+y = tensor([ 5.4656e+01, -2.8844e+01, -7.6602e+00,  4.1719e+00, -1.6812e+01,
+         1.3195e+01,  3.4941e+00, -1.4102e+01...75e+01, -1.5109e+01, -3.2312e+01, -1.4695e+01,
+         5.8469e+01, -5.4938e+01], device='cuda:0', dtype=torch.float16)
+exact_match = False, rtol_float32 = 0, atol_float32 = 3e-05, rtol_float16 = 0.0006, atol_float16 = 0.09, rtol_bfloat16 = None, atol_bfloat16 = None
+
+    def assert_equal_tensors(
+        self,
+        x: torch.Tensor,
+        y: torch.Tensor,
+        exact_match: bool,
+        rtol_float32: float = None,
+        atol_float32: float = None,
+        rtol_float16: float = None,
+        atol_float16: float = None,
+        rtol_bfloat16: float = None,
+        atol_bfloat16: float = None,
+    ) -> None:
+        if exact_match:
+            assert x.equal(y)
+        else:
+            assert x.dtype == y.dtype
+            dtype = x.dtype
+    
+            if dtype == torch.float32:
+                assert_close(x, y, rtol=rtol_float32, atol=atol_float32)
+            elif dtype == torch.float16:
+>               assert_close(x, y, rtol=rtol_float16, atol=atol_float16)
+E               AssertionError: Tensor-likes are not close!
+E               
+E               Mismatched elements: 2 / 37 (5.4%)
+E               Greatest absolute difference: 0.1875 at index (36,) (up to 0.09 allowed)
+E               Greatest relative difference: 0.00429534912109375 at index (8,) (up to 0.0006 allowed)
+
+tests/test_commons.py:56: AssertionError
+------------------------------------------------------------------------------------------------------------ Captured stdout call -------------------------------------------------------------------------------------------------------------
+(400, 37) cuda torch.float16 True True <function rmsnorm_cute at 0x152b71287b00>
+________________________________________________________________________________________________________ RMSNormTest.test_rmsnorm_5561 ________________________________________________________________________________________________________
+
+a = (<tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5561>,), kw = {}
+
+    @wraps(func)
+    def standalone_func(*a, **kw):
+>       return func(*(a + p.args), **p.kwargs, **kw)
+
+../../miniconda3/envs/ai/lib/python3.11/site-packages/parameterized/parameterized.py:620: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/kernels/rmsnorm_test.py:60: in test_rmsnorm
+    self.assert_equal_tensors(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5561>
+x = tensor([ 5.4750e+01, -2.8875e+01, -7.6328e+00,  4.1758e+00, -1.6828e+01,
+         1.3172e+01,  3.5410e+00, -1.4070e+01...12e+01, -1.5156e+01, -3.2281e+01, -1.4688e+01,
+         5.8438e+01, -5.5125e+01], device='cuda:0', dtype=torch.float16)
+y = tensor([ 5.4656e+01, -2.8844e+01, -7.6602e+00,  4.1719e+00, -1.6812e+01,
+         1.3195e+01,  3.4941e+00, -1.4102e+01...75e+01, -1.5109e+01, -3.2312e+01, -1.4695e+01,
+         5.8469e+01, -5.4938e+01], device='cuda:0', dtype=torch.float16)
+exact_match = False, rtol_float32 = 0, atol_float32 = 3e-05, rtol_float16 = 0.0006, atol_float16 = 0.09, rtol_bfloat16 = None, atol_bfloat16 = None
+
+    def assert_equal_tensors(
+        self,
+        x: torch.Tensor,
+        y: torch.Tensor,
+        exact_match: bool,
+        rtol_float32: float = None,
+        atol_float32: float = None,
+        rtol_float16: float = None,
+        atol_float16: float = None,
+        rtol_bfloat16: float = None,
+        atol_bfloat16: float = None,
+    ) -> None:
+        if exact_match:
+            assert x.equal(y)
+        else:
+            assert x.dtype == y.dtype
+            dtype = x.dtype
+    
+            if dtype == torch.float32:
+                assert_close(x, y, rtol=rtol_float32, atol=atol_float32)
+            elif dtype == torch.float16:
+>               assert_close(x, y, rtol=rtol_float16, atol=atol_float16)
+E               AssertionError: Tensor-likes are not close!
+E               
+E               Mismatched elements: 2 / 37 (5.4%)
+E               Greatest absolute difference: 0.1875 at index (36,) (up to 0.09 allowed)
+E               Greatest relative difference: 0.00429534912109375 at index (8,) (up to 0.0006 allowed)
+
+tests/test_commons.py:56: AssertionError
+------------------------------------------------------------------------------------------------------------ Captured stdout call -------------------------------------------------------------------------------------------------------------
+(400, 37) cuda torch.float16 True True <function rmsnorm_cute at 0x152b70d21f80>
+________________________________________________________________________________________________________ RMSNormTest.test_rmsnorm_5564 ________________________________________________________________________________________________________
+
+a = (<tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5564>,), kw = {}
+
+    @wraps(func)
+    def standalone_func(*a, **kw):
+>       return func(*(a + p.args), **p.kwargs, **kw)
+
+../../miniconda3/envs/ai/lib/python3.11/site-packages/parameterized/parameterized.py:620: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/kernels/rmsnorm_test.py:60: in test_rmsnorm
+    self.assert_equal_tensors(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5564>
+x = tensor([ 5.4750e+01, -2.8875e+01, -7.6328e+00,  4.1758e+00, -1.6828e+01,
+         1.3172e+01,  3.5410e+00, -1.4070e+01...12e+01, -1.5156e+01, -3.2281e+01, -1.4688e+01,
+         5.8438e+01, -5.5125e+01], device='cuda:0', dtype=torch.float16)
+y = tensor([ 5.4656e+01, -2.8844e+01, -7.6602e+00,  4.1719e+00, -1.6812e+01,
+         1.3195e+01,  3.4941e+00, -1.4102e+01...75e+01, -1.5109e+01, -3.2312e+01, -1.4695e+01,
+         5.8469e+01, -5.4938e+01], device='cuda:0', dtype=torch.float16)
+exact_match = False, rtol_float32 = 0, atol_float32 = 3e-05, rtol_float16 = 0.0006, atol_float16 = 0.09, rtol_bfloat16 = None, atol_bfloat16 = None
+
+    def assert_equal_tensors(
+        self,
+        x: torch.Tensor,
+        y: torch.Tensor,
+        exact_match: bool,
+        rtol_float32: float = None,
+        atol_float32: float = None,
+        rtol_float16: float = None,
+        atol_float16: float = None,
+        rtol_bfloat16: float = None,
+        atol_bfloat16: float = None,
+    ) -> None:
+        if exact_match:
+            assert x.equal(y)
+        else:
+            assert x.dtype == y.dtype
+            dtype = x.dtype
+    
+            if dtype == torch.float32:
+                assert_close(x, y, rtol=rtol_float32, atol=atol_float32)
+            elif dtype == torch.float16:
+>               assert_close(x, y, rtol=rtol_float16, atol=atol_float16)
+E               AssertionError: Tensor-likes are not close!
+E               
+E               Mismatched elements: 2 / 37 (5.4%)
+E               Greatest absolute difference: 0.1875 at index (36,) (up to 0.09 allowed)
+E               Greatest relative difference: 0.00429534912109375 at index (8,) (up to 0.0006 allowed)
+
+tests/test_commons.py:56: AssertionError
+------------------------------------------------------------------------------------------------------------ Captured stdout call -------------------------------------------------------------------------------------------------------------
+(400, 37) cuda torch.float16 False True <function rmsnorm_cute at 0x152b71287b00>
+________________________________________________________________________________________________________ RMSNormTest.test_rmsnorm_5565 ________________________________________________________________________________________________________
+
+a = (<tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5565>,), kw = {}
+
+    @wraps(func)
+    def standalone_func(*a, **kw):
+>       return func(*(a + p.args), **p.kwargs, **kw)
+
+../../miniconda3/envs/ai/lib/python3.11/site-packages/parameterized/parameterized.py:620: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/kernels/rmsnorm_test.py:60: in test_rmsnorm
+    self.assert_equal_tensors(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.kernels.rmsnorm_test.RMSNormTest testMethod=test_rmsnorm_5565>
+x = tensor([ 5.4750e+01, -2.8875e+01, -7.6328e+00,  4.1758e+00, -1.6828e+01,
+         1.3172e+01,  3.5410e+00, -1.4070e+01...12e+01, -1.5156e+01, -3.2281e+01, -1.4688e+01,
+         5.8438e+01, -5.5125e+01], device='cuda:0', dtype=torch.float16)
+y = tensor([ 5.4656e+01, -2.8844e+01, -7.6602e+00,  4.1719e+00, -1.6812e+01,
+         1.3195e+01,  3.4941e+00, -1.4102e+01...75e+01, -1.5109e+01, -3.2312e+01, -1.4695e+01,
+         5.8469e+01, -5.4938e+01], device='cuda:0', dtype=torch.float16)
+exact_match = False, rtol_float32 = 0, atol_float32 = 3e-05, rtol_float16 = 0.0006, atol_float16 = 0.09, rtol_bfloat16 = None, atol_bfloat16 = None
+
+    def assert_equal_tensors(
+        self,
+        x: torch.Tensor,
+        y: torch.Tensor,
+        exact_match: bool,
+        rtol_float32: float = None,
+        atol_float32: float = None,
+        rtol_float16: float = None,
+        atol_float16: float = None,
+        rtol_bfloat16: float = None,
+        atol_bfloat16: float = None,
+    ) -> None:
+        if exact_match:
+            assert x.equal(y)
+        else:
+            assert x.dtype == y.dtype
+            dtype = x.dtype
+    
+            if dtype == torch.float32:
+                assert_close(x, y, rtol=rtol_float32, atol=atol_float32)
+            elif dtype == torch.float16:
+>               assert_close(x, y, rtol=rtol_float16, atol=atol_float16)
+E               AssertionError: Tensor-likes are not close!
+E               
+E               Mismatched elements: 2 / 37 (5.4%)
+E               Greatest absolute difference: 0.1875 at index (36,) (up to 0.09 allowed)
+E               Greatest relative difference: 0.00429534912109375 at index (8,) (up to 0.0006 allowed)
+
+tests/test_commons.py:56: AssertionError
+------------------------------------------------------------------------------------------------------------ Captured stdout call -------------------------------------------------------------------------------------------------------------
+(400, 37) cuda torch.float16 False True <function rmsnorm_cute at 0x152b70d21f80>
+============================================================================================================== warnings summary ===============================================================================================================
+tests/kernels/rmsnorm_test.py: 458 warnings
+  /u/mayank98/miniconda3/envs/ai/lib/python3.11/site-packages/torch/_dynamo/variables/misc.py:644: UserWarning: The config.capture_autograd_function flag is deprecated, it's now always true.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================================================================================================== short test summary info ===========================================================================================================
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3120 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3121 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3124 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3125 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3128 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3129 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3132 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3133 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3176 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3177 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3180 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3181 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3240 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3241 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3244 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3245 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3272 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3273 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3276 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3277 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3384 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3385 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3388 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3389 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3432 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3433 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3436 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3437 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3496 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3497 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3500 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3501 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3512 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3513 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3516 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3517 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3704 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3705 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3708 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3709 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3752 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3753 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3756 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3757 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3800 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3801 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3804 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3805 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3880 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3881 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3884 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3885 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3928 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3929 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3932 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3933 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3992 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3993 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3996 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_3997 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4168 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4169 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4172 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4173 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4200 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4201 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4204 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4205 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4280 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4281 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4284 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4285 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4400 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4401 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4404 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4405 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4408 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4409 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4412 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4413 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4440 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4441 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4444 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4445 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4488 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4489 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4492 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4493 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4568 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4569 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4572 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4573 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4600 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4601 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4604 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4605 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4632 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4633 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4636 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4637 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4680 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4681 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4684 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4685 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4744 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4745 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4748 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4749 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4824 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4825 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4828 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4829 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4840 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4841 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4844 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4845 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4872 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4873 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4876 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4877 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4968 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4969 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4972 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_4973 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5024 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5025 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5028 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5029 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5032 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5033 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5036 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5037 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5064 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5065 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5068 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5069 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5080 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5081 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5084 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5085 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5176 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5177 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5180 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5181 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5320 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5321 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5324 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5325 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5352 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5353 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5356 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5357 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5560 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5561 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5564 - AssertionError: Tensor-likes are not close!
+FAILED tests/kernels/rmsnorm_test.py::RMSNormTest::test_rmsnorm_5565 - AssertionError: Tensor-likes are not close!
+========================================================================================= 156 failed, 5444 passed, 458 warnings in 719.23s (0:11:59) ==========================================================================================
+(ai) ➜  kernel-hyperdrive git:(cutotune-cache) ✗ 
