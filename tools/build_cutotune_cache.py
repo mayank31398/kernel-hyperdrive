@@ -2,6 +2,7 @@ from typing import Callable
 
 import torch
 from tqdm import tqdm
+from transformers import set_seed
 
 from cute_kernels import (
     add_scalar_cute,
@@ -19,18 +20,12 @@ from cute_kernels import (
 )
 
 
-def get_tensor_metadata() -> list[tuple[torch.dtype, tuple[int]]]:
-    metadata_list = []
-    for dtype in get_dtypes():
-        for size in [104857600, (1024, 102400)]:
-            metadata_list.append((size, dtype))
-
-    return metadata_list
-
-
 def forward_backward(kernel: Callable, *args, **kwargs) -> None:
     output = kernel(*args, **kwargs)
     output.sum().backward()
+
+
+set_seed(42)
 
 
 for dtype in get_dtypes():
@@ -59,16 +54,16 @@ for dtype in get_dtypes():
 #     x = torch.randint(0, 64, (size,), device=torch.cuda.current_device(), dtype=torch.long)
 #     contiguous_count_cute(x, 64)
 
-# for dtype in [torch.float32, torch.float16]:
-#     for input_ids_size in [(51, 17), (19, 239), (7, 7537), (9, 1749)]:
-#         for weight_size in [(7153, 937), (27153, 1937), (97153, 2937), (17153, 31937)]:
-#             forward_backward(
-#                 embedding_cute,
-#                 input_ids=torch.randint(
-#                     0, weight_size[0] - 1, input_ids_size, device=torch.cuda.current_device(), dtype=torch.long
-#                 ),
-#                 weight=torch.randn(weight_size, device=torch.cuda.current_device(), dtype=dtype, requires_grad=True),
-#             )
+for dtype in [torch.float32, torch.float16]:
+    for input_ids_size in [(32, 4096)]:
+        for weight_size in [(131072, 4096)]:
+            forward_backward(
+                embedding_cute,
+                input_ids=torch.randint(
+                    0, weight_size[0] - 1, input_ids_size, device=torch.cuda.current_device(), dtype=torch.long
+                ),
+                weight=torch.randn(weight_size, device=torch.cuda.current_device(), dtype=dtype, requires_grad=True),
+            )
 
 
-# save_cutotune_cache()
+save_cutotune_cache()
