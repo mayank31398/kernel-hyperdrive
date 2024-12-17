@@ -36,23 +36,7 @@ class _CutoTuneCache:
         yaml.dump(full_cache_serialized, open(_CUTOTUNE_CACHE_FILENAME, "w"))
 
     def load(self) -> None:
-        full_cache_serialized = yaml.load(open(_CUTOTUNE_CACHE_FILENAME, "r"), yaml.SafeLoader)
-
-        for function_hash in full_cache_serialized:
-            for lookup_key in full_cache_serialized[function_hash]:
-                for config_time in full_cache_serialized[function_hash][lookup_key]:
-                    config = config_time["config"]
-                    time = config_time["time"]
-
-                    unserialized_config = {}
-                    for key, value in config.items():
-                        if key == "kernel_backend":
-                            value = KernelBackend(value)
-
-                        unserialized_config[key] = value
-
-                    unserialized_config = CutoTuneConfig(unserialized_config)
-                    self.full_cache[function_hash][lookup_key].append((unserialized_config, time))
+        self.full_cache = yaml.load(open(_CUTOTUNE_CACHE_FILENAME, "r"), yaml.SafeLoader)
 
     def get_best_configs(self, function_hash: str) -> dict[str, CutoTuneConfig]:
         return self.best_cache[function_hash]

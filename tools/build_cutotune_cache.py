@@ -1,7 +1,6 @@
 from typing import Callable
 
 import torch
-from tqdm import tqdm
 from transformers import set_seed
 
 from cute_kernels import (
