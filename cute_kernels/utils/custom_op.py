@@ -32,6 +32,7 @@ def cute_op(
             return _dispatch(func, compileable_func, *args, **kwargs)
 
         _run.__signature__ = inspect.signature(func)
+        _run.__name__ = func.__name__
 
         return _run
 
