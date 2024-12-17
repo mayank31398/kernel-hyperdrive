@@ -68,6 +68,37 @@ class _CutoTuneCache:
 
                     config_time_list[i] = [config, time]
 
+                if not has_config_time_list:
+                    config_time_list = config_time_list[0]
+
+                result[function_hash][lookup_key] = config_time_list
+
+        return result
+
+    def _deserialize(self, x: dict, has_config_time_list: bool) -> dict:
+        result = {}
+        for function_hash in x:
+            result[function_hash] = {}
+
+            for lookup_key in x[function_hash]:
+                config_time_list = x[function_hash][lookup_key]
+                if not has_config_time_list:
+                    config_time_list = [config_time_list]
+
+                def _deserialize(k, v):
+                    if k.startswith("kernel_backend"):
+                        v = KernelBackend(v)
+                    return v
+
+                for i, config_time in enumerate(config_time_list):
+                    config, time = config_time
+                    config = {key: _deserialize(key, value) for key, value in config.get_key_values().items()}
+
+                    config_time_list[i] = [config, time]
+
+                if not has_config_time_list:
+                    config_time_list = config_time_list[0]
+
                 result[function_hash][lookup_key] = config_time_list
 
         return result
