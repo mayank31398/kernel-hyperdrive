@@ -36,7 +36,6 @@ def _forward(
             weight=weight,
             output=output,
             eps=eps,
-            memory_efficient=memory_efficient,
             rmsnorm_denominator=rmsnorm_denominator,
             BLOCK_SIZE_B=BLOCK_SIZE_B,
             BLOCK_SIZE_H=BLOCK_SIZE_H,

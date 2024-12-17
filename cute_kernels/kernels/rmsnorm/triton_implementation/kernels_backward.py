@@ -104,7 +104,6 @@ def _rmsnorm_backward_no_weight_triton(
     rmsnorm_denominator: torch.Tensor | None,
     x_grad: torch.Tensor,
     eps: float,
-    memory_efficient: bool,
     BLOCK_SIZE_B: int,
     BLOCK_SIZE_H: int,
 ) -> None:
@@ -126,7 +125,7 @@ def _rmsnorm_backward_no_weight_triton(
             x_grad_ptr=x_grad,
             weight_grad_ptr=None,
             eps=eps,
-            memory_efficient=memory_efficient,
+            memory_efficient=rmsnorm_denominator is None,
             rmsnorm_denominator_ptr=rmsnorm_denominator,
             B=num_elements,
             H=hidden_size,
@@ -142,7 +141,6 @@ def _fake(
     rmsnorm_denominator: torch.Tensor,
     x_grad: torch.Tensor,
     eps: float,
-    memory_efficient: bool,
     BLOCK_SIZE_B: int,
     BLOCK_SIZE_H: int,
 ) -> torch.Tensor:
@@ -157,7 +155,6 @@ def _rmsnorm_backward_triton(
     rmsnorm_denominator: torch.Tensor,
     x_grad: torch.Tensor,
     eps: float,
-    memory_efficient: bool,
     BLOCK_SIZE_B: int,
     BLOCK_SIZE_H: int,
 ) -> torch.Tensor:
@@ -181,7 +178,7 @@ def _rmsnorm_backward_triton(
             x_grad_ptr=x_grad,
             weight_grad_ptr=weight_grad,
             eps=eps,
-            memory_efficient=memory_efficient,
+            memory_efficient=rmsnorm_denominator is None,
             rmsnorm_denominator_ptr=rmsnorm_denominator,
             B=num_elements,
             H=hidden_size,
@@ -213,7 +210,6 @@ def rmsnorm_backward_triton(
     rmsnorm_denominator: torch.Tensor,
     x_grad: torch.Tensor,
     eps: float,
-    memory_efficient: bool,
     BLOCK_SIZE_B: int,
     BLOCK_SIZE_H: int,
 ) -> torch.Tensor | None:
@@ -224,7 +220,6 @@ def rmsnorm_backward_triton(
             rmsnorm_denominator=rmsnorm_denominator,
             x_grad=x_grad,
             eps=eps,
-            memory_efficient=memory_efficient,
             BLOCK_SIZE_B=BLOCK_SIZE_B,
             BLOCK_SIZE_H=BLOCK_SIZE_H,
         )
@@ -236,7 +231,6 @@ def rmsnorm_backward_triton(
             rmsnorm_denominator=rmsnorm_denominator,
             x_grad=x_grad,
             eps=eps,
-            memory_efficient=memory_efficient,
             BLOCK_SIZE_B=BLOCK_SIZE_B,
             BLOCK_SIZE_H=BLOCK_SIZE_H,
         )
