@@ -29,12 +29,4 @@ from .kernels import (
 )
 from .math import ceil_divide, get_powers_of_2
 from .tensor import CuteTensor
-from .utils import (
-    CuteInductor,
-    device_synchronize,
-    get_1d_tensor_sizes,
-    get_2d_tensor_sizes,
-    get_all_devices,
-    get_dtypes,
-    get_triton_num_warps,
-)
+from .utils import CuteInductor, get_triton_num_warps

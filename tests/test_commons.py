@@ -1,3 +1,4 @@
+import random
 from itertools import product
 from typing import Any
 from unittest import TestCase
@@ -6,7 +7,7 @@ import torch
 import torch.nn as nn
 from torch.testing import assert_close
 
-from cute_kernels import get_1d_tensor_sizes, get_2d_tensor_sizes, get_all_devices, get_dtypes, init_inductor
+from cute_kernels import init_inductor
 
 
 class TestCommons(TestCase):
@@ -15,19 +16,42 @@ class TestCommons(TestCase):
 
     @staticmethod
     def get_all_devices() -> list[torch.device]:
-        return get_all_devices()
+        return [torch.device("cpu"), torch.device("cuda")]
 
     @staticmethod
     def get_dtypes() -> list[torch.dtype]:
-        return get_dtypes()
+        return [torch.float32, torch.float16, torch.bfloat16]
 
     @staticmethod
     def get_1d_tensor_sizes() -> list[tuple[int]]:
-        return get_1d_tensor_sizes()
+        sizes = set()
+        # powers of 2
+        for i in range(15):
+            start = 2**i
+            for j in range(10):
+                sizes.add(start + j)
+        # not powers of 2
+        for _ in range(50):
+            sizes.add(3000 + random.randint(-1000, 1000))
+        return sizes
 
     @staticmethod
     def get_2d_tensor_sizes(static_batch_size: int | None = None) -> list[tuple[int]]:
-        return get_2d_tensor_sizes(static_batch_size)
+        sizes = set()
+        # powers of 2
+        for i in range(15):
+            start = 2**i
+            for j in range(10):
+                sizes.add((start + j if static_batch_size is None else static_batch_size, start + j))
+        # not powers of 2
+        for _ in range(50):
+            sizes.add(
+                (
+                    3000 + random.randint(-1000, 1000) if static_batch_size is None else static_batch_size,
+                    3000 + random.randint(-1000, 1000),
+                )
+            )
+        return sizes
 
     def make_args_matrix(*args_lists) -> list[Any]:
         return [p for p in product(*args_lists)]

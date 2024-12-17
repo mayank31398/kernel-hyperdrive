@@ -10,8 +10,6 @@ from cute_kernels import (
     ceil_divide,
     contiguous_count_cute,
     embedding_cute,
-    get_1d_tensor_sizes,
-    get_2d_tensor_sizes,
     get_dtypes,
     rmsnorm_cute,
     save_cutotune_cache,
@@ -44,7 +42,7 @@ for dtype in get_dtypes():
         #     eps=1e-5,
         # )
 
-    for size in [(819200, 819200)]:
+    for size in [(81920, 8192)]:
         forward_backward(
             swiglu_unchunked_cute,
             torch.randn(size, dtype=dtype, device=torch.cuda.current_device(), requires_grad=True),
