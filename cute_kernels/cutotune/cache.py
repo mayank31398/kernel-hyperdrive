@@ -54,8 +54,18 @@ class _CutoTuneCache:
                     unserialized_config = CutoTuneConfig(unserialized_config)
                     self.full_cache[function_hash][lookup_key].append((unserialized_config, time))
 
-    def get_best_configs(self, function_hash: str) -> dict[str, CutoTuneConfig]:
-        return self.best_cache[function_hash]
+    def get_best_config(
+        self, function_hash: str, lookup_key: str, default: CutoTuneConfig | None = None
+    ) -> CutoTuneConfig:
+        best_cache = self.best_cache.get(function_hash)
+        if best_cache is None:
+            return default
+
+        config_time = best_cache.get(lookup_key)
+        if config_time is None:
+            return default
+
+        return config_time[0]
 
 
 _CUTOTUNE_CACHE = None
