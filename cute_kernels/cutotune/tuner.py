@@ -13,8 +13,8 @@ from .config import CutoTuneConfig
 from .parameter import CutoTuneParameter
 
 
-_DEBUG_CUTOTUNE = get_boolean_env_variable("DEBUG_CUTOTUNE")
-_DISABLE_CUTOTUNE = get_boolean_env_variable("DISABLE_CUTOTUNE")
+_DEBUG_CUTOTUNE = get_boolean_env_variable("DEBUG_CUTOTUNE", False)
+_DISABLE_CUTOTUNE = get_boolean_env_variable("DISABLE_CUTOTUNE", False)
 _SEPARATOR = "."
 _DEFAULT_WARMUP_ITERATIONS = 5
 _BENCHMARK_ITERATIONS = 10
