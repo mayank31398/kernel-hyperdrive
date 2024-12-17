@@ -65,23 +65,20 @@ class _CutoTune:
         else:
             lookup_key = self._get_lookup_key(*args, **kwargs)
 
-            if _DISABLE_CUTOTUNE or torch.compiler.is_compiling():
-                best_config = self.best_configs.get(lookup_key, self.default_config)
-            else:
-                best_config = self.best_configs.get(lookup_key, None)
+            best_config = self.best_configs.get(
+                lookup_key, self.default_config if _DISABLE_CUTOTUNE or torch.compiler.is_compiling() else None
+            )
 
-                if best_config is None:
-                    best_config, best_time, timed_configs = self._cutotune(*args, **kwargs)
-                    self._update_cutotune_cache(lookup_key=lookup_key, timed_configs=timed_configs)
+            if best_config is None:
+                best_config, best_time, timed_configs = self._cutotune(*args, **kwargs)
+                self._update_cutotune_cache(lookup_key=lookup_key, timed_configs=timed_configs)
 
-                    self.best_configs[lookup_key] = best_config
+                self.best_configs[lookup_key] = best_config
 
-                    if _DEBUG_CUTOTUNE and (
-                        not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0
-                    ):
-                        print(
-                            f"config {best_config} achieved the best time ({best_time} sec) for {lookup_key} for function {self.function.__name__}"
-                        )
+                if _DEBUG_CUTOTUNE and (not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0):
+                    print(
+                        f"config {best_config} achieved the best time ({best_time} sec) for {lookup_key} for function {self.function.__name__}"
+                    )
 
         output = self.function(
             **self._get_function_arguments(
