@@ -23,7 +23,7 @@ def get_tensor_metadata() -> list[tuple[torch.dtype, tuple[int]]]:
     metadata_list = []
     for dtype in get_dtypes():
         for size in get_1d_tensor_sizes():
-            metadata_list.append((size, dtype))
+            metadata_list.append(((size,), dtype))
         for size in get_2d_tensor_sizes():
             metadata_list.append((size, dtype))
 
