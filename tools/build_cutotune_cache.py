@@ -37,7 +37,7 @@ def forward_backward(kernel: Callable, *args, **kwargs) -> None:
 
 for metadata in tqdm(get_tensor_metadata()):
     size, dtype = metadata
-    x = torch.randn(size, dtype=dtype, device=torch.cuda.current_device())
+    x = torch.randn(size, dtype=dtype, device=torch.cuda.current_device(), requires_grad=True)
 
     forward_backward(add_scalar_cute, x, 3)
     forward_backward(add_tensor_cute, x, x)
