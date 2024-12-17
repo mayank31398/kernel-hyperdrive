@@ -68,7 +68,7 @@ for size in tqdm(get_1d_tensor_sizes()):
     x = torch.randint(0, 64, (size,), device=torch.cuda.current_device(), dtype=torch.long)
     contiguous_count_cute(x, 64)
 
-for dtype in get_dtypes():
+for dtype in [torch.float32, torch.float16]:
     for input_ids_size in [(51, 17), (19, 239), (7, 7537), (9, 1749)]:
         for weight_size in [(7153, 937), (27153, 1937), (97153, 2937), (17153, 31937)]:
             forward_backward(
