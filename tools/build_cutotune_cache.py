@@ -47,13 +47,18 @@ for metadata in tqdm(get_tensor_metadata()):
     forward_backward(
         rmsnorm_cute,
         x,
-        weight=torch.randn(x.size(-1), dtype=dtype, device=torch.cuda.current_device()),
+        weight=torch.randn(x.size(-1), dtype=dtype, device=torch.cuda.current_device(), requires_grad=True),
         eps=1e-5,
     )
 
     forward_backward(
         swiglu_unchunked_cute,
-        torch.randn((size[0], ceil_divide(size[1], 2) * 2), dtype=metadata[1], device=torch.cuda.current_device()),
+        torch.randn(
+            (size[0], ceil_divide(size[1], 2) * 2),
+            dtype=metadata[1],
+            device=torch.cuda.current_device(),
+            requires_grad=True,
+        ),
     )
 
 for size in tqdm(get_1d_tensor_sizes()):
@@ -68,7 +73,7 @@ for dtype in get_dtypes():
                 input_ids=torch.randint(
                     0, weight_size[0] - 1, input_ids_size, device=torch.cuda.current_device(), dtype=torch.long
                 ),
-                weight=torch.randn(weight_size, device=torch.cuda.current_device(), dtype=dtype),
+                weight=torch.randn(weight_size, device=torch.cuda.current_device(), dtype=dtype, requires_grad=True),
             )
 
 
