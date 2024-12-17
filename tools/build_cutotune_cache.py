@@ -23,7 +23,7 @@ def get_tensor_metadata() -> list[tuple[torch.dtype, tuple[int]]]:
     metadata_list = []
     for dtype in get_dtypes():
         for size in get_1d_tensor_sizes():
-            metadata_list.append(((size,), dtype))
+            metadata_list.append((size, dtype))
         for size in get_2d_tensor_sizes():
             metadata_list.append((size, dtype))
 
@@ -51,15 +51,18 @@ for metadata in tqdm(get_tensor_metadata()):
         eps=1e-5,
     )
 
-    forward_backward(
-        swiglu_unchunked_cute,
-        torch.randn(
-            (size[0], ceil_divide(size[1], 2) * 2),
-            dtype=metadata[1],
-            device=torch.cuda.current_device(),
-            requires_grad=True,
-        ),
-    )
+
+for dtype in get_dtypes():
+    for size in get_2d_tensor_sizes():
+        forward_backward(
+            swiglu_unchunked_cute,
+            torch.randn(
+                (size[0], ceil_divide(size[1], 2) * 2),
+                dtype=metadata[1],
+                device=torch.cuda.current_device(),
+                requires_grad=True,
+            ),
+        )
 
 for size in tqdm(get_1d_tensor_sizes()):
     x = torch.randint(0, 64, (size,), device=torch.cuda.current_device(), dtype=torch.long)
