@@ -1,4 +1,4 @@
-import torch.nn.functional as F
+import torch
 from torch.fx import Node
 from torch.fx.graph_module import GraphModule
 
@@ -7,7 +7,7 @@ from .constants import CALL_FUNCTION
 
 
 def replace_rmsnorm(gm: GraphModule, node: Node) -> None:
-    if node.op == CALL_FUNCTION and node.target == F.rms_norm:
+    if node.op == CALL_FUNCTION and node.target == torch.rms_norm:
         with gm.graph.inserting_after(node):
             new_node = gm.graph.call_function(rmsnorm_cute, args=(node.args[0], node.args[2], node.args[3]))
 
