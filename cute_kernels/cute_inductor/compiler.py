@@ -1,10 +1,9 @@
-import os
 from typing import Callable
 
 import torch
 from torch._dynamo import lookup_backend
 
-from ..utils import get_boolean_env_variable
+from ..utils import get_boolean_env_variable, set_cute_tracing
 from .rmsnorm import replace_rmsnorm
 
 
@@ -16,6 +15,8 @@ class CuteInductor:
         self.use_inductor = use_inductor
 
     def compiler(self, gm: torch.fx.GraphModule, example_inputs: list[torch.Tensor]) -> Callable:
+        set_cute_tracing(True)
+
         if _DEBUG_CUTEINDUCTOR:
             print("graph before cute inductor")
             gm.print_readable()
@@ -32,5 +33,7 @@ class CuteInductor:
             compiled = inductor(gm, example_inputs)
         else:
             compiled = gm.forward
+
+        set_cute_tracing(False)
 
         return compiled
