@@ -14,7 +14,7 @@ from .triton_implementation import rmsnorm_backward_triton
 )
 def _backward(
     x: torch.Tensor,
-    weight: torch.Tensor,
+    weight: torch.Tensor | None,
     eps: float,
     rmsnorm_denominator: torch.Tensor,
     output_grad: torch.Tensor,

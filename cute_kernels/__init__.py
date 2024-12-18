@@ -1,4 +1,5 @@
 from .constants import COMMON_VECTOR_INSTRUCTION_WIDTHS, MAX_FP16_BF16_INSTRUCTION_WIDTH
+from .cute_inductor import CuteInductor
 from .cutotune import (
     CutoTuneConfig,
     CutoTuneParameter,
@@ -29,4 +30,4 @@ from .kernels import (
 )
 from .math import ceil_divide, get_powers_of_2
 from .tensor import CuteTensor
-from .utils import CuteInductor, get_triton_num_warps
+from .utils import get_triton_num_warps

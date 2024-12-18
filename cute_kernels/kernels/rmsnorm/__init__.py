@@ -14,8 +14,8 @@ class _RMSNorm_Cute(torch.autograd.Function):
     def forward(
         ctx,
         x: torch.Tensor,
-        weight: torch.Tensor,
-        eps: float,
+        weight: torch.Tensor | None,
+        eps: float | None,
         memory_efficient: bool,
         kernel_backend_forward: KernelBackend,
         kernel_backend_backward: KernelBackend,
@@ -32,6 +32,9 @@ class _RMSNorm_Cute(torch.autograd.Function):
         is_x_1d = x.dim() == 1
         if is_x_1d:
             x = x.unsqueeze(0)
+
+        if eps is None:
+            eps = torch.finfo(x.dtype).eps
 
         output, rmsnorm_denominator = _forward(
             x=x,
@@ -79,8 +82,8 @@ class _RMSNorm_Cute(torch.autograd.Function):
 
 def rmsnorm_cute(
     x: torch.Tensor,
-    weight: torch.Tensor,
-    eps: float,
+    weight: torch.Tensor | None,
+    eps: float | None,
     memory_efficient: bool = False,
     kernel_backend_forward: KernelBackend = CutoTuneParameter(),
     kernel_backend_backward: KernelBackend = CutoTuneParameter(),

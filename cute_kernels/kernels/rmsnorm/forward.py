@@ -14,7 +14,7 @@ from .triton_implementation import rmsnorm_forward_triton
 )
 def _forward(
     x: torch.Tensor,
-    weight: torch.Tensor,
+    weight: torch.Tensor | None,
     eps: float,
     memory_efficient: bool,
     kernel_backend: KernelBackend,
