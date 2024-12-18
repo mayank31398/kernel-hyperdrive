@@ -197,31 +197,24 @@ class _ScatteredExperts(torch.autograd.Function):
             d_gates = None
             gates_flat = None
             gate_fan = 1
-            grouped_grad_out = None
+            grouped_grad_out = torch.zeros_like(output_expanded)
         else:
             # calculate gates gradient
             d_gates = torch.bmm(output_expanded, grad_out.unsqueeze(2)).squeeze(-1)
             gates_flat = gates.flatten()
             gate_fan = gates.size(1)
             # print("expanded and grouping")
-            grouped_grad_out = output_expanded.flatten(0, 1)  # reuse expanded buffer later
-
-        if grouped_out:
-            grouped_grad_out = grad_out
-        else:
-            group(
-                A=grad_out,
-                sorted_expert_idxs=sorted_scattered_idxs,
-                out=grouped_grad_out,
-                coeff=gates_flat,
-                fan_out=gate_fan,
-            )
+            grouped_grad_out = torch.zeros_like(output_expanded.flatten(0, 1))  # reuse expanded buffer later
+        group(
+            A=grad_out,
+            sorted_expert_idxs=sorted_scattered_idxs,
+            out=grouped_grad_out,
+            coeff=gates_flat,
+            fan_out=gate_fan,
+        )
 
         if grouped_in:
             grouped_x = x
-            d_expanded_input = torch.empty(
-                sorted_expert_idxs.size(0), expert_weights.size(1), device=x.device, dtype=x.dtype
-            )
         else:
             grouped_x = torch.empty(sorted_scattered_idxs.size(0), x.size(1), dtype=x.dtype, device=x.device)
             group(
@@ -231,10 +224,7 @@ class _ScatteredExperts(torch.autograd.Function):
                 fan_out=k,
             )
 
-            d_expanded_input = grouped_x
-
         d_weights = torch.zeros_like(expert_weights)
-
         group_bwd_W(
             DY=grouped_grad_out,
             X=grouped_x,
@@ -243,6 +233,9 @@ class _ScatteredExperts(torch.autograd.Function):
             E=expert_weights.size(0),
         )
 
+        d_expanded_input = torch.empty(
+            sorted_expert_idxs.size(0), expert_weights.size(1), device=x.device, dtype=x.dtype
+        )
         scatter2scatter(
             X=grouped_grad_out,
             W=expert_weights.permute(0, 2, 1),
