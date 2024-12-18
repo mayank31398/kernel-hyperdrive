@@ -7,7 +7,7 @@ from .constants import CALL_FUNCTION
 
 
 def replace_rmsnorm(gm: GraphModule, node: Node) -> None:
-    if node.op != CALL_FUNCTION or node.target != torch.rms_norm:
+    if not (node.op == CALL_FUNCTION and node.target == torch.rms_norm):
         return
 
     # delete normalized_shape from the args (position 1)
