@@ -198,7 +198,7 @@ class _ScatteredExperts(torch.autograd.Function):
             d_gates = None
             gates_flat = None
             gate_fan = 1
-            grouped_grad_out = torch.zeros_like(output_expanded)
+            grouped_grad_out = torch.zeros_like(grad_out)
         else:
             # calculate gates gradient
             d_gates = torch.bmm(output_expanded, grad_out.unsqueeze(2)).squeeze(-1)
