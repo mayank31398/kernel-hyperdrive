@@ -59,6 +59,8 @@ def replace_swiglu_unchunked(gm: GraphModule, node: Node) -> None:
     if not valid:
         return
 
+    print("replacing with swiglu_unchunked_cute")
+
     with gm.graph.inserting_after(node):
         x = node.kwargs.get("input", node.args[0])
         new_node = gm.graph.call_function(swiglu_unchunked_cute, args=(x,))
