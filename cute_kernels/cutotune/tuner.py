@@ -69,9 +69,9 @@ class _CutoTune:
             if not disable_cutotune:
                 self.best_configs[lookup_key] = (best_config, 0)
         else:
-            best_config = self.best_configs.get(lookup_key, self.default_config if disable_cutotune else (None, None))[
-                0
-            ]
+            best_config = self.best_configs.get(
+                lookup_key, (self.default_config, None) if disable_cutotune else (None, None)
+            )[0]
 
             if best_config is None:
                 best_config, best_time, timed_configs = self._cutotune(*args, **kwargs)
