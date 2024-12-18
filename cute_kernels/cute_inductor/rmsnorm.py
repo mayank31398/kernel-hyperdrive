@@ -23,7 +23,7 @@ def replace_rmsnorm(gm: GraphModule, node: Node) -> None:
         kwargs["x"] = input
 
     with gm.graph.inserting_after(node):
-        new_node = gm.graph.call_function(rmsnorm_cute, args=tuple(args), kwargs=kwargs)
+        new_node = gm.graph.call_function(rmsnorm_cute, args=args, kwargs=kwargs)
 
     node.replace_all_uses_with(new_node)
     gm.graph.erase_node(node)
