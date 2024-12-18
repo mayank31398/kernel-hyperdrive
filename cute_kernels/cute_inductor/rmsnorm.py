@@ -10,7 +10,7 @@ def replace_rmsnorm(gm: GraphModule, node: Node) -> None:
     if node.op == CALL_FUNCTION and node.target == torch.rms_norm:
         with gm.graph.inserting_after(node):
             args = list(node.args)
-            kwargs = node.kwargs
+            kwargs = dict(node.kwargs)
 
             # delete normalized_shape from the args
             if len(args) > 1:
