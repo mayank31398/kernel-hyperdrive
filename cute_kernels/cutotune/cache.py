@@ -93,7 +93,7 @@ class _CutoTuneCache:
                 for i, config_time in enumerate(config_time_list):
                     config = config_time["config"]
                     time = config_time["time"]
-                    config = {key: _deserialize(key, value) for key, value in config.get_key_values().items()}
+                    config = CutoTuneConfig({key: _deserialize(key, value) for key, value in config.items()})
 
                     config_time_list[i] = [config, time]
 
