@@ -2,7 +2,6 @@ import os
 from typing import Callable
 
 import torch
-import torch.nn.functional as F
 from torch._dynamo import lookup_backend
 
 from .rmsnorm import replace_rmsnorm
