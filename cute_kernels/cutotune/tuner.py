@@ -213,7 +213,7 @@ class _CutoTune:
             for variable_name, func in self.functional_triggers.items():
                 lookup_key.append(f"{variable_name} = {func(**kwargs)}")
 
-        return str(lookup_key)
+        return str(lookup_key)[1:-1]
 
     def _run_benchmark(self, **kwargs: dict) -> float:
         device_synchronize()
