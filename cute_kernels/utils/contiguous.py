@@ -4,10 +4,6 @@ import torch
 from torch.utils._pytree import tree_map
 
 
-def is_hip() -> bool:
-    return torch.version.hip is not None
-
-
 def make_contiguous(x: Any) -> Any:
     return x.contiguous() if isinstance(x, torch.Tensor) else x
 

@@ -4,8 +4,16 @@ from typing import Callable, Iterable, Sequence
 import torch
 
 
+_IS_CUTE_TRACING = False
+
+
+def set_cute_tracing(enable: bool) -> None:
+    global _IS_CUTE_TRACING
+    _IS_CUTE_TRACING = enable
+
+
 def _dispatch(func: Callable, compileable_fn: Callable, *args, **kwargs):
-    if torch.compiler.is_compiling():
+    if _IS_CUTE_TRACING or torch.compiler.is_compiling():
         output = compileable_fn(*args, **kwargs)
     else:
         output = func(*args, **kwargs)
@@ -32,6 +40,7 @@ def cute_op(
             return _dispatch(func, compileable_func, *args, **kwargs)
 
         _run.__signature__ = inspect.signature(func)
+        _run.__name__ = func.__name__
 
         return _run
 

@@ -1,7 +1,8 @@
 import torch
 
+from ...cutotune import CutoTuneParameter
 from ...enums import KernelBackend
-from ...utils import CutoTuneParameter, ensure_contiguous
+from ...utils import ensure_contiguous
 from .backward import _backward
 from .forward import _forward
 from .torch_implementation import swiglu_torch

@@ -16,7 +16,7 @@ _SEED = 42
 class RMSNormTest(TestCommons):
     @parameterized.expand(
         TestCommons.make_args_matrix(
-            TestCommons.get_2d_tensor_sizes(400),  # size
+            list(TestCommons.get_1d_tensor_sizes()) + list(TestCommons.get_2d_tensor_sizes(400)),  # size
             [torch.device("cuda")],  # device
             [torch.float32, torch.float16],  # dtype
             [True, False],  # memory_efficient
@@ -34,6 +34,9 @@ class RMSNormTest(TestCommons):
         function: Callable,
     ) -> None:
         set_seed(_SEED)
+
+        if isinstance(size, int):
+            size = (size,)
 
         x_kernel, x_expected = self.get_random_duplicated_tensors(size, device=device, dtype=dtype)
 

@@ -1,8 +1,9 @@
 import torch
 
 from ...constants import MAX_TRITON_BLOCK_SIZE
+from ...cutotune import CutoTuneConfig, cutotune
 from ...enums import KernelBackend
-from ...utils import CutoTuneConfig, cutotune, get_next_power_of_2
+from ...math import get_next_power_of_2
 from .triton_implementation import rmsnorm_backward_triton
 
 
@@ -13,11 +14,10 @@ from .triton_implementation import rmsnorm_backward_triton
 )
 def _backward(
     x: torch.Tensor,
-    weight: torch.Tensor,
+    weight: torch.Tensor | None,
     eps: float,
     rmsnorm_denominator: torch.Tensor,
     output_grad: torch.Tensor,
-    memory_efficient: bool,
     kernel_backend: KernelBackend,
     BLOCK_SIZE_B: int,
     BLOCK_SIZE_H: int,
@@ -37,7 +37,6 @@ def _backward(
             rmsnorm_denominator=rmsnorm_denominator,
             x_grad=x_grad,
             eps=eps,
-            memory_efficient=memory_efficient,
             BLOCK_SIZE_B=BLOCK_SIZE_B,
             BLOCK_SIZE_H=BLOCK_SIZE_H,
         )

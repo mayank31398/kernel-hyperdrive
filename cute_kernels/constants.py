@@ -1,7 +1,7 @@
 import torch
 import triton.language as tl
 
-from .utils import get_powers_of_2
+from .math import get_powers_of_2
 
 
 LIBRARY_NAME = "cute"

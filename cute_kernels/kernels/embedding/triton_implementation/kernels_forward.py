@@ -3,7 +3,8 @@ import triton
 import triton.language as tl
 
 from ....constants import LIBRARY_NAME
-from ....utils import ceil_divide, cute_op
+from ....math import ceil_divide
+from ....utils import cute_op
 
 
 _KERNEL_NAME = "embedding_forward_triton"
