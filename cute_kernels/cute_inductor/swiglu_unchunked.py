@@ -2,10 +2,10 @@ import operator
 
 import torch
 import torch.nn.functional as F
-from torch.fx import Node, symbolic_trace
+from torch.fx import Node
 from torch.fx.graph_module import GraphModule
 
-from ..kernels import swiglu_unchunked_cute, swiglu_unchunked_torch
+from ..kernels import swiglu_unchunked_cute
 from .constants import CALL_FUNCTION, CALL_METHOD
 
 
