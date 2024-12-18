@@ -61,13 +61,17 @@ class _CutoTune:
         override_cutotune_parameters = self._check_all_or_no_args_are_cutotune_parameters(*args, **kwargs)
         lookup_key = self._get_lookup_key(*args, **kwargs)
 
+        disable_cutotune = _DISABLE_CUTOTUNE or torch.compiler.is_compiling()
+
         if len(self.configs) == 1:
             best_config = self.configs[0]
-            self.best_configs[lookup_key] = (best_config, 0)
+
+            if not disable_cutotune:
+                self.best_configs[lookup_key] = (best_config, 0)
         else:
-            best_config = self.best_configs.get(
-                lookup_key, self.default_config if _DISABLE_CUTOTUNE or torch.compiler.is_compiling() else (None, None)
-            )[0]
+            best_config = self.best_configs.get(lookup_key, self.default_config if disable_cutotune else (None, None))[
+                0
+            ]
 
             if best_config is None:
                 best_config, best_time, timed_configs = self._cutotune(*args, **kwargs)
