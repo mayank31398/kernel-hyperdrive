@@ -4,10 +4,11 @@ from typing import Callable
 import torch
 from torch._dynamo import lookup_backend
 
+from ..utils import get_boolean_env_variable
 from .rmsnorm import replace_rmsnorm
 
 
-_DEBUG_CUTEINDUCTOR = bool(os.getenv("DEBUG_CUTEINDUCTOR", 0))
+_DEBUG_CUTEINDUCTOR = get_boolean_env_variable("DEBUG_CUTEINDUCTOR", False)
 
 
 class CuteInductor:
