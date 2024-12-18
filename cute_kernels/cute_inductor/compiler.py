@@ -8,7 +8,7 @@ from .rmsnorm import replace_rmsnorm
 from .swiglu_unchunked import replace_swiglu_unchunked
 
 
-_DEBUG_CUTEINDUCTOR = get_boolean_env_variable("DEBUG_CUTEINDUCTOR", False)
+_DEBUG_CUTEINDUCTOR = get_boolean_env_variable("DEBUG_CUTEINDUCTOR", True)
 
 
 class CuteInductor:
