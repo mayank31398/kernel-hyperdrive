@@ -5,7 +5,6 @@ from torch._dynamo import lookup_backend
 
 from ..utils import get_boolean_env_variable, set_cute_tracing
 from .rmsnorm import replace_rmsnorm
-from .swiglu import replace_swiglu
 from .swiglu_unchunked import replace_swiglu_unchunked
 
 
@@ -16,7 +15,7 @@ class CuteInductor:
     def __init__(
         self,
         use_torch_inductor_after_cute_inductor: bool = True,
-        replace_functions=[replace_rmsnorm, replace_swiglu_unchunked, replace_swiglu],
+        replace_functions=[replace_rmsnorm, replace_swiglu_unchunked],
     ) -> None:
         self.use_torch_inductor_after_cute_inductor = use_torch_inductor_after_cute_inductor
         self.replace_functions = replace_functions

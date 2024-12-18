@@ -1,5 +1,4 @@
 import inspect
-import os
 from collections import defaultdict
 from time import perf_counter
 from typing import Any, Callable
@@ -54,7 +53,7 @@ class _CutoTune:
         if self.in_place_op:
             raise NotImplementedError()
 
-        self.function_hash = f"{os.path.relpath(inspect.stack()[2].filename, 'cute_kernels')}->{function.__name__}"
+        self.function_hash = f"{inspect.stack()[2].filename.split('cute_kernels')[1][1:]}->{function.__name__}"
         self.best_configs = get_cutotune_cache().get_best_configs(self.function_hash)
 
     def __call__(self, *args, **kwargs) -> Any:
