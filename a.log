@@ -1,0 +1,50 @@
+class GraphModule(torch.nn.Module):
+    def forward(self, L_x_: "f32[8, 8]"):
+        l_x_ = L_x_
+        
+         # File: /u/mayank98/miniconda3/envs/ai/lib/python3.11/site-packages/torch/nn/functional.py:2929 in rms_norm, code: return torch.rms_norm(input, normalized_shape, weight, eps)
+        x: "f32[8, 8]" = torch.rms_norm(l_x_, (8,), None, 1e-05);  l_x_ = None
+        
+         # File: /u/mayank98/scratch/kernel-hyperdrive/a.py:10 in forward, code: x = F.rms_norm(x, (x.size(-1),), torch.randn(x.size(-1), device=x.device), eps=eps)
+        randn: "f32[8]" = torch.randn(8, device = device(type='cuda', index=0))
+        
+         # File: /u/mayank98/miniconda3/envs/ai/lib/python3.11/site-packages/torch/nn/functional.py:2929 in rms_norm, code: return torch.rms_norm(input, normalized_shape, weight, eps)
+        x_1: "f32[8, 8]" = torch.rms_norm(x, (8,), randn, 1e-05);  x = randn = None
+        
+         # File: /u/mayank98/scratch/kernel-hyperdrive/a.py:11 in forward, code: x = x * 3
+        x_2: "f32[8, 8]" = x_1 * 3;  x_1 = None
+        
+         # File: /u/mayank98/scratch/kernel-hyperdrive/a.py:12 in forward, code: x = F.rms_norm(x, (x.size(-1),), torch.randn(x.size(-1), device=x.device), eps=eps)
+        randn_1: "f32[8]" = torch.randn(8, device = device(type='cuda', index=0))
+        
+         # File: /u/mayank98/miniconda3/envs/ai/lib/python3.11/site-packages/torch/nn/functional.py:2929 in rms_norm, code: return torch.rms_norm(input, normalized_shape, weight, eps)
+        x_3: "f32[8, 8]" = torch.rms_norm(x_2, (8,), randn_1, 1e-05);  x_2 = randn_1 = None
+        
+         # File: /u/mayank98/scratch/kernel-hyperdrive/a.py:13 in forward, code: x = x.chunk(2, -1)
+        chunk = x_3.chunk(2, -1);  x_3 = None
+        x_4: "f32[8, 4]" = chunk[0]
+        y: "f32[8, 4]" = chunk[1];  chunk = None
+        
+         # File: /u/mayank98/scratch/kernel-hyperdrive/a.py:16 in forward, code: y = F.silu(y) * x
+        silu: "f32[8, 4]" = torch.nn.functional.silu(y);  y = None
+        y_1: "f32[8, 4]" = silu * x_4;  silu = x_4 = None
+        
+         # File: /u/mayank98/scratch/kernel-hyperdrive/a.py:17 in forward, code: x = F.rms_norm(y, (x.size(-1),), torch.randn(x.size(-1), device=x.device), eps=eps)
+        randn_2: "f32[4]" = torch.randn(4, device = device(type='cuda', index=0))
+        
+         # File: /u/mayank98/miniconda3/envs/ai/lib/python3.11/site-packages/torch/nn/functional.py:2929 in rms_norm, code: return torch.rms_norm(input, normalized_shape, weight, eps)
+        x_5: "f32[8, 4]" = torch.rms_norm(y_1, (4,), randn_2, 1e-05);  randn_2 = None
+        
+         # File: /u/mayank98/scratch/kernel-hyperdrive/a.py:18 in forward, code: y = F.rms_norm(y, (x.size(-1),), torch.randn(x.size(-1), device=x.device), eps=eps)
+        randn_3: "f32[4]" = torch.randn(4, device = device(type='cuda', index=0))
+        
+         # File: /u/mayank98/miniconda3/envs/ai/lib/python3.11/site-packages/torch/nn/functional.py:2929 in rms_norm, code: return torch.rms_norm(input, normalized_shape, weight, eps)
+        y_2: "f32[8, 4]" = torch.rms_norm(y_1, (4,), randn_3, 1e-05);  y_1 = randn_3 = None
+        
+         # File: /u/mayank98/scratch/kernel-hyperdrive/a.py:19 in forward, code: y = torch.rms_norm(input=y, normalized_shape=(x.size(-1),), weight=torch.randn(x.size(-1), device=x.device), eps=eps)
+        randn_4: "f32[4]" = torch.randn(4, device = device(type='cuda', index=0))
+        y_3: "f32[8, 4]" = torch.rms_norm(input = y_2, normalized_shape = (4,), weight = randn_4, eps = 1e-05);  y_2 = randn_4 = None
+        
+         # File: /u/mayank98/scratch/kernel-hyperdrive/a.py:21 in forward, code: return x + y
+        add: "f32[8, 4]" = x_5 + y_3;  x_5 = y_3 = None
+        return (add,)
