@@ -8,7 +8,9 @@ from ....constants import (
     MAX_TRITON_BLOCK_SIZE,
     TORCH_TO_TRITON_DTYPE,
 )
-from ....utils import CutoTuneConfig, ceil_divide, cute_op, cutotune, get_powers_of_2
+from ....cutotune import CutoTuneConfig, cutotune
+from ....math import ceil_divide, get_powers_of_2
+from ....utils import cute_op
 
 
 _KERNEL_NAME = "rmsnorm_forward_triton"
@@ -78,7 +80,6 @@ def rmsnorm_forward_triton(
     weight: torch.Tensor | None,
     output: torch.Tensor,
     eps: float,
-    memory_efficient: bool,
     rmsnorm_denominator: torch.Tensor | None,
     BLOCK_SIZE_B: int,
     BLOCK_SIZE_H: int,
@@ -96,7 +97,7 @@ def rmsnorm_forward_triton(
             weight_ptr=weight,
             output_ptr=output,
             eps=eps,
-            memory_efficient=memory_efficient,
+            memory_efficient=rmsnorm_denominator is None,
             rmsnorm_denominator_ptr=rmsnorm_denominator,
             B=num_elements,
             H=hidden_size,

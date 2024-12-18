@@ -1,8 +1,9 @@
 import torch
 
 from ...constants import MAX_TRITON_BLOCK_SIZE
+from ...cutotune import CutoTuneConfig, cutotune
 from ...enums import KernelBackend
-from ...utils import CutoTuneConfig, cutotune, get_next_power_of_2
+from ...math import get_next_power_of_2
 from .triton_implementation import rmsnorm_forward_triton
 
 
@@ -35,7 +36,6 @@ def _forward(
             weight=weight,
             output=output,
             eps=eps,
-            memory_efficient=memory_efficient,
             rmsnorm_denominator=rmsnorm_denominator,
             BLOCK_SIZE_B=BLOCK_SIZE_B,
             BLOCK_SIZE_H=BLOCK_SIZE_H,

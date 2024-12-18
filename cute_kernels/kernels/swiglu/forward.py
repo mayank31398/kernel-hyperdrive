@@ -6,8 +6,8 @@ from ...constants import (
     COMMON_VECTOR_INSTRUCTION_WIDTHS,
     MAX_FP16_BF16_INSTRUCTION_WIDTH,
 )
+from ...cutotune import CutoTuneConfig, cutotune, get_cartesian_product_cutotune_configs
 from ...enums import KernelBackend
-from ...utils import CutoTuneConfig, cutotune, get_cartesian_product_cutotune_configs
 from .cuda_implementation import swiglu_forward_cuda
 from .triton_implementation import swiglu_forward_triton
 

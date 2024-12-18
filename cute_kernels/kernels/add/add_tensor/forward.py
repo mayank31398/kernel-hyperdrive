@@ -7,8 +7,8 @@ from ....constants import (
     MAX_CUDA_BLOCK_SIZE,
     MAX_FP16_BF16_INSTRUCTION_WIDTH,
 )
+from ....cutotune import CutoTuneConfig, cutotune, get_cartesian_product_cutotune_configs
 from ....enums import KernelBackend
-from ....utils import CutoTuneConfig, cutotune, get_cartesian_product_cutotune_configs
 from .cuda_implementation import add_tensor_forward_cuda
 from .triton_implementation import add_tensor_forward_triton
 

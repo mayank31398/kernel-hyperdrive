@@ -1,7 +1,8 @@
 import torch
 
+from ....cutotune import CutoTuneParameter
 from ....enums import KernelBackend
-from ....utils import CutoTuneParameter, ensure_same_strides
+from ....utils import ensure_same_strides
 from .forward import _forward
 from .torch_implementation import add_tensor_torch
 
