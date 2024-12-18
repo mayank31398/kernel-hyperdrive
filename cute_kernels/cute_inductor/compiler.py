@@ -5,6 +5,7 @@ from torch._dynamo import lookup_backend
 
 from ..utils import get_boolean_env_variable, set_cute_tracing
 from .rmsnorm import replace_rmsnorm
+from .swiglu_unchunked import replace_swiglu_unchunked
 
 
 _DEBUG_CUTEINDUCTOR = get_boolean_env_variable("DEBUG_CUTEINDUCTOR", False)
@@ -23,6 +24,7 @@ class CuteInductor:
 
         for node in gm.graph.nodes:
             replace_rmsnorm(gm, node)
+            replace_swiglu_unchunked(gm, node)
 
         if _DEBUG_CUTEINDUCTOR:
             print("graph after cute inductor")
