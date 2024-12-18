@@ -6,9 +6,8 @@ from transformers import set_seed
 from cute_kernels import (
     add_scalar_cute,
     add_tensor_cute,
-    ceil_divide,
-    contiguous_count_cute,
     embedding_cute,
+    get_powers_of_2,
     rmsnorm_cute,
     save_cutotune_cache,
     swiglu_cute,
@@ -32,23 +31,25 @@ for dtype in [torch.float32, torch.float16, torch.bfloat16]:
         forward_backward(add_tensor_cute, x, x)
         forward_backward(swiglu_cute, x, x)
 
-        # forward_backward(rmsnorm_cute, x, weight=None, eps=1e-5)
-        # forward_backward(
-        #     rmsnorm_cute,
-        #     x,
-        #     weight=torch.randn(x.size(-1), dtype=dtype, device=torch.cuda.current_device(), requires_grad=True),
-        #     eps=1e-5,
-        # )
-
     for size in [(81920, 8192)]:
         forward_backward(
             swiglu_unchunked_cute,
             torch.randn(size, dtype=dtype, device=torch.cuda.current_device(), requires_grad=True),
         )
 
-# for size in tqdm(get_1d_tensor_sizes()):
-#     x = torch.randint(0, 64, (size,), device=torch.cuda.current_device(), dtype=torch.long)
-#     contiguous_count_cute(x, 64)
+
+for dtype in [torch.float32, torch.float16, torch.bfloat16]:
+    for power_of_2 in get_powers_of_2(1, 65536):
+        size = (8192, power_of_2)
+        x = torch.randn(size, dtype=dtype, device=torch.cuda.current_device(), requires_grad=True)
+
+        forward_backward(rmsnorm_cute, x, weight=None, eps=1e-5)
+        forward_backward(
+            rmsnorm_cute,
+            x,
+            weight=torch.randn(x.size(-1), dtype=dtype, device=torch.cuda.current_device(), requires_grad=True),
+            eps=1e-5,
+        )
 
 for dtype in [torch.float32, torch.float16]:
     for input_ids_size in [(32, 4096)]:
