@@ -3,9 +3,9 @@ import torch
 from ...constants import MAX_TRITON_BLOCK_SIZE
 from ...cutotune import CutoTuneConfig, cutotune, get_cartesian_product_cutotune_configs
 from ...enums import KernelBackend
-from ...math import ceil_divide, get_powers_of_2
+from ...math import get_powers_of_2
 from ...utils import CutoTuneConfig, cutotune, get_cartesian_product_cutotune_configs
-from .cuda_implementation import embedding_forward_cuda_kernel
+from .cuda_implementation import embedding_forward_cuda
 from .triton_implementation import embedding_forward_triton
 
 
@@ -41,7 +41,7 @@ def _forward(
         assert input_ids.is_cuda
         assert weight.is_cuda
 
-        embedding_forward_cuda_kernel(
+        embedding_forward_cuda(
             input_ids=input_ids,
             weight=weight,
             output=output,
