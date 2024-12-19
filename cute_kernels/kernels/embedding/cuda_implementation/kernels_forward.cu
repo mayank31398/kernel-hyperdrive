@@ -11,11 +11,11 @@ template <typename scalar_t, typename vector_t>
 __global__ void _embedding_forward_cuda_kernel(const scalar_t *input_ids,
                                                const scalar_t *weight,
                                                scalar_t *output,
-                                               const int64_t &num_elements,
+                                               const uint64 &num_elements,
                                                const int &BLOCK_SIZE_B,
                                                const int &BLOCK_SIZE_H) {
     constexpr int vector_instruction_width = sizeof(vector_t) / sizeof(scalar_t);
-    const int64_t thread_id = get_global_thread_id();
+    const uint64 thread_id = get_global_thread_id();
 
     using dtype = DType<scalar_t>;
 }
@@ -25,7 +25,7 @@ void embedding_forward_cuda(const torch::Tensor &input_ids,
                             torch::Tensor output,
                             const int &BLOCK_SIZE_B,
                             const int &BLOCK_SIZE_H) {
-    const int64_t num_elements = gate.numel();
+    const uint64 num_elements = gate.numel();
 
     AT_DISPATCH_CUSTOM_FLOAT_TYPES(gate.scalar_type(), "embedding_forward_cuda_kernel", ([&] {
                                        const int num_elements_per_block = BLOCK_SIZE * vector_instruction_width;
