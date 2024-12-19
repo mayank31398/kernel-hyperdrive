@@ -10,7 +10,7 @@ template <typename scalar_t, typename vector_t>
 __global__ void _add_tensor_forward_cuda_kernel(const scalar_t *x,
                                                 const scalar_t *y,
                                                 scalar_t *output,
-                                                const int64_t num_elements) {
+                                                const uint64 num_elements) {
     constexpr int vector_instruction_width = sizeof(vector_t) / sizeof(scalar_t);
     static_assert(vector_instruction_width == 1 || vector_instruction_width == 2 || vector_instruction_width == 4 ||
                   vector_instruction_width == 8);
@@ -103,7 +103,7 @@ void add_tensor_forward_cuda(const torch::Tensor &x,
                              const int &BLOCK_SIZE) {
     assert(BLOCK_SIZE % WARP_SIZE == 0);
 
-    const int64_t num_elements = x.numel();
+    const uint64 num_elements = x.numel();
 
     const int num_elements_per_block = BLOCK_SIZE * vector_instruction_width;
     const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;

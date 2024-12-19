@@ -4,11 +4,19 @@ from ...constants import MAX_TRITON_BLOCK_SIZE
 from ...cutotune import CutoTuneConfig, cutotune, get_cartesian_product_cutotune_configs
 from ...enums import KernelBackend
 from ...math import get_powers_of_2
+from ...utils import CutoTuneConfig, cutotune, get_cartesian_product_cutotune_configs
+from .cuda_implementation import embedding_forward_cuda
 from .triton_implementation import embedding_forward_triton
 
 
 @cutotune(
     configs=get_cartesian_product_cutotune_configs(
+        kernel_backend=[KernelBackend.cuda],
+        BLOCK_SIZE_B=get_powers_of_2(1, 32),
+        BLOCK_SIZE_H=get_powers_of_2(32, 1024),
+        condition=lambda **kwargs: kwargs["BLOCK_SIZE_B"] * kwargs["BLOCK_SIZE_H"] <= 1024,
+    )
+    + get_cartesian_product_cutotune_configs(
         kernel_backend=[KernelBackend.triton],
         BLOCK_SIZE_B=get_powers_of_2(128, MAX_TRITON_BLOCK_SIZE),
         BLOCK_SIZE_H=get_powers_of_2(128, MAX_TRITON_BLOCK_SIZE),
@@ -29,7 +37,18 @@ def _forward(
 
     output = torch.empty(num_elements, hidden_size, dtype=weight.dtype, device=input_ids.device)
 
-    if kernel_backend == KernelBackend.triton:
+    if kernel_backend == KernelBackend.cuda:
+        assert input_ids.is_cuda
+        assert weight.is_cuda
+
+        embedding_forward_cuda(
+            input_ids=input_ids,
+            weight=weight,
+            output=output,
+            BLOCK_SIZE_B=BLOCK_SIZE_B,
+            BLOCK_SIZE_H=BLOCK_SIZE_H,
+        )
+    elif kernel_backend == KernelBackend.triton:
         embedding_forward_triton(
             input_ids=input_ids, weight=weight, output=output, BLOCK_SIZE_B=BLOCK_SIZE_B, BLOCK_SIZE_H=BLOCK_SIZE_H
         )
