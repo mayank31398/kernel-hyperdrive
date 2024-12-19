@@ -3,8 +3,8 @@
 #include <cuda_runtime.h>
 #include <torch/extension.h>
 
-#include "../../../utils/dtypes.h"
-#include "../../../utils/threads.h"
+#include "../../../../include/dtypes/all.h"
+#include "../../../../include/threads.h"
 
 template <typename scalar_t, typename vector_t>
 __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
@@ -12,19 +12,23 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
                                                 scalar_t *output,
                                                 const int64_t num_elements) {
     constexpr int vector_instruction_width = sizeof(vector_t) / sizeof(scalar_t);
-    const int64_t thread_id = get_global_thread_id();
+    static_assert(vector_instruction_width == 1 || vector_instruction_width == 2 || vector_instruction_width == 4 ||
+                  vector_instruction_width == 8);
+
+    using dtype = DType<scalar_t>;
+    using T = typename dtype::nv_dtype;
+    using T2 = typename dtype::nv_dtype2;
+
+    const uint64 thread_id = get_global_thread_id();
 
     if constexpr (vector_instruction_width == 1) {
         if (thread_id < num_elements) {
             output[thread_id] = x[thread_id] + y;
         }
     } else {
-        using dtype = DType<scalar_t>;
+        uint64 end = (thread_id + 1) * vector_instruction_width - 1;  // inclusive of last element
 
-        const int64_t start = thread_id * vector_instruction_width;
-        const int64_t end = (thread_id + 1) * vector_instruction_width - 1;  // inclusive of last element
-
-        if (start < num_elements && end < num_elements) {
+        if (end < num_elements) {
             vector_t *output_vec = (vector_t *)output;
 
             if constexpr (std::is_same_v<scalar_t, fp32>) {
@@ -46,8 +50,6 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
                     static_assert("vector_instruction_width is invalid for fp32");
                 }
             } else {
-                using T2 = typename dtype::nv_dtype2;
-
                 if constexpr (vector_instruction_width == 2) {
                     const T2 _x = ((vector_t *)x)[thread_id];
                     fp32_2 _x_upcast = dtype::upcast(_x);
@@ -57,7 +59,7 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
                 } else {
                     const fp32 *x_vec = (fp32 *)&((vector_t *)x)[thread_id];
 
-                    const int n = vector_instruction_width >> 1;
+                    constexpr int n = vector_instruction_width >> 1;
                     fp32 output_buffer[n];
 
                     // clang-format off
@@ -78,12 +80,14 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
                     }
                 }
             }
-        } else if (start < num_elements) {
-            // clang-format off
-            #pragma unroll
-            // clang-format on
-            for (int64_t i = start; i < num_elements; i++) {
-                output[i] = x[i] + y;
+        }
+
+        // use first warp for computing the last elements
+        if (thread_id < WARP_SIZE) {
+            // NOTE end is same as start since we don't use vector load stores here
+            end = (num_elements / vector_instruction_width) * vector_instruction_width + thread_id;
+            if (end < num_elements) {
+                output[end] = x[end] + y;
             }
         }
     }
@@ -91,16 +95,18 @@ __global__ void _add_scalar_forward_cuda_kernel(const scalar_t *x,
 
 void add_scalar_forward_cuda(const torch::Tensor &x,
                              const float &y,
-                             torch::Tensor output,
+                             torch::Tensor &output,
                              const int &vector_instruction_width,
                              const int &BLOCK_SIZE) {
+    assert(BLOCK_SIZE % WARP_SIZE == 0);
+
     const int64_t num_elements = x.numel();
+
+    const int num_elements_per_block = BLOCK_SIZE * vector_instruction_width;
+    const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
 
     AT_DISPATCH_CUSTOM_FLOAT_TYPES(
         x.scalar_type(), "add_scalar_forward_cuda_kernel", ([&] {
-            const int num_elements_per_block = BLOCK_SIZE * vector_instruction_width;
-            const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
-
             switch (vector_instruction_width) {
                 case 1:
                     _add_scalar_forward_cuda_kernel<scalar_t, scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(
@@ -122,7 +128,8 @@ void add_scalar_forward_cuda(const torch::Tensor &x,
                     break;
                 case 8:
                     if constexpr (std::is_same_v<scalar_t, fp32>) {
-                        throw std::runtime_error("fp32 doesn't support vector_instruction_width = 8");
+                        _add_scalar_forward_cuda_kernel<scalar_t, fp64_4><<<NUM_BLOCKS, BLOCK_SIZE>>>(
+                            x.data_ptr<scalar_t>(), y, output.data_ptr<scalar_t>(), num_elements);
                     } else {
                         _add_scalar_forward_cuda_kernel<scalar_t, fp32_4><<<NUM_BLOCKS, BLOCK_SIZE>>>(
                             x.data_ptr<scalar_t>(), y, output.data_ptr<scalar_t>(), num_elements);

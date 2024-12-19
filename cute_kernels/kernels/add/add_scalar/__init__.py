@@ -1,7 +1,7 @@
 import torch
 
+from ....cutotune import CutoTuneParameter
 from ....enums import KernelBackend
-from ....utils import CutoTuneParameter
 from .forward import _forward
 from .torch_implementation import add_scalar_torch
 

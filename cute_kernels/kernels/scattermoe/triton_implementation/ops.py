@@ -3,6 +3,7 @@ import triton
 import triton.language as tl
 
 from ....constants import LIBRARY_NAME
+from ....math import ceil_divide
 from ....utils import cute_op
 from .kernels import group_triton_kernel, groupXtY_triton_kernel, scatter2scatter_triton_kernel
 
@@ -29,7 +30,7 @@ def scatter2scatter(
     assert out.size(1) == W.size(-1)
 
     grid = lambda meta: (
-        triton.cdiv(sorted_expert_idxs.size(0), meta["BLOCK_M"]) * triton.cdiv(meta["N"], meta["BLOCK_N"]),
+        ceil_divide(sorted_expert_idxs.size(0), meta["BLOCK_M"]) * ceil_divide(meta["N"], meta["BLOCK_N"]),
     )
 
     with torch.device(X.device):
@@ -65,7 +66,7 @@ def scatter2scatter(
 # custom op is needed because of https://github.com/pytorch/pytorch/issues/136394
 @cute_op(f"{LIBRARY_NAME}::group_bwd_W", mutates_args={"DW"})
 def group_bwd_W(DY: torch.Tensor, X: torch.Tensor, expert_offsets: torch.Tensor, DW: torch.Tensor, E: int) -> None:
-    grid = lambda meta: (E * triton.cdiv(meta["K"], meta["BLOCK_K"]), triton.cdiv(meta["N"], meta["BLOCK_N"]))
+    grid = lambda meta: (E * ceil_divide(meta["K"], meta["BLOCK_K"]), ceil_divide(meta["N"], meta["BLOCK_N"]))
 
     with torch.device(X.device):
         groupXtY_triton_kernel[grid](

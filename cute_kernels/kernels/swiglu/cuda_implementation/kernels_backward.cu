@@ -3,9 +3,9 @@
 #include <cuda_runtime.h>
 #include <torch/extension.h>
 
-#include "../../utils/activations.h"
-#include "../../utils/dtypes.h"
-#include "../../utils/threads.h"
+#include "../../../include/activations.h"
+#include "../../../include/dtypes/all.h"
+#include "../../../include/threads.h"
 
 __device__ void _swiglu_backward_helper_bf16_fp16_vectorized(fp32_2 &_gate_upcast,
                                                              fp32_2 &_up_upcast,
@@ -33,8 +33,10 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
                                              scalar_t *up_grad,
                                              const int64_t num_elements) {
     constexpr int vector_instruction_width = sizeof(vector_t) / sizeof(scalar_t);
-    const int64_t thread_id = get_global_thread_id();
+    static_assert(vector_instruction_width == 1 || vector_instruction_width == 2 || vector_instruction_width == 4 ||
+                  vector_instruction_width == 8);
 
+    const int64_t thread_id = get_global_thread_id();
     using dtype = DType<scalar_t>;
 
     if constexpr (vector_instruction_width == 1) {
@@ -52,10 +54,9 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
         using T = typename dtype::nv_dtype;
         using T2 = typename dtype::nv_dtype2;
 
-        const int64_t start = thread_id * vector_instruction_width;
-        const int64_t end = (thread_id + 1) * vector_instruction_width - 1;  // inclusive of last element
+        int64_t end = (thread_id + 1) * vector_instruction_width - 1;  // inclusive of last element
 
-        if (start < num_elements && end < num_elements) {
+        if (end < num_elements) {
             vector_t *gate_grad_vec = (vector_t *)gate_grad;
             vector_t *up_grad_vec = (vector_t *)up_grad;
 
@@ -139,19 +140,21 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
                     }
                 }
             }
-        } else if (start < num_elements) {
-            // clang-format off
-            #pragma unroll
-            // clang-format on
-            for (int i = start; i < num_elements; i++) {
-                fp32 _gate_upcast = dtype::upcast(gate[i]);
+        }
+
+        // use first warp for computing the last elements
+        if (thread_id < WARP_SIZE) {
+            // NOTE end is same as start since we don't use vector load stores here
+            end = (num_elements / vector_instruction_width) * vector_instruction_width + thread_id;
+            if (end < num_elements) {
+                fp32 _gate_upcast = dtype::upcast(gate[end]);
 
                 fp32 _gate_sigmoid = sigmoid<fp32, fp32>(_gate_upcast);
                 fp32 _gate_silu = _gate_upcast * _gate_sigmoid;
 
-                gate_grad[i] =
-                    dtype::downcast(output_grad[i] * up[i] * (_gate_sigmoid + _gate_silu * (1 - _gate_sigmoid)));
-                up_grad[i] = dtype::downcast(output_grad[i] * _gate_silu);
+                gate_grad[end] =
+                    dtype::downcast(output_grad[end] * up[end] * (_gate_sigmoid + _gate_silu * (1 - _gate_sigmoid)));
+                up_grad[end] = dtype::downcast(output_grad[end] * _gate_silu);
             }
         }
     }
@@ -160,8 +163,8 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
 void swiglu_backward_cuda(const torch::Tensor &gate,
                           const torch::Tensor &up,
                           const torch::Tensor &output_grad,
-                          torch::Tensor gate_grad,
-                          torch::Tensor up_grad,
+                          torch::Tensor &gate_grad,
+                          torch::Tensor &up_grad,
                           const int &vector_instruction_width,
                           const int &BLOCK_SIZE) {
     const int64_t num_elements = gate.numel();

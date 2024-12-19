@@ -1,10 +1,7 @@
 from typing import Any, Callable
 
 import torch
-
-
-def is_hip() -> bool:
-    return torch.version.hip is not None
+from torch.utils._pytree import tree_map
 
 
 def make_contiguous(x: Any) -> Any:
@@ -12,12 +9,9 @@ def make_contiguous(x: Any) -> Any:
 
 
 def ensure_contiguous(func: Callable) -> Callable:
-    def _contiguous(x):
-        return x.contiguous() if isinstance(x, torch.Tensor) else x
-
     def inner(*args, **kwargs):
-        args = [_contiguous(arg) for arg in args]
-        kwargs = {k: _contiguous(v) for k, v in kwargs.items()}
+        args = tree_map(make_contiguous, args)
+        kwargs = tree_map(make_contiguous, kwargs)
         return func(*args, **kwargs)
 
     return inner
@@ -25,7 +19,7 @@ def ensure_contiguous(func: Callable) -> Callable:
 
 def ensure_same_strides(*args, force_contiguous: bool = False) -> list[torch.Tensor]:
     if force_contiguous:
-        output = [make_contiguous(arg) for arg in args]
+        output = tree_map(make_contiguous, args)
     else:
         mismatch = False
         expected_stride = None

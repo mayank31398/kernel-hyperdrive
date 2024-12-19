@@ -1,2 +1,2 @@
-from .kernels_backward import swiglu_backward_triton_kernel
-from .kernels_forward import swiglu_forward_triton_kernel
+from .kernels_backward import swiglu_backward_triton
+from .kernels_forward import swiglu_forward_triton

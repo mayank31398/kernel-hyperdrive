@@ -2,7 +2,7 @@
 
 void add_scalar_forward_cuda(const torch::Tensor &x,
                              const float &y,
-                             torch::Tensor output,
+                             torch::Tensor &output,
                              const int &vector_instruction_width,
                              const int &BLOCK_SIZE);
 
