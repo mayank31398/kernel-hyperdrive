@@ -11,9 +11,9 @@ template <typename scalar_t, typename vector_t>
 __global__ void _embedding_forward_cuda_kernel(const scalar_t *input_ids,
                                                const scalar_t *weight,
                                                scalar_t *output,
-                                               const uint64 &num_elements,
-                                               const int &BLOCK_SIZE_B,
-                                               const int &BLOCK_SIZE_H) {
+                                               const uint64 num_elements,
+                                               const int BLOCK_SIZE_B,
+                                               const int BLOCK_SIZE_H) {
     constexpr int vector_instruction_width = sizeof(vector_t) / sizeof(scalar_t);
     const uint64 thread_id = get_global_thread_id();
 
