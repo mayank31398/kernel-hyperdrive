@@ -36,7 +36,7 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
     static_assert(vector_instruction_width == 1 || vector_instruction_width == 2 || vector_instruction_width == 4 ||
                   vector_instruction_width == 8);
 
-    const int64_t thread_id = get_global_thread_id();
+    const uint64 thread_id = get_global_thread_id();
     using dtype = DType<scalar_t>;
 
     if constexpr (vector_instruction_width == 1) {
