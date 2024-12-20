@@ -25,7 +25,7 @@ def contiguous_count_triton_kernel(x_ptr, output_ptr, B, C, BLOCK_SIZE_B: tl.con
     num_elements_in_current_program = program_end - program_start
 
     num_loops = tl.cdiv(num_elements_in_current_program, BLOCK_SIZE_B)
-    counts = tl.zeros((BLOCK_SIZE_C,), dtype=tl.int64)
+    counts = tl.zeros((BLOCK_SIZE_C,), dtype=tl.int32)
 
     for i in range(num_loops):
         indices_b = program_start + i * BLOCK_SIZE_B + tl.arange(0, BLOCK_SIZE_B)
@@ -33,14 +33,14 @@ def contiguous_count_triton_kernel(x_ptr, output_ptr, B, C, BLOCK_SIZE_B: tl.con
 
         x = tl.load(x_ptr + indices_b, mask=mask_b, other=-1)
 
-        equal = (x[:, None] == indices_c[None, :]).to(tl.int64)
+        equal = (x[:, None] == indices_c[None, :]).to(tl.int32)
         counts += tl.sum(equal, axis=0)
 
     tl.atomic_add(output_ptr + indices_c, counts, mask=mask_c)
 
 
 def _fake(x: torch.Tensor, size: int, BLOCK_SIZE_B: int) -> torch.Tensor:
-    return torch.empty(size, dtype=torch.long, device=x.device)
+    return torch.empty(size, dtype=torch.int32, device=x.device)
 
 
 @cute_op(f"{LIBRARY_NAME}::{_KERNEL_NAME}", mutates_args={}, fake_func=_fake)
@@ -51,7 +51,7 @@ def contiguous_count_triton(x: torch.Tensor, size: int, BLOCK_SIZE_B: int) -> to
     sm_count = get_sm_count(x.device)
     num_programs = min(sm_count, ceil_divide(B, BLOCK_SIZE_B))
 
-    output = torch.zeros(size, dtype=torch.long, device=x.device)
+    output = torch.zeros(size, dtype=torch.int32, device=x.device)
 
     with torch.device(x.device):
         contiguous_count_triton_kernel[(num_programs,)](
