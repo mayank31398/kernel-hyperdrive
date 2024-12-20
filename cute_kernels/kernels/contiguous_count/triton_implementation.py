@@ -2,9 +2,9 @@ import torch
 import triton
 import triton.language as tl
 
-from ....constants import LIBRARY_NAME
-from ....math import ceil_divide, get_next_power_of_2
-from ....utils import cute_op, get_sm_count
+from ...constants import LIBRARY_NAME
+from ...math import ceil_divide, get_next_power_of_2
+from ...utils import cute_op, get_sm_count
 
 
 _KERNEL_NAME = "contiguous_count_triton"
