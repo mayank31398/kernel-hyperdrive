@@ -25,7 +25,7 @@ def contiguous_count_triton_kernel(x_ptr, output_ptr, B, C, BLOCK_SIZE_B: tl.con
     num_elements_in_current_program = program_end - program_start
 
     num_loops = tl.cdiv(num_elements_in_current_program, BLOCK_SIZE_B)
-    counts = tl.zeros((BLOCK_SIZE_C,), dtype=tl.int32)
+    counts = tl.zeros((BLOCK_SIZE_C,), dtype=tl.int64)
 
     for i in range(num_loops):
         indices_b = program_start + i * BLOCK_SIZE_B + tl.arange(0, BLOCK_SIZE_B)
