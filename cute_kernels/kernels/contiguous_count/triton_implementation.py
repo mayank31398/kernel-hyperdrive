@@ -51,7 +51,7 @@ def contiguous_count_triton(x: torch.Tensor, size: int, BLOCK_SIZE_B: int) -> to
     sm_count = get_sm_count(x.device)
     num_programs = min(sm_count, ceil_divide(B, BLOCK_SIZE_B))
 
-    output = torch.empty(size, dtype=torch.long, device=x.device)
+    output = torch.zeros(size, dtype=torch.long, device=x.device)
 
     with torch.device(x.device):
         contiguous_count_triton_kernel[(num_programs,)](
