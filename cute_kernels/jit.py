@@ -32,15 +32,15 @@ def compile_cpp(name: str) -> None:
         if name in functions:
             break
 
-    build_directory = os.path.join(CPP_BUILD_DIRECTORY, build_directory)
-    os.makedirs(build_directory, exist_ok=True)
+    full_build_path = os.path.join(CPP_BUILD_DIRECTORY, build_directory)
+    os.makedirs(full_build_path, exist_ok=True)
 
     module = load_cpp_extension(
-        build_directory,
+        f"{CPP_MODULE_PREFIX}_{build_directory}",
         sources=source_map[index],
         with_cuda=True,
         extra_cflags=["-O3", "-Wall", "-shared", "-fPIC", "-fdiagnostics-color"],
-        build_directory=build_directory,
+        build_directory=full_build_path,
         verbose=True,
     )
 
