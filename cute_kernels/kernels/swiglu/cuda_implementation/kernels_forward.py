@@ -9,7 +9,7 @@ _KERNEL_NAME = "swiglu_forward_cuda"
 
 
 @cute_op(f"{LIBRARY_NAME}::{_KERNEL_NAME}", mutates_args={"output"})
-@cuda_jit
+@cpp_jit
 def swiglu_forward_cuda(
     gate: torch.Tensor, up: torch.Tensor, output: torch.Tensor, vector_instruction_width: int, BLOCK_SIZE: int
 ) -> None: ...

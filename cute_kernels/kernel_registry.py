@@ -62,7 +62,7 @@ class _CUDA_JIT:
             _CUDA_JIT.cuda_kernel_registry[function] = getattr(module, function)
 
 
-def cuda_jit(kernel_name: str) -> Callable:
+def cpp_jit(kernel_name: str) -> Callable:
     kernel = None
     args_spec = None
 
