@@ -1,5 +1,4 @@
 import os
-from collections import defaultdict
 from enum import Enum
 
 import yaml
@@ -15,17 +14,24 @@ _LOAD_CUTOTUNE_CACHE = get_boolean_env_variable("LOAD_CUTOTUNE_CACHE", True)
 
 class _CutoTuneCache:
     def __init__(self) -> None:
-        self.full_cache = defaultdict(lambda: defaultdict(list))
-        self.best_cache = defaultdict(lambda: defaultdict(list))
+        self.full_cache = {}
+        self.best_cache = {}
 
         if _LOAD_CUTOTUNE_CACHE and os.path.exists(_CUTOTUNE_CACHE_FILENAME):
             self.load()
 
     def add_config(self, function_hash: str, lookup_key: str, config: CutoTuneConfig, time: float) -> None:
+        if function_hash not in self.full_cache:
+            self.full_cache[function_hash] = {}
+            self.best_cache[function_hash] = {}
+
+        if lookup_key not in self.full_cache[function_hash]:
+            self.full_cache[function_hash][lookup_key] = []
+
         self.full_cache[function_hash][lookup_key].append((config, time))
 
         min_time = float("inf")
-        if lookup_key in self.best_cache[function_hash][lookup_key]:
+        if lookup_key in self.best_cache[function_hash]:
             min_time = self.best_cache[function_hash][lookup_key][1]
 
         if time < min_time:
