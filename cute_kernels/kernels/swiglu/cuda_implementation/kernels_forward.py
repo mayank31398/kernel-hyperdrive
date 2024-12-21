@@ -1,7 +1,7 @@
 import torch
 
 from ....constants import LIBRARY_NAME
-from ....kernel_registry import cuda_jit
+from ....kernel_registry import cpp_jit
 from ....utils import cute_op
 
 
