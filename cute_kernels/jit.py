@@ -62,22 +62,22 @@ def get_cpp_function(name: str) -> Callable:
     return function
 
 
-def cpp_jit(kernel_name: str) -> Callable:
-    kernel = None
+def cpp_jit(function_name: str) -> Callable:
+    cpp_function = None
     args_spec = None
 
     def _run(*args, **kwargs):
-        nonlocal kernel
+        nonlocal cpp_function
 
-        if kernel is None:
-            kernel = get_cpp_function(kernel_name)
+        if cpp_function is None:
+            cpp_function = get_cpp_function(function_name)
 
         full_args = []
         full_args.extend(args)
         for variable_name in args_spec.args[len(args) :]:
             full_args.append(kwargs[variable_name])
 
-        return kernel(*full_args)
+        return cpp_function(*full_args)
 
     def inner(function: Callable) -> Callable:
         _run.__signature__ = inspect.signature(function)
