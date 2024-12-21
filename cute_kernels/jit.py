@@ -51,6 +51,17 @@ def compile_cpp(name: str) -> None:
         _CUDA_JIT.cuda_kernel_registry[function] = getattr(module, function)
 
 
+def get_cpp_function(name: str) -> Callable:
+    function = _CUDA_JIT.cuda_kernel_registry.get(name, None)
+
+    # if kernel is compiled, we return the torch op since its compatible with torch compile
+    if function is None:
+        compile_cpp(name)
+        function = get_cpp_function(name)
+
+    return function
+
+
 def cpp_jit(kernel_name: str) -> Callable:
     kernel = None
     args_spec = None
@@ -59,7 +70,7 @@ def cpp_jit(kernel_name: str) -> Callable:
         nonlocal kernel
 
         if kernel is None:
-            kernel = compile_cpp(kernel_name)
+            kernel = get_cpp_function(kernel_name)
 
         full_args = []
         full_args.extend(args)
