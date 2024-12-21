@@ -13,53 +13,42 @@ class _CUDA_JIT:
     cuda_kernel_registry = {}
     kernel_registry_yaml = yaml.safe_load(open(os.path.join(os.path.dirname(__file__), "kernel_registry.yml"), "r"))
 
-    @staticmethod
-    def get_kernel(name: str) -> Callable:
-        kernel = _CUDA_JIT.cuda_kernel_registry.get(name, None)
 
-        # if kernel is compiled, we return the torch op since its compatible with torch compile
-        if kernel is None:
-            _CUDA_JIT.compile_kernel(name)
-            kernel = _CUDA_JIT.get_kernel(name)
+@torch._dynamo.disable
+def compile_cpp(name: str) -> None:
+    function_map = []
+    all_functions = []
+    source_map = []
+    for module in _CUDA_JIT.kernel_registry_yaml:
+        function_map.append(module["functions"])
+        all_functions.extend(module["functions"])
 
-        return kernel
+        sources = module["sources"]
+        sources = [os.path.join(os.path.dirname(__file__), source) for source in sources]
+        source_map.append(sources)
 
-    @torch._dynamo.disable
-    @staticmethod
-    def compile_kernel(name: str) -> None:
-        function_map = []
-        all_functions = []
-        source_map = []
-        for module in _CUDA_JIT.kernel_registry_yaml:
-            function_map.append(module["functions"])
-            all_functions.extend(module["functions"])
+    assert len(all_functions) == len(set(all_functions)), "function names are not unique"
 
-            sources = module["sources"]
-            sources = [os.path.join(os.path.dirname(__file__), source) for source in sources]
-            source_map.append(sources)
+    build_directory = _CUDA_JIT.build_directory
+    os.makedirs(build_directory, exist_ok=True)
 
-        assert len(all_functions) == len(set(all_functions)), "function names are not unique"
+    # find which files the function belongs to
+    for index, functions in enumerate(function_map):
+        if name in functions:
+            break
 
-        build_directory = _CUDA_JIT.build_directory
-        os.makedirs(build_directory, exist_ok=True)
+    module = load_cpp_extension(
+        f"{_CUDA_JIT.module_name}_{index}",
+        sources=source_map[index],
+        with_cuda=True,
+        extra_cflags=["-O3", "-Wall", "-shared", "-fPIC", "-fdiagnostics-color"],
+        build_directory=build_directory,
+        verbose=True,
+    )
 
-        # find which files the function belongs to
-        for index, functions in enumerate(function_map):
-            if name in functions:
-                break
-
-        module = load_cpp_extension(
-            f"{_CUDA_JIT.module_name}_{index}",
-            sources=source_map[index],
-            with_cuda=True,
-            extra_cflags=["-O3", "-Wall", "-shared", "-fPIC", "-fdiagnostics-color"],
-            build_directory=build_directory,
-            verbose=True,
-        )
-
-        # populate all functions from the file
-        for function in function_map[index]:
-            _CUDA_JIT.cuda_kernel_registry[function] = getattr(module, function)
+    # populate all functions from the file
+    for function in function_map[index]:
+        _CUDA_JIT.cuda_kernel_registry[function] = getattr(module, function)
 
 
 def cpp_jit(kernel_name: str) -> Callable:
@@ -70,7 +59,7 @@ def cpp_jit(kernel_name: str) -> Callable:
         nonlocal kernel
 
         if kernel is None:
-            kernel = _CUDA_JIT.get_kernel(kernel_name)
+            kernel = compile_cpp(kernel_name)
 
         full_args = []
         full_args.extend(args)
