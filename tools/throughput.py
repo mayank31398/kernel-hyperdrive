@@ -3,7 +3,7 @@ from functools import partial
 import torch
 from tabulate import tabulate
 
-from cute_kernels import KernelBackend, add_tensor_cute, add_tensor_torch
+from cute_kernels import KernelBackend, add_tensor_cute, add_tensor_torch, device_synchronize
 
 
 n = 100
@@ -36,7 +36,7 @@ for dtype in [torch.float16, torch.bfloat16, torch.float32]:
             z = kernel(x, y)
         e.record()
 
-        torch.cuda.synchronize()
+        device_synchronize()
 
         row.append(s.elapsed_time(e) / n)
     table.append(row)

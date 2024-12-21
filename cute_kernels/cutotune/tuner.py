@@ -225,12 +225,12 @@ class _CutoTune:
 
         # TODO generalize to device Event
         start = torch.cuda.Event(enable_timing=True)
+        end = torch.cuda.Event(enable_timing=True)
 
+        start.record()
         for _ in range(self.benchmark_iterations):
             self.function(**kwargs)
-
-        # TODO generalize to device Event
-        end = torch.cuda.Event(enable_timing=True)
+        end.record()
 
         device_synchronize()
         elapsed_time = start.elapsed_time(end)
