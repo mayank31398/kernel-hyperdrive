@@ -13,10 +13,6 @@ class _CUDA_JIT:
     cuda_kernel_registry = {}
     kernel_registry_yaml = yaml.safe_load(open(os.path.join(os.path.dirname(__file__), "kernel_registry.yml"), "r"))
 
-    def __init__(self, kernel_name: str) -> None:
-        self.kernel_name = kernel_name
-        self._kernel = None
-
     @staticmethod
     def get_kernel(name: str) -> Callable:
         kernel = _CUDA_JIT.cuda_kernel_registry.get(name, None)
@@ -65,21 +61,15 @@ class _CUDA_JIT:
         for function in function_map[index]:
             _CUDA_JIT.cuda_kernel_registry[function] = getattr(module, function)
 
-    def __call__(self, *args, **kwargs):
-        if self._kernel is None:
-            self._kernel = _CUDA_JIT.compile_kernel(self.kernel_name)
-
-        return self._kernel(*args, **kwargs)
-
 
 KernelRegistry = _CUDA_JIT
 
 
 def cuda_jit(kernel_name: str) -> Callable:
-    def inner(function: Callable) -> Callable:
-        cuda_function = _CUDA_JIT(kernel_name).__call__
+    kernel = KernelRegistry.get_kernel(kernel_name)
 
-        cuda_function.__signature__ = inspect.signature(function)
-        cuda_function.__name__ = function.__name__
+    def inner(function: Callable) -> Callable:
+        kernel.__signature__ = inspect.signature(function)
+        kernel.__name__ = function.__name__
 
     return inner
