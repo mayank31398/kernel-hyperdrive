@@ -63,13 +63,30 @@ class _CUDA_JIT:
 
 
 def cuda_jit(kernel_name: str) -> Callable:
+    kernel = None
+    parameters = None
+
     def _run(*args, **kwargs):
-        kernel = _CUDA_JIT.get_kernel(kernel_name)
-        return kernel(*args, *[kwargs[key] for key in kwargs])
+        nonlocal kernel
+
+        if kernel is None:
+            kernel = _CUDA_JIT.get_kernel(kernel_name)
+
+        full_args = []
+        full_args.extend(args)
+        for i in range(len(args), len(parameters)):
+            variable_name = parameters[i]
+            full_args.append(kwargs[variable_name])
+
+        return kernel(*full_args)
 
     def inner(function: Callable) -> Callable:
         _run.__signature__ = inspect.signature(function)
         _run.__name__ = function.__name__
+
+        nonlocal parameters
+        parameters = _run.__signature__.parameters
+
         return _run
 
     return inner
