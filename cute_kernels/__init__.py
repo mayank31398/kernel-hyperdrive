@@ -10,7 +10,6 @@ from .cutotune import (
 )
 from .enums import KernelBackend
 from .inductor import init_inductor
-from .kernel_registry import KernelRegistry
 from .kernels import (
     MoE_Torch,
     MoE_Triton,

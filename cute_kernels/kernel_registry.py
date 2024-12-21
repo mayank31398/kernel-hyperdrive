@@ -62,12 +62,9 @@ class _CUDA_JIT:
             _CUDA_JIT.cuda_kernel_registry[function] = getattr(module, function)
 
 
-KernelRegistry = _CUDA_JIT
-
-
 def cuda_jit(kernel_name: str) -> Callable:
     def _run(*args, **kwargs):
-        kernel = KernelRegistry.get_kernel(kernel_name)
+        kernel = _CUDA_JIT.get_kernel(kernel_name)
         return kernel(*args, *[kwargs[key] for key in kwargs])
 
     def inner(function: Callable) -> Callable:

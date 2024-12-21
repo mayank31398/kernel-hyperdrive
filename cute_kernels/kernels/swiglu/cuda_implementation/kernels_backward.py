@@ -1,7 +1,7 @@
 import torch
 
 from ....constants import LIBRARY_NAME
-from ....kernel_registry import KernelRegistry
+from ....kernel_registry import _CUDA_JIT
 from ....utils import cute_op
 
 
@@ -18,6 +18,4 @@ def swiglu_backward_cuda(
     vector_instruction_width: int,
     BLOCK_SIZE: int,
 ) -> None:
-    KernelRegistry.get_kernel(_KERNEL_NAME)(
-        gate, up, output_grad, gate_grad, up_grad, vector_instruction_width, BLOCK_SIZE
-    )
+    _CUDA_JIT.get_kernel(_KERNEL_NAME)(gate, up, output_grad, gate_grad, up_grad, vector_instruction_width, BLOCK_SIZE)
