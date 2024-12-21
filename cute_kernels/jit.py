@@ -36,7 +36,7 @@ def compile_cpp(name: str) -> None:
     os.makedirs(build_directory, exist_ok=True)
 
     module = load_cpp_extension(
-        f"{CPP_MODULE_PREFIX}_{index}",
+        build_directory,
         sources=source_map[index],
         with_cuda=True,
         extra_cflags=["-O3", "-Wall", "-shared", "-fPIC", "-fdiagnostics-color"],
