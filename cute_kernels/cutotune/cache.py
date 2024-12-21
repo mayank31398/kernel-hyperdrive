@@ -44,7 +44,8 @@ class _CutoTuneCache:
         }
 
         for function_hash in full_cache_serialized["all_configs"]:
-            full_cache_serialized["all_configs"][function_hash].sort(key=lambda x: x["time"])
+            for lookup_key in full_cache_serialized["all_configs"][function_hash]:
+                full_cache_serialized["all_configs"][function_hash][lookup_key].sort(key=lambda x: x["time"])
 
         yaml.dump(full_cache_serialized, open(_CUTOTUNE_CACHE_FILENAME, "w"))
 
