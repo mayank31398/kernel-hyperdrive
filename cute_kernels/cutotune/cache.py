@@ -51,6 +51,9 @@ class _CutoTuneCache:
         self.best_cache = self._deserialize(cache["best_configs"], False)
 
     def get_best_configs(self, function_hash: str) -> dict[str, CutoTuneConfig]:
+        if function_hash not in self.best_cache:
+            self.best_cache[function_hash] = {}
+
         return self.best_cache[function_hash]
 
     def _serialize(self, x: dict, has_config_time_list: bool) -> dict:
