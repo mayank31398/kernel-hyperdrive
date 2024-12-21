@@ -1,6 +1,5 @@
 import inspect
 from collections import defaultdict
-from time import perf_counter
 from typing import Any, Callable
 
 import torch

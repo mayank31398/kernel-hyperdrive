@@ -1,5 +1,4 @@
 from functools import partial
-from time import perf_counter
 
 import torch
 from tabulate import tabulate
