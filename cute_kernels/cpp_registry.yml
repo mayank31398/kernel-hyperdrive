@@ -3,12 +3,14 @@
   sources:
     - kernels/add/add_tensor/cuda_implementation/ops.cpp
     - kernels/add/add_tensor/cuda_implementation/kernels_forward.cu
+  build_path: add_tensor
 
 - functions:
     - add_scalar_forward_cuda
   sources:
     - kernels/add/add_scalar/cuda_implementation/ops.cpp
     - kernels/add/add_scalar/cuda_implementation/kernels_forward.cu
+  build_path: add_scalar
 
 - functions:
     - embedding_forward_cuda
@@ -23,3 +25,4 @@
     - kernels/swiglu/cuda_implementation/ops.cpp
     - kernels/swiglu/cuda_implementation/kernels_forward.cu
     - kernels/swiglu/cuda_implementation/kernels_backward.cu
+  build_path: swiglu
