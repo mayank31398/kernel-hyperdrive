@@ -9,7 +9,7 @@ _KERNEL_NAME = "swiglu_backward_cuda"
 
 
 @cute_op(f"{LIBRARY_NAME}::{_KERNEL_NAME}", mutates_args={"gate_grad", "up_grad"})
-@cpp_jit
+@cpp_jit(_KERNEL_NAME)
 def swiglu_backward_cuda(
     gate: torch.Tensor,
     up: torch.Tensor,
