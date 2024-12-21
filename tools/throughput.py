@@ -29,14 +29,17 @@ for dtype in [torch.float16, torch.bfloat16, torch.float32]:
         for i in range(n):
             z = kernel(x, y)
 
-        torch.cuda.synchronize()
-        s = perf_counter()
+        s = torch.cuda.Event(enable_timing=True)
+        e = torch.cuda.Event(enable_timing=True)
+
+        s.record()
         for i in range(n):
             z = kernel(x, y)
-        torch.cuda.synchronize()
-        e = perf_counter()
+        e.record()
 
-        row.append((e - s) / n)
+        torch.cuda.synchronize()
+
+        row.append(s.elapsed_time(e) / n)
     table.append(row)
 
 
