@@ -6,7 +6,11 @@ import torch
 import yaml
 from torch.utils.cpp_extension import load as load_cpp_extension
 
-from .constants import CPP_BUILD_DIRECTORY, CPP_FUNCTIONS, CPP_MODULE_PREFIX, CPP_REGISTRY_YAML
+
+CPP_MODULE_PREFIX = "cute_cuda_kernels"
+CPP_BUILD_DIRECTORY = "build"
+CPP_FUNCTIONS = {}
+CPP_REGISTRY_YAML = yaml.safe_load(open(os.path.join(os.path.dirname(__file__), "cpp_registry.yml"), "r"))
 
 
 @torch._dynamo.disable
@@ -14,22 +18,22 @@ def compile_cpp(name: str) -> None:
     function_map = []
     all_functions = []
     source_map = []
+    build_directories = []
     for module in CPP_REGISTRY_YAML:
         function_map.append(module["functions"])
         all_functions.extend(module["functions"])
-
-        sources = module["sources"]
-        sources = [os.path.join(os.path.dirname(__file__), source) for source in sources]
-        source_map.append(sources)
+        source_map.append([os.path.join(os.path.dirname(__file__), source) for source in module["sources"]])
+        build_directories.append(module["build_path"])
 
     assert len(all_functions) == len(set(all_functions)), "function names are not unique"
 
-    os.makedirs(CPP_BUILD_DIRECTORY, exist_ok=True)
-
     # find which files the function belongs to
-    for index, functions in enumerate(function_map):
+    for index, (functions, build_directory) in enumerate(zip(function_map, build_directories)):
         if name in functions:
             break
+
+    build_directory = os.path.join(CPP_BUILD_DIRECTORY, build_directory)
+    os.makedirs(build_directory, exist_ok=True)
 
     module = load_cpp_extension(
         f"{CPP_MODULE_PREFIX}_{index}",
