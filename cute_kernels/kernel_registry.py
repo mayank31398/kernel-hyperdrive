@@ -1,3 +1,4 @@
+import inspect
 import os
 from typing import Callable
 
@@ -76,6 +77,9 @@ KernelRegistry = _CUDA_JIT
 
 def cuda_jit(kernel_name: str) -> Callable:
     def inner(function: Callable) -> Callable:
-        return _CUDA_JIT(kernel_name).__call__
+        cuda_function = _CUDA_JIT(kernel_name).__call__
+
+        cuda_function.__signature__ = inspect.signature(function)
+        cuda_function.__name__ = function.__name__
 
     return inner
