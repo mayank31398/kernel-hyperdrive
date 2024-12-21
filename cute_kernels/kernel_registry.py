@@ -66,10 +66,13 @@ KernelRegistry = _CUDA_JIT
 
 
 def cuda_jit(kernel_name: str) -> Callable:
-    kernel = KernelRegistry.get_kernel(kernel_name)
+    def _run(*args, **kwargs):
+        kernel = KernelRegistry.get_kernel(kernel_name)
+        return kernel(*args, **kwargs)
 
     def inner(function: Callable) -> Callable:
-        kernel.__signature__ = inspect.signature(function)
-        kernel.__name__ = function.__name__
+        _run.__signature__ = inspect.signature(function)
+        _run.__name__ = function.__name__
+        return _run
 
     return inner
