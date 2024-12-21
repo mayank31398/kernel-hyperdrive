@@ -40,7 +40,7 @@ def compile_cpp(name: str) -> None:
         sources=source_map[index],
         with_cuda=True,
         extra_cflags=["-O3", "-Wall", "-shared", "-fPIC", "-fdiagnostics-color"],
-        build_directory=CPP_BUILD_DIRECTORY,
+        build_directory=build_directory,
         verbose=True,
     )
 
