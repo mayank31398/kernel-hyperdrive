@@ -6,12 +6,7 @@ import torch
 import yaml
 from torch.utils.cpp_extension import load as load_cpp_extension
 
-
-class _CUDA_JIT:
-    module_name = "cute_cuda_kernels"
-    build_directory = "build"
-    cuda_kernel_registry = {}
-    kernel_registry_yaml = yaml.safe_load(open(os.path.join(os.path.dirname(__file__), "kernel_registry.yml"), "r"))
+from .constants import CPP_BUILD_DIRECTORY, CPP_FUNCTIONS, CPP_MODULE_PREFIX, CPP_REGISTRY_YAML
 
 
 @torch._dynamo.disable
@@ -19,7 +14,7 @@ def compile_cpp(name: str) -> None:
     function_map = []
     all_functions = []
     source_map = []
-    for module in _CUDA_JIT.kernel_registry_yaml:
+    for module in CPP_REGISTRY_YAML:
         function_map.append(module["functions"])
         all_functions.extend(module["functions"])
 
@@ -29,8 +24,7 @@ def compile_cpp(name: str) -> None:
 
     assert len(all_functions) == len(set(all_functions)), "function names are not unique"
 
-    build_directory = _CUDA_JIT.build_directory
-    os.makedirs(build_directory, exist_ok=True)
+    os.makedirs(CPP_BUILD_DIRECTORY, exist_ok=True)
 
     # find which files the function belongs to
     for index, functions in enumerate(function_map):
@@ -38,21 +32,21 @@ def compile_cpp(name: str) -> None:
             break
 
     module = load_cpp_extension(
-        f"{_CUDA_JIT.module_name}_{index}",
+        f"{CPP_MODULE_PREFIX}_{index}",
         sources=source_map[index],
         with_cuda=True,
         extra_cflags=["-O3", "-Wall", "-shared", "-fPIC", "-fdiagnostics-color"],
-        build_directory=build_directory,
+        build_directory=CPP_BUILD_DIRECTORY,
         verbose=True,
     )
 
     # populate all functions from the file
     for function in function_map[index]:
-        _CUDA_JIT.cuda_kernel_registry[function] = getattr(module, function)
+        CPP_FUNCTIONS[function] = getattr(module, function)
 
 
 def get_cpp_function(name: str) -> Callable:
-    function = _CUDA_JIT.cuda_kernel_registry.get(name, None)
+    function = CPP_FUNCTIONS.get(name, None)
 
     # if kernel is compiled, we return the torch op since its compatible with torch compile
     if function is None:

@@ -1,5 +1,8 @@
+import os
+
 import torch
 import triton.language as tl
+import yaml
 
 from .math import get_powers_of_2
 
@@ -21,3 +24,8 @@ TORCH_TO_TRITON_DTYPE = {
     torch.float16: tl.float16,
     torch.bfloat16: tl.bfloat16,
 }
+
+CPP_MODULE_PREFIX = "cute_cuda_kernels"
+CPP_BUILD_DIRECTORY = "build"
+CPP_FUNCTIONS = {}
+CPP_REGISTRY_YAML = yaml.safe_load(open(os.path.join(os.path.dirname(__file__), "cpp_registry.yml"), "r"))
