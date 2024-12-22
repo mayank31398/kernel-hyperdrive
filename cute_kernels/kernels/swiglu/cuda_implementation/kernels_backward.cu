@@ -100,12 +100,18 @@ void swiglu_backward_cuda(const torch::Tensor &gate,
                           const torch::Tensor &output_grad,
                           torch::Tensor &gate_grad,
                           torch::Tensor &up_grad,
-                          const int &vector_instruction_width,
                           const int &BLOCK_SIZE) {
     const int64_t num_elements = gate.numel();
 
     AT_DISPATCH_CUSTOM_FLOAT_TYPES(gate.scalar_type(), "swiglu_backward_cuda_kernel", ([&] {
-                                       const int num_elements_per_block = BLOCK_SIZE * vector_instruction_width;
+                                       int log_vector_instruction_width;
+                                       if constexpr (std::is_same_v<scalar_t, fp32>) {
+                                           log_vector_instruction_width = 2;
+                                       } else {
+                                           log_vector_instruction_width = 3;
+                                       }
+
+                                       const int num_elements_per_block = BLOCK_SIZE << log_vector_instruction_width;
                                        const int NUM_BLOCKS =
                                            (num_elements + num_elements_per_block - 1) / num_elements_per_block;
 
