@@ -3,14 +3,7 @@ from typing import Callable
 import torch
 from parameterized import parameterized
 
-from cute_kernels import (
-    COMMON_VECTOR_INSTRUCTION_WIDTHS,
-    MAX_FP16_BF16_INSTRUCTION_WIDTH,
-    MAX_FP32_INSTRUCTION_WIDTH,
-    KernelBackend,
-    swiglu_cute,
-    swiglu_torch,
-)
+from cute_kernels import KernelBackend, swiglu_cute, swiglu_torch
 
 from ..test_commons import TestCommons
 
@@ -23,8 +16,6 @@ class SwigluTest(TestCommons):
             TestCommons.get_dtypes(),  # dtype
             [KernelBackend.cuda],  # kernel_backend_forward
             [KernelBackend.cuda],  # kernel_backend_backward
-            [MAX_FP32_INSTRUCTION_WIDTH],  # vector_instruction_width_forward
-            COMMON_VECTOR_INSTRUCTION_WIDTHS,  # vector_instruction_width_backward
             [1024],  # BLOCK_SIZE_forward
             [1024],  # BLOCK_SIZE_backward
             [swiglu_cute, torch.compile(swiglu_cute, fullgraph=True)],  # function
@@ -35,8 +26,6 @@ class SwigluTest(TestCommons):
             [torch.bfloat16, torch.float16],  # dtype
             [KernelBackend.cuda],  # kernel_backend_forward
             [KernelBackend.cuda],  # kernel_backend_backward
-            [MAX_FP16_BF16_INSTRUCTION_WIDTH],  # vector_instruction_width_forward
-            [MAX_FP16_BF16_INSTRUCTION_WIDTH],  # vector_instruction_width_backward
             [1024],  # BLOCK_SIZE_forward
             [1024],  # BLOCK_SIZE_backward
             [swiglu_cute, torch.compile(swiglu_cute, fullgraph=True)],  # function
@@ -47,8 +36,6 @@ class SwigluTest(TestCommons):
             TestCommons.get_dtypes(),  # dtype
             [KernelBackend.triton],  # kernel_backend_forward
             [KernelBackend.triton],  # kernel_backend_backward
-            [None],  # vector_instruction_width_forward
-            [None],  # vector_instruction_width_backward
             [1024],  # BLOCK_SIZE_forward
             [1024],  # BLOCK_SIZE_backward
             [swiglu_cute, torch.compile(swiglu_cute, fullgraph=True)],  # function
@@ -59,8 +46,6 @@ class SwigluTest(TestCommons):
             TestCommons.get_dtypes(),  # dtype
             [KernelBackend.cuda],  # kernel_backend_forward
             [KernelBackend.triton],  # kernel_backend_backward
-            [MAX_FP32_INSTRUCTION_WIDTH],  # vector_instruction_width_forward
-            [None],  # vector_instruction_width_backward
             [1024],  # BLOCK_SIZE_forward
             [1024],  # BLOCK_SIZE_backward
             [swiglu_cute, torch.compile(swiglu_cute, fullgraph=True)],  # function
@@ -71,8 +56,6 @@ class SwigluTest(TestCommons):
             [torch.bfloat16, torch.float16],  # dtype
             [KernelBackend.cuda],  # kernel_backend_forward
             [KernelBackend.triton],  # kernel_backend_backward
-            [MAX_FP16_BF16_INSTRUCTION_WIDTH],  # vector_instruction_width_forward
-            [None],  # vector_instruction_width_backward
             [1024],  # BLOCK_SIZE_forward
             [1024],  # BLOCK_SIZE_backward
             [swiglu_cute, torch.compile(swiglu_cute, fullgraph=True)],  # function
@@ -83,8 +66,6 @@ class SwigluTest(TestCommons):
             TestCommons.get_dtypes(),  # dtype
             [KernelBackend.triton],  # kernel_backend_forward
             [KernelBackend.cuda],  # kernel_backend_backward
-            [None],  # vector_instruction_width_forward
-            COMMON_VECTOR_INSTRUCTION_WIDTHS,  # vector_instruction_width_backward
             [1024],  # BLOCK_SIZE_forward
             [1024],  # BLOCK_SIZE_backward
             [swiglu_cute, torch.compile(swiglu_cute, fullgraph=True)],  # function
@@ -95,8 +76,6 @@ class SwigluTest(TestCommons):
             [torch.bfloat16, torch.float16],  # dtype
             [KernelBackend.triton],  # kernel_backend_forward
             [KernelBackend.cuda],  # kernel_backend_backward
-            [None],  # vector_instruction_width_forward
-            [MAX_FP16_BF16_INSTRUCTION_WIDTH],  # vector_instruction_width_backward
             [1024],  # BLOCK_SIZE_forward
             [1024],  # BLOCK_SIZE_backward
             [swiglu_cute, torch.compile(swiglu_cute, fullgraph=True)],  # function
@@ -109,8 +88,6 @@ class SwigluTest(TestCommons):
         dtype: torch.dtype,
         kernel_backend_forward: KernelBackend,
         kernel_backend_backward: KernelBackend,
-        vector_instruction_width_forward: int,
-        vector_instruction_width_backward: int,
         BLOCK_SIZE_forward: int,
         BLOCK_SIZE_backward: int,
         function: Callable,
@@ -123,8 +100,6 @@ class SwigluTest(TestCommons):
             y_kernel,
             kernel_backend_forward=kernel_backend_forward,
             kernel_backend_backward=kernel_backend_backward,
-            vector_instruction_width_forward=vector_instruction_width_forward,
-            vector_instruction_width_backward=vector_instruction_width_backward,
             BLOCK_SIZE_forward=BLOCK_SIZE_forward,
             BLOCK_SIZE_backward=BLOCK_SIZE_backward,
         )

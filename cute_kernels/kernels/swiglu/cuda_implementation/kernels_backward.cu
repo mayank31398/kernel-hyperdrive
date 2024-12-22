@@ -33,8 +33,7 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
                                              scalar_t *up_grad,
                                              const int64_t num_elements) {
     constexpr int vector_instruction_width = sizeof(vector_t) / sizeof(scalar_t);
-    static_assert(vector_instruction_width == 1 || vector_instruction_width == 2 || vector_instruction_width == 4 ||
-                  vector_instruction_width == 8);
+    static_assert(vector_instruction_width == 4 || vector_instruction_width == 8);
 
     const int64_t thread_id = get_global_thread_id();
     using dtype = DType<scalar_t>;
