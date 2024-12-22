@@ -7,12 +7,12 @@
 #include "../../../include/dtypes/all.h"
 #include "../../../include/threads.h"
 
-template <typename scalar_t, typename vector_t>
+template <typename scalar_t>
 __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
                                             const scalar_t *up,
                                             scalar_t *output,
                                             const int64_t num_elements) {
-    constexpr int vector_instruction_width = sizeof(vector_t) / sizeof(scalar_t);
+    constexpr int vector_instruction_width = sizeof(fp32_4) / sizeof(scalar_t);
     static_assert(vector_instruction_width == 4 || vector_instruction_width == 8);
 
     const int64_t thread_id = get_global_thread_id();
@@ -21,9 +21,9 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
     int64_t end = (thread_id + 1) * vector_instruction_width - 1;  // inclusive of last element
 
     if (end < num_elements) {
-        vector_t *output_vec = (vector_t *)output;
-        const fp32 *gate_vec = (fp32 *)&((vector_t *)gate)[thread_id];
-        const fp32 *up_vec = (fp32 *)&((vector_t *)up)[thread_id];
+        const fp32 *gate_vec = (fp32 *)&((fp32_4 *)gate)[thread_id];
+        const fp32 *up_vec = (fp32 *)&((fp32_4 *)up)[thread_id];
+
         fp32 output_buffer[4];
 
         // clang-format off
@@ -43,7 +43,7 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
             }
         }
 
-        output_vec[thread_id] = DType<fp32>::make4(output_buffer);
+        ((fp32_4 *)output)[thread_id] = DType<fp32>::make4(output_buffer);
     }
 
     // use first warp for computing the last elements
@@ -79,10 +79,10 @@ void swiglu_forward_cuda(const torch::Tensor &gate,
             const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
 
             if constexpr (std::is_same_v<scalar_t, fp32>) {
-                _swiglu_forward_cuda_kernel<scalar_t, fp32_4><<<NUM_BLOCKS, BLOCK_SIZE>>>(
+                _swiglu_forward_cuda_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(
                     gate.data_ptr<scalar_t>(), up.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
             } else {
-                _swiglu_forward_cuda_kernel<scalar_t, fp32_4><<<NUM_BLOCKS, BLOCK_SIZE>>>(
+                _swiglu_forward_cuda_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(
                     gate.data_ptr<scalar_t>(), up.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements);
             }
         }));

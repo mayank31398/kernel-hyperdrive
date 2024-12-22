@@ -25,14 +25,14 @@ __device__ void _swiglu_backward_helper_bf16_fp16_vectorized(fp32_2 &_gate_upcas
     _up_upcast = DType<fp32>::make2(_output_grad_upcast.x * _gate_silu_x, _output_grad_upcast.y * _gate_silu_y);
 }
 
-template <typename scalar_t, typename vector_t>
+template <typename scalar_t>
 __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
                                              const scalar_t *up,
                                              const scalar_t *output_grad,
                                              scalar_t *gate_grad,
                                              scalar_t *up_grad,
                                              const int64_t num_elements) {
-    constexpr int vector_instruction_width = sizeof(vector_t) / sizeof(scalar_t);
+    constexpr int vector_instruction_width = sizeof(fp32_4) / sizeof(scalar_t);
     static_assert(vector_instruction_width == 4 || vector_instruction_width == 8);
 
     const int64_t thread_id = get_global_thread_id();
@@ -41,12 +41,9 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
     int64_t end = (thread_id + 1) * vector_instruction_width - 1;  // inclusive of last element
 
     if (end < num_elements) {
-        vector_t *gate_grad_vec = (vector_t *)gate_grad;
-        vector_t *up_grad_vec = (vector_t *)up_grad;
-
-        const fp32 *gate_vec = (fp32 *)&((vector_t *)gate)[thread_id];
-        const fp32 *up_vec = (fp32 *)&((vector_t *)up)[thread_id];
-        const fp32 *output_grad_vec = (fp32 *)&((vector_t *)output_grad)[thread_id];
+        const fp32 *gate_vec = (fp32 *)&((fp32_4 *)gate)[thread_id];
+        const fp32 *up_vec = (fp32 *)&((fp32_4 *)up)[thread_id];
+        const fp32 *output_grad_vec = (fp32 *)&((fp32_4 *)output_grad)[thread_id];
 
         fp32 gate_grad_buffer[4];
         fp32 up_grad_buffer[4];
@@ -74,8 +71,8 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
             }
         }
 
-        gate_grad_vec[thread_id] = DType<fp32>::make4(gate_grad_buffer);
-        up_grad_vec[thread_id] = DType<fp32>::make4(up_grad_buffer);
+        (fp32_4 *)gate_grad[thread_id] = DType<fp32>::make4(gate_grad_buffer);
+        ((fp32_4 *)up_grad)[thread_id] = DType<fp32>::make4(up_grad_buffer);
     }
 
     // use first warp for computing the last elements
@@ -103,34 +100,32 @@ void swiglu_backward_cuda(const torch::Tensor &gate,
                           const int &BLOCK_SIZE) {
     const int64_t num_elements = gate.numel();
 
-    AT_DISPATCH_CUSTOM_FLOAT_TYPES(gate.scalar_type(), "swiglu_backward_cuda_kernel", ([&] {
-                                       int log_vector_instruction_width;
-                                       if constexpr (std::is_same_v<scalar_t, fp32>) {
-                                           log_vector_instruction_width = 2;
-                                       } else {
-                                           log_vector_instruction_width = 3;
-                                       }
+    AT_DISPATCH_CUSTOM_FLOAT_TYPES(
+        gate.scalar_type(), "swiglu_backward_cuda_kernel", ([&] {
+            int log_vector_instruction_width;
+            if constexpr (std::is_same_v<scalar_t, fp32>) {
+                log_vector_instruction_width = 2;
+            } else {
+                log_vector_instruction_width = 3;
+            }
 
-                                       const int num_elements_per_block = BLOCK_SIZE << log_vector_instruction_width;
-                                       const int NUM_BLOCKS =
-                                           (num_elements + num_elements_per_block - 1) / num_elements_per_block;
+            const int num_elements_per_block = BLOCK_SIZE << log_vector_instruction_width;
+            const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
 
-                                       if constexpr (std::is_same_v<scalar_t, fp32>) {
-                                           _swiglu_backward_cuda_kernel<scalar_t, fp32_4>
-                                               <<<NUM_BLOCKS, BLOCK_SIZE>>>(gate.data_ptr<scalar_t>(),
-                                                                            up.data_ptr<scalar_t>(),
-                                                                            output_grad.data_ptr<scalar_t>(),
-                                                                            gate_grad.data_ptr<scalar_t>(),
-                                                                            up_grad.data_ptr<scalar_t>(),
-                                                                            num_elements);
-                                       } else {
-                                           _swiglu_backward_cuda_kernel<scalar_t, fp32_4>
-                                               <<<NUM_BLOCKS, BLOCK_SIZE>>>(gate.data_ptr<scalar_t>(),
-                                                                            up.data_ptr<scalar_t>(),
-                                                                            output_grad.data_ptr<scalar_t>(),
-                                                                            gate_grad.data_ptr<scalar_t>(),
-                                                                            up_grad.data_ptr<scalar_t>(),
-                                                                            num_elements);
-                                       }
-                                   }));
+            if constexpr (std::is_same_v<scalar_t, fp32>) {
+                _swiglu_backward_cuda_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(gate.data_ptr<scalar_t>(),
+                                                                                   up.data_ptr<scalar_t>(),
+                                                                                   output_grad.data_ptr<scalar_t>(),
+                                                                                   gate_grad.data_ptr<scalar_t>(),
+                                                                                   up_grad.data_ptr<scalar_t>(),
+                                                                                   num_elements);
+            } else {
+                _swiglu_backward_cuda_kernel<scalar_t><<<NUM_BLOCKS, BLOCK_SIZE>>>(gate.data_ptr<scalar_t>(),
+                                                                                   up.data_ptr<scalar_t>(),
+                                                                                   output_grad.data_ptr<scalar_t>(),
+                                                                                   gate_grad.data_ptr<scalar_t>(),
+                                                                                   up_grad.data_ptr<scalar_t>(),
+                                                                                   num_elements);
+            }
+        }));
 }
