@@ -21,25 +21,17 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
     int64_t end = (thread_id + 1) * vector_instruction_width - 1;  // inclusive of last element
 
     if (end < num_elements) {
-        fp32_4 *output_vec = (fp32_4 *)output;
         const fp32 *gate_vec = (fp32 *)&((fp32_4 *)gate)[thread_id];
         const fp32 *up_vec = (fp32 *)&((fp32_4 *)up)[thread_id];
         fp32 output_buffer[4];
 
-        if constexpr (std::is_same_v<scalar_t, fp32>) {
-            // clang-format off
-            #pragma unroll
-            // clang-format on
-            for (int i = 0; i < 4; i++) {
+        // clang-format off
+        #pragma unroll
+        // clang-format on
+        for (int i = 0; i < 4; i++) {
+            if constexpr (std::is_same_v<scalar_t, fp32>) {
                 output_buffer[i] = up_vec[i] * gate_vec[i] * sigmoid<fp32, fp32>(gate_vec[i]);
-            }
-
-            output_vec[thread_id] = dtype::make4(output_buffer);
-        } else {
-            // clang-format off
-            #pragma unroll
-            // clang-format on
-            for (int i = 0; i < 4; i++) {
+            } else {
                 fp32_2 _gate_upcast = dtype::upcast(dtype::reinterpret_32_bits_as_2x16(gate_vec[i]));
                 fp32_2 _up_upcast = dtype::upcast(dtype::reinterpret_32_bits_as_2x16(up_vec[i]));
 
@@ -48,9 +40,9 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
 
                 output_buffer[i] = dtype::reinterpret_2x16_as_32_bits(dtype::downcast(_gate_upcast));
             }
-
-            output_vec[thread_id] = DType<fp32>::make4(output_buffer);
         }
+
+        ((fp32_4 *)output)[thread_id] = DType<fp32>::make4(output_buffer);
     }
 
     // use first warp for computing the last elements
