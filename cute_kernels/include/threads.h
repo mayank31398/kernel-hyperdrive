@@ -6,7 +6,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
-#include "dtypes.h"
+#include "dtypes/all.h"
 
 inline __device__ uint get_threads_per_block() { return blockDim.x * blockDim.y * blockDim.z; }
 
