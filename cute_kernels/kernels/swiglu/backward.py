@@ -55,16 +55,9 @@ def _backward(
 
     if kernel_backend == KernelBackend.cuda:
         swiglu_backward_cuda(
-            gate=gate,
-            up=up,
-            output_grad=output_grad,
-            gate_grad=gate_grad,
-            up_grad=up_grad,
-            vector_instruction_width=vector_instruction_width,
-            BLOCK_SIZE=BLOCK_SIZE,
+            gate=gate, up=up, output_grad=output_grad, gate_grad=gate_grad, up_grad=up_grad, BLOCK_SIZE=BLOCK_SIZE
         )
     elif kernel_backend == KernelBackend.triton:
-        assert vector_instruction_width is None
         swiglu_backward_triton(
             gate=gate, up=up, output_grad=output_grad, gate_grad=gate_grad, up_grad=up_grad, BLOCK_SIZE=BLOCK_SIZE
         )

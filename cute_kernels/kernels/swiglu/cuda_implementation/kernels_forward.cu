@@ -62,7 +62,6 @@ __global__ void _swiglu_forward_cuda_kernel(const scalar_t *gate,
 void swiglu_forward_cuda(const torch::Tensor &gate,
                          const torch::Tensor &up,
                          torch::Tensor &output,
-                         int &vector_instruction_width,
                          const int &BLOCK_SIZE) {
     const int64_t num_elements = gate.numel();
 

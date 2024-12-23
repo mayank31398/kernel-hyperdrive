@@ -16,6 +16,5 @@ def swiglu_backward_cuda(
     output_grad: torch.Tensor,
     gate_grad: torch.Tensor,
     up_grad: torch.Tensor,
-    vector_instruction_width: int,
     BLOCK_SIZE: int,
 ) -> None: ...

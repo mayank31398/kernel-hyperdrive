@@ -51,15 +51,8 @@ def _forward(
         assert gate.is_cuda, "tensor gate is not on GPU"
         assert up.is_cuda, "tensor up is not on GPU"
 
-        swiglu_forward_cuda(
-            gate=gate,
-            up=up,
-            output=output,
-            vector_instruction_width=vector_instruction_width,
-            BLOCK_SIZE=BLOCK_SIZE,
-        )
+        swiglu_forward_cuda(gate=gate, up=up, output=output, BLOCK_SIZE=BLOCK_SIZE)
     elif kernel_backend == KernelBackend.triton:
-        assert vector_instruction_width is None
         swiglu_forward_triton(gate=gate, up=up, output=output, BLOCK_SIZE=BLOCK_SIZE)
     else:
         raise ValueError(f"unexpected kernel_backend ({kernel_backend})")
