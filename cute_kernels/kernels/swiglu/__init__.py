@@ -18,7 +18,6 @@ class _Swiglu_Cute(torch.autograd.Function):
         kernel_backend_forward: KernelBackend,
         kernel_backend_backward: KernelBackend,
         vector_instruction_width_forward: int,
-        vector_instruction_width_backward: int,
         BLOCK_SIZE_forward: int,
         BLOCK_SIZE_backward: int,
     ) -> torch.Tensor:
@@ -27,7 +26,6 @@ class _Swiglu_Cute(torch.autograd.Function):
 
         ctx.save_for_backward(gate, up)
         ctx.kernel_backend_backward = kernel_backend_backward
-        ctx.vector_instruction_width_backward = vector_instruction_width_backward
         ctx.BLOCK_SIZE_backward = BLOCK_SIZE_backward
 
         return _forward(
@@ -48,7 +46,6 @@ class _Swiglu_Cute(torch.autograd.Function):
             up=up,
             output_grad=output_grad,
             kernel_backend=ctx.kernel_backend_backward,
-            vector_instruction_width=ctx.vector_instruction_width_backward,
             BLOCK_SIZE=ctx.BLOCK_SIZE_backward,
         )
 
@@ -61,7 +58,6 @@ def swiglu_cute(
     kernel_backend_forward: KernelBackend = CutoTuneParameter(),
     kernel_backend_backward: KernelBackend = CutoTuneParameter(),
     vector_instruction_width_forward: int = CutoTuneParameter(),
-    vector_instruction_width_backward: int = CutoTuneParameter(),
     BLOCK_SIZE_forward: int = CutoTuneParameter(),
     BLOCK_SIZE_backward: int = CutoTuneParameter(),
 ) -> torch.Tensor:
@@ -71,7 +67,6 @@ def swiglu_cute(
         kernel_backend_forward,
         kernel_backend_backward,
         vector_instruction_width_forward,
-        vector_instruction_width_backward,
         BLOCK_SIZE_forward,
         BLOCK_SIZE_backward,
     )

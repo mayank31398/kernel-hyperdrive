@@ -15,9 +15,7 @@ from .triton_implementation import swiglu_backward_triton
 @cutotune(
     configs=(
         get_cartesian_product_cutotune_configs(
-            kernel_backend=[KernelBackend.cuda],
-            vector_instruction_width=COMMON_VECTOR_INSTRUCTION_WIDTHS,
-            BLOCK_SIZE=COMMON_CUDA_BLOCK_SIZES_POWERS_OF_2,
+            kernel_backend=[KernelBackend.cuda], BLOCK_SIZE=COMMON_CUDA_BLOCK_SIZES_POWERS_OF_2
         )
         if torch.cuda.is_available()
         else []
@@ -25,7 +23,6 @@ from .triton_implementation import swiglu_backward_triton
     + (
         get_cartesian_product_cutotune_configs(
             kernel_backend=[KernelBackend.cuda],
-            vector_instruction_width=[MAX_FP16_BF16_INSTRUCTION_WIDTH],
             BLOCK_SIZE=COMMON_CUDA_BLOCK_SIZES_POWERS_OF_2,
             condition=lambda **kwargs: kwargs["gate"].dtype in [torch.float16, torch.bfloat16],
         )
@@ -33,9 +30,7 @@ from .triton_implementation import swiglu_backward_triton
         else []
     )
     + get_cartesian_product_cutotune_configs(
-        kernel_backend=[KernelBackend.triton],
-        vector_instruction_width=[None],
-        BLOCK_SIZE=COMMON_TRITON_BLOCK_SIZES_POWERS_OF_2,
+        kernel_backend=[KernelBackend.triton], BLOCK_SIZE=COMMON_TRITON_BLOCK_SIZES_POWERS_OF_2
     ),
     default_config=CutoTuneConfig(
         {"kernel_backend": KernelBackend.triton, "vector_instruction_width": None, "BLOCK_SIZE": 1024}
@@ -47,7 +42,6 @@ def _backward(
     up: torch.Tensor,
     output_grad: torch.Tensor,
     kernel_backend: KernelBackend,
-    vector_instruction_width: int,
     BLOCK_SIZE: int,
 ) -> tuple[torch.Tensor]:
     gate_grad = torch.empty_like(gate)
