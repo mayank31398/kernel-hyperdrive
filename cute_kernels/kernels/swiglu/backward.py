@@ -1,11 +1,6 @@
 import torch
 
-from ...constants import (
-    COMMON_CUDA_BLOCK_SIZES_POWERS_OF_2,
-    COMMON_TRITON_BLOCK_SIZES_POWERS_OF_2,
-    COMMON_VECTOR_INSTRUCTION_WIDTHS,
-    MAX_FP16_BF16_INSTRUCTION_WIDTH,
-)
+from ...constants import COMMON_CUDA_BLOCK_SIZES_POWERS_OF_2, COMMON_TRITON_BLOCK_SIZES_POWERS_OF_2
 from ...cutotune import CutoTuneConfig, cutotune, get_cartesian_product_cutotune_configs
 from ...enums import KernelBackend
 from .cuda_implementation import swiglu_backward_cuda
@@ -32,9 +27,7 @@ from .triton_implementation import swiglu_backward_triton
     + get_cartesian_product_cutotune_configs(
         kernel_backend=[KernelBackend.triton], BLOCK_SIZE=COMMON_TRITON_BLOCK_SIZES_POWERS_OF_2
     ),
-    default_config=CutoTuneConfig(
-        {"kernel_backend": KernelBackend.triton, "vector_instruction_width": None, "BLOCK_SIZE": 1024}
-    ),
+    default_config=CutoTuneConfig({"kernel_backend": KernelBackend.triton, "BLOCK_SIZE": 1024}),
     triggers={"gate.dtype"},
 )
 def _backward(
