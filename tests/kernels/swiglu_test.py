@@ -102,7 +102,6 @@ class SwigluTest(TestCommons):
         kernel_backend_forward: KernelBackend,
         kernel_backend_backward: KernelBackend,
         vector_instruction_width_forward: int,
-        vector_instruction_width_backward: int,
         BLOCK_SIZE_forward: int,
         BLOCK_SIZE_backward: int,
         function: Callable,
@@ -116,7 +115,6 @@ class SwigluTest(TestCommons):
             kernel_backend_forward=kernel_backend_forward,
             kernel_backend_backward=kernel_backend_backward,
             vector_instruction_width_forward=vector_instruction_width_forward,
-            vector_instruction_width_backward=vector_instruction_width_backward,
             BLOCK_SIZE_forward=BLOCK_SIZE_forward,
             BLOCK_SIZE_backward=BLOCK_SIZE_backward,
         )
