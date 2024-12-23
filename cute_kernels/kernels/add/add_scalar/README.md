@@ -1,4 +1,4 @@
 # Add Scalar
 
 ## Forward
-$$y_i = x_i + c$$
+$$z_i = x_i + y$$
