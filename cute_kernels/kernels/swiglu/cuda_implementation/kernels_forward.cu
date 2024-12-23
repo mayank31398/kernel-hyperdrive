@@ -68,6 +68,7 @@ void swiglu_forward_cuda(const torch::Tensor &gate,
 
     AT_DISPATCH_CUSTOM_FLOAT_TYPES(
         gate.scalar_type(), "swiglu_forward_cuda_kernel", ([&] {
+            int log_vector_instruction_width;
             if constexpr (std::is_same_v<scalar_t, fp32>) {
                 log_vector_instruction_width = 2;
             } else {
