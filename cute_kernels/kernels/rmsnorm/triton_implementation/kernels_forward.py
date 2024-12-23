@@ -84,7 +84,8 @@ def rmsnorm_forward_triton(
     BLOCK_SIZE_B: int,
     BLOCK_SIZE_H: int,
 ) -> None:
-    num_elements, hidden_size = x.size()
+    hidden_size = x.size(-1)
+    num_elements = x.numel() // hidden_size
 
     if BLOCK_SIZE_H < hidden_size:
         raise ValueError(f"hidden_size should be more than the BLOCK_SIZE_H")
