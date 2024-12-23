@@ -13,14 +13,14 @@ __global__ void _swiglu_backward_cuda_kernel(const scalar_t *gate,
                                              const scalar_t *output_grad,
                                              scalar_t *gate_grad,
                                              scalar_t *up_grad,
-                                             const int64_t num_elements) {
+                                             const uint64 num_elements) {
     constexpr int vector_instruction_width = sizeof(fp32_4) / sizeof(scalar_t);
     static_assert(vector_instruction_width == 4 || vector_instruction_width == 8);
 
-    const int64_t thread_id = get_global_thread_id();
+    const uint64 thread_id = get_global_thread_id();
     using dtype = DType<scalar_t>;
 
-    int64_t end = (thread_id + 1) * vector_instruction_width - 1;  // inclusive of last element
+    uint64 end = (thread_id + 1) * vector_instruction_width - 1;  // inclusive of last element
 
     if (end < num_elements) {
         const fp32 *gate_vec = (fp32 *)&((fp32_4 *)gate)[thread_id];
@@ -91,7 +91,7 @@ void swiglu_backward_cuda(const torch::Tensor &gate,
                           torch::Tensor &gate_grad,
                           torch::Tensor &up_grad,
                           const int &BLOCK_SIZE) {
-    const int64_t num_elements = gate.numel();
+    const uint64 num_elements = gate.numel();
 
     AT_DISPATCH_CUSTOM_FLOAT_TYPES(
         gate.scalar_type(), "swiglu_backward_cuda_kernel", ([&] {
