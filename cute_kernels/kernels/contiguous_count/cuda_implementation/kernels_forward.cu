@@ -8,13 +8,13 @@
 
 #define MAX_ALLOWED_C 16384
 
-inline __device__ void _init_shared_memory(uint32 *x, const int &C) {
-    const int num_loops = (C + BlockDim.x - 1) / BlockDim.x;
+inline __device__ void _init_shared_memory(uint32 *x, const int &C, const uint32 &thread_id) {
+    const int num_loops = (C + blockDim.x - 1) / blockDim.x;
     // clang-format off
     #pragma unroll
     // clang-format on
     for (int i = 0; i < num_loops; i++) {
-        output_shared[thread_id + i * BlockDim.x] = 0;
+        x[thread_id + i * blockDim.x] = 0;
     }
 }
 
@@ -26,7 +26,7 @@ __global__ void _contiguous_count_cuda_kernel(const uint32 *x,
     const uint64 thread_id = get_global_thread_id();
 
     __shared__ uint32 output_shared[MAX_ALLOWED_C];
-    _init_shared_memory(output_shared, C);
+    _init_shared_memory(output_shared, C, thread_id);
     __syncthreads();
 
     const uint32 *x_vec = (uint32 *)&((uint32_4 *)x)[thread_id];
