@@ -1,7 +1,7 @@
 #include <torch/extension.h>
 
-void contigous_count_cuda(const torch::Tensor &x, const torch::Tensor &output, const int &C, const int &BLOCK_SIZE);
+void contiguous_count_cuda(const torch::Tensor &x, const torch::Tensor &output, const int &C, const int &BLOCK_SIZE);
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-    m.def("contigous_count_cuda", &contigous_count_cuda, "contiguous count forward (CUDA)");
+    m.def("contiguous_count_cuda", &contiguous_count_cuda, "contiguous count forward (CUDA)");
 }

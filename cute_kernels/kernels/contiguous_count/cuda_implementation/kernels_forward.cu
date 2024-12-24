@@ -25,7 +25,7 @@ __global__ void _contiguous_count_cuda_kernel(const uint32 *x,
     }
 }
 
-void contigous_count_cuda(const torch::Tensor &x, const torch::Tensor &output, const int &C, const int &BLOCK_SIZE) {
+void contiguous_count_cuda(const torch::Tensor &x, const torch::Tensor &output, const int &C, const int &BLOCK_SIZE) {
     const uint64 num_elements = x.numel();
 
     // we use vector instructions of width 4
