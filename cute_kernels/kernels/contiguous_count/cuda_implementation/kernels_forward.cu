@@ -8,9 +8,9 @@
 
 #define MAX_ALLOWED_C 16384
 
-template <typename scalar_t, int vector_instruction_width>
-__global__ void _contiguous_count_cuda_kernel(const scalar_t *x,
-                                              const scalar_t *output,
+template <int vector_instruction_width>
+__global__ void _contiguous_count_cuda_kernel(const int32 *x,
+                                              int32 *output,
                                               const uint64 num_elements,
                                               const uint32 C) {
     const uint64 thread_id = get_global_thread_id();
@@ -22,21 +22,28 @@ __global__ void _contiguous_count_cuda_kernel(const scalar_t *x,
     #pragma unroll
     // clang-format on
     for (int i = 0; i < num_loops; i++) {
-        x[thread_id + i * blockDim.x] = 0;
+        const int index = thread_id + i * blockDim.x;
+        if (index < C) {
+            output_shared[index] = 0;
+            output[index] = 3;
+        }
     }
 
-    __syncthreads();
+    // __syncthreads();
 
-    // TODO add code here
+    // // TODO add code here
 
-    __syncthreads();
+    // __syncthreads();
 
-    // clang-format off
-    #pragma unroll
-    // clang-format on
-    for (int i = 0; i < num_loops; i++) {
-        atomicAdd(&x[thread_id + i * blockDim.x], output_shared[thread_id + i * blockDim.x]);
-    }
+    // // clang-format off
+    // #pragma unroll
+    // // clang-format on
+    // for (int i = 0; i < num_loops; i++) {
+    //     const int index = thread_id + i * blockDim.x;
+    //     if (index < C) {
+    //         atomicAdd(&output[index], output_shared[index]);
+    //     }
+    // }
 }
 
 void contiguous_count_cuda(const torch::Tensor &x, const torch::Tensor &output, const int &C, const int &BLOCK_SIZE) {
@@ -49,8 +56,6 @@ void contiguous_count_cuda(const torch::Tensor &x, const torch::Tensor &output, 
     const int num_elements_per_block = BLOCK_SIZE << 2;
     const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
 
-    AT_DISPATCH_CUSTOM_INT_TYPES(x.scalar_type(), "contiguous_count_cuda_kernel", ([&] {
-                                     _contiguous_count_cuda_kernel<scalar_t, 4><<<NUM_BLOCKS, BLOCK_SIZE>>>(
-                                         x.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements, C);
-                                 }));
+    _contiguous_count_cuda_kernel<4>
+        <<<NUM_BLOCKS, BLOCK_SIZE>>>(x.data_ptr<int32>(), output.data_ptr<int32>(), num_elements, C);
 }

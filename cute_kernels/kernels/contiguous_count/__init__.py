@@ -18,8 +18,9 @@ def contiguous_count_cute(
     assert x.dtype in [torch.int32, torch.long]
 
     if kernel_backend == KernelBackend.cuda:
-        output = torch.empty(size, device=x.device, dtype=x.dtype)
-        contiguous_count_cuda(x=x, output=output, size=size, BLOCK_SIZE_B=BLOCK_SIZE_B)
+        output = torch.empty(size, device=x.device, dtype=torch.int32)
+        contiguous_count_cuda(x=x.to(torch.int32), output=output, size=size, BLOCK_SIZE_B=BLOCK_SIZE_B)
+        output = output.type_as(x)
     elif kernel_backend == KernelBackend.triton:
         output = contiguous_count_triton(x=x, size=size, BLOCK_SIZE_B=BLOCK_SIZE_B)
     else:
