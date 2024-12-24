@@ -134,20 +134,7 @@ def _rmsnorm_backward_no_weight_triton(
         )
 
 
-def _fake(
-    x: torch.Tensor,
-    weight: torch.Tensor,
-    output_grad: torch.Tensor,
-    rmsnorm_denominator: torch.Tensor,
-    x_grad: torch.Tensor,
-    eps: float,
-    BLOCK_SIZE_B: int,
-    BLOCK_SIZE_H: int,
-) -> torch.Tensor:
-    return torch.empty_like(weight)
-
-
-@cute_op(f"{LIBRARY_NAME}::{_KERNEL_WEIGHTED_NAME}", mutates_args={"x_grad", "weight_grad"}, fake_func=_fake)
+@cute_op(f"{LIBRARY_NAME}::{_KERNEL_WEIGHTED_NAME}", mutates_args={"x_grad", "weight_grad"})
 def _rmsnorm_backward_triton(
     x: torch.Tensor,
     weight: torch.Tensor,
