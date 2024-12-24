@@ -18,7 +18,7 @@ inline __device__ void _init_shared_memory(uint32 *x, const int &C, const uint32
     }
 }
 
-template <int vector_instruction_width>
+template <typename scalar_t, int vector_instruction_width>
 __global__ void _contiguous_count_cuda_kernel(const uint32 *x,
                                               const uint32 *output,
                                               const uint64 num_elements,
@@ -50,7 +50,8 @@ void contiguous_count_cuda(const torch::Tensor &x, const torch::Tensor &output, 
     const int num_elements_per_block = BLOCK_SIZE << 2;
     const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
 
-    // the 3rd argument in launch parameters is the size of dynamic shared memory
-    _contiguous_count_cuda_kernel<4>
-        <<<NUM_BLOCKS, BLOCK_SIZE>>>(x.data_ptr<uint>(), output.data_ptr<uint>(), num_elements, C);
+    AT_DISPATCH_CUSTOM_INT_TYPES(x.scalar_type(), "contiguous_count_cuda_kernel", ([&] {
+                                     _contiguous_count_cuda_kernel<scalar_t, 4><<<NUM_BLOCKS, BLOCK_SIZE>>>(
+                                         x.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), num_elements, C);
+                                 }));
 }
