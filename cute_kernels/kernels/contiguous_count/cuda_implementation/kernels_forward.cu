@@ -6,12 +6,14 @@
 #include "../../../include/dtypes/all.h"
 #include "../../../include/threads.h"
 
+#define MAX_ALLOWED_C 16384
+
 template <int vector_instruction_width>
 __global__ void _contiguous_count_cuda_kernel(const uint32 *x,
                                               const uint32 *output,
                                               const uint64 num_elements,
                                               const uint32 C) {
-    extern __shared__ uint32 output_shared[];
+    __shared__ uint32 output_shared[MAX_ALLOWED_C];
 
     const uint64 thread_id = get_global_thread_id();
     const uint32 *x_vec = (uint32 *)&((uint32_4 *)x)[thread_id];
@@ -34,5 +36,5 @@ void contiguous_count_cuda(const torch::Tensor &x, const torch::Tensor &output, 
 
     // the 3rd argument in launch parameters is the size of dynamic shared memory
     _contiguous_count_cuda_kernel<4>
-        <<<NUM_BLOCKS, BLOCK_SIZE, C * sizeof(uint32)>>>(x.data_ptr<uint>(), output.data_ptr<uint>(), num_elements, C);
+        <<<NUM_BLOCKS, BLOCK_SIZE>>>(x.data_ptr<uint>(), output.data_ptr<uint>(), num_elements, C);
 }
