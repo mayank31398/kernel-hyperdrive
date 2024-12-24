@@ -8,35 +8,34 @@
 
 #define MAX_ALLOWED_C 16384
 
-inline __device__ void _init_shared_memory(uint32 *x, const int &C, const uint32 &thread_id) {
-    const int num_loops = (C + blockDim.x - 1) / blockDim.x;
-    // clang-format off
-    #pragma unroll
-    // clang-format on
-    for (int i = 0; i < num_loops; i++) {
-        x[thread_id + i * blockDim.x] = 0;
-    }
-}
-
 template <typename scalar_t, int vector_instruction_width>
 __global__ void _contiguous_count_cuda_kernel(const scalar_t *x,
                                               const scalar_t *output,
                                               const uint64 num_elements,
                                               const uint32 C) {
     const uint64 thread_id = get_global_thread_id();
+    const int num_loops = (C + blockDim.x - 1) / blockDim.x;
 
     __shared__ uint32 output_shared[MAX_ALLOWED_C];
-    _init_shared_memory(output_shared, C, thread_id);
-    __syncthreads();
-
-    const uint32 *x_vec = (uint32 *)&((uint32_4 *)x)[thread_id];
 
     // clang-format off
     #pragma unroll
     // clang-format on
-    for (int i = 0; i < 4; i++) {
-        uint32 *x_local = (uint32 *)x_vec[thread_id];
-        x_local[i];
+    for (int i = 0; i < num_loops; i++) {
+        x[thread_id + i * blockDim.x] = 0;
+    }
+
+    __syncthreads();
+
+    // TODO add code here
+
+    __syncthreads();
+
+    // clang-format off
+    #pragma unroll
+    // clang-format on
+    for (int i = 0; i < num_loops; i++) {
+        atomicAdd(&x[thread_id + i * blockDim.x], output_shared[thread_id + i * blockDim.x]);
     }
 }
 
