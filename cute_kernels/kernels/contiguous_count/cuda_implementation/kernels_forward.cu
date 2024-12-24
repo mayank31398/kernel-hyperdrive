@@ -3,7 +3,6 @@
 #include <cuda_runtime.h>
 #include <torch/extension.h>
 
-#include "../../../include/activations.h"
 #include "../../../include/dtypes/all.h"
 #include "../../../include/threads.h"
 
@@ -17,7 +16,7 @@ __global__ void _contiguous_count_cuda_kernel(const uint32 *x,
     const uint64 thread_id = get_global_thread_id();
     using dtype = DType<scalar_t>;
 
-    const uint32_4 *x_vec = (uint32_4 *)x;
+    const uint32 *x_vec = (uint32 *)&((uint32_4 *)x)[thread_id];
 
     // clang-format off
     #pragma unroll
