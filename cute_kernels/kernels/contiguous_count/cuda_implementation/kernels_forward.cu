@@ -6,7 +6,7 @@
 #include "../../../include/dtypes/all.h"
 #include "../../../include/threads.h"
 
-template <typename scalar_t, int vector_instruction_width>
+template <int vector_instruction_width>
 __global__ void _contiguous_count_cuda_kernel(const uint32 *x,
                                               const uint32 *output,
                                               const uint64 num_elements,
@@ -38,6 +38,6 @@ void contigous_count_cuda(const torch::Tensor &x,
     const int num_elements_per_block = BLOCK_SIZE << 2;
     const int NUM_BLOCKS = (num_elements + num_elements_per_block - 1) / num_elements_per_block;
 
-    _contiguous_count_cuda_kernel<<<NUM_BLOCKS, BLOCK_SIZE>>>(
-        x.data_ptr<uint>(), output.data_ptr<uint>(), num_elements, C);
+    _contiguous_count_cuda_kernel<4>
+        <<<NUM_BLOCKS, BLOCK_SIZE>>>(x.data_ptr<uint>(), output.data_ptr<uint>(), num_elements, C);
 }
