@@ -230,6 +230,7 @@ def rmsnorm_backward_triton(
             output_grad=output_grad,
             rmsnorm_denominator=rmsnorm_denominator,
             x_grad=x_grad,
+            weight_grad=weight_grad,
             eps=eps,
             BLOCK_SIZE_B=BLOCK_SIZE_B,
             BLOCK_SIZE_H=BLOCK_SIZE_H,
