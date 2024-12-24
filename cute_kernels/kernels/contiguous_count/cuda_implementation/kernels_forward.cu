@@ -19,8 +19,8 @@ inline __device__ void _init_shared_memory(uint32 *x, const int &C, const uint32
 }
 
 template <typename scalar_t, int vector_instruction_width>
-__global__ void _contiguous_count_cuda_kernel(const uint32 *x,
-                                              const uint32 *output,
+__global__ void _contiguous_count_cuda_kernel(const scalar_t *x,
+                                              const scalar_t *output,
                                               const uint64 num_elements,
                                               const uint32 C) {
     const uint64 thread_id = get_global_thread_id();
