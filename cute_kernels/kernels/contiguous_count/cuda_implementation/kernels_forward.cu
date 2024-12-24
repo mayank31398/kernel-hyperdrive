@@ -14,8 +14,6 @@ __global__ void _contiguous_count_cuda_kernel(const uint32 *x,
     __shared__ uint32 output_shared[C];
 
     const uint64 thread_id = get_global_thread_id();
-    using dtype = DType<scalar_t>;
-
     const uint32 *x_vec = (uint32 *)&((uint32_4 *)x)[thread_id];
 
     // clang-format off
@@ -27,11 +25,7 @@ __global__ void _contiguous_count_cuda_kernel(const uint32 *x,
     }
 }
 
-void contigous_count_cuda(const torch::Tensor &x,
-                          const torch::Tensor &output,
-                          const int C,
-                          const int &BLOCK_SIZE_B,
-                          const int &BLOCK_SIZE_C) {
+void contigous_count_cuda(const torch::Tensor &x, const torch::Tensor &output, const int &C, const int &BLOCK_SIZE) {
     const uint64 num_elements = x.numel();
 
     // we use vector instructions of width 4
