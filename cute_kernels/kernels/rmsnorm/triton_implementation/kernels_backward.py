@@ -93,8 +93,7 @@ def rmsnorm_backward_triton_kernel(
             weight_grad += tl.sum(output_grad * (x * inverse_rms[:, None]).to(x_dtype), axis=0)
 
     if has_weight:
-        weight_grad_ptrs = weight_grad_ptr + pid * H + indices_h
-        tl.store(weight_grad_ptrs, weight_grad, mask=mask_h)
+        tl.atomic_add(weight_grad_ptr + indices_h, weight_grad, mask=mask_h)
 
 
 @cute_op(f"{LIBRARY_NAME}::{_KERNEL_NO_WEIGHT_NAME}", mutates_args={"x_grad"})
@@ -148,17 +147,18 @@ def _fake(
     return torch.empty_like(weight)
 
 
-@cute_op(f"{LIBRARY_NAME}::{_KERNEL_WEIGHTED_NAME}", mutates_args={"x_grad"}, fake_func=_fake)
+@cute_op(f"{LIBRARY_NAME}::{_KERNEL_WEIGHTED_NAME}", mutates_args={"x_grad", "weight_grad"}, fake_func=_fake)
 def _rmsnorm_backward_triton(
     x: torch.Tensor,
     weight: torch.Tensor,
     output_grad: torch.Tensor,
     rmsnorm_denominator: torch.Tensor,
     x_grad: torch.Tensor,
+    weight_grad: torch.Tensor,
     eps: float,
     BLOCK_SIZE_B: int,
     BLOCK_SIZE_H: int,
-) -> torch.Tensor:
+) -> None:
     hidden_size = x.size(-1)
     num_elements = x.numel() // hidden_size
 
@@ -167,8 +167,6 @@ def _rmsnorm_backward_triton(
 
     sm_count = get_sm_count(x.device)
     num_programs = min(sm_count, ceil_divide(num_elements, BLOCK_SIZE_B))
-
-    weight_grad = torch.empty(num_programs, hidden_size, device=x_grad.device, dtype=torch.float32)
 
     with torch.device(x.device):
         rmsnorm_backward_triton_kernel[(num_programs,)](
@@ -187,8 +185,6 @@ def _rmsnorm_backward_triton(
             BLOCK_SIZE_B=BLOCK_SIZE_B,
             BLOCK_SIZE_H=BLOCK_SIZE_H,
         )
-
-    return weight_grad.sum(dim=0).type_as(weight)
 
 
 @cutotune(
@@ -216,7 +212,8 @@ def rmsnorm_backward_triton(
     BLOCK_SIZE_H: int,
 ) -> torch.Tensor | None:
     if weight is None:
-        weight_grad = _rmsnorm_backward_no_weight_triton(
+        weight_grad = None
+        _rmsnorm_backward_no_weight_triton(
             x=x,
             output_grad=output_grad,
             rmsnorm_denominator=rmsnorm_denominator,
@@ -226,7 +223,8 @@ def rmsnorm_backward_triton(
             BLOCK_SIZE_H=BLOCK_SIZE_H,
         )
     else:
-        weight_grad = _rmsnorm_backward_triton(
+        weight_grad = torch.zeros_like(weight, dtype=torch.float32)
+        _rmsnorm_backward_triton(
             x=x,
             weight=weight,
             output_grad=output_grad,
@@ -236,5 +234,7 @@ def rmsnorm_backward_triton(
             BLOCK_SIZE_B=BLOCK_SIZE_B,
             BLOCK_SIZE_H=BLOCK_SIZE_H,
         )
+
+        weight_grad = weight_grad.type_as(weight)
 
     return weight_grad
