@@ -33,6 +33,7 @@ using uint64 = unsigned long;
 
 using int32 = int;
 using uint32 = uint;
+using uint32_4 = uint4;
 
 using int16 = short;
 using uint16 = ushort;
